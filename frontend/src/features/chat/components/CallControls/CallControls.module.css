@@ -1,0 +1,24 @@
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.audioButton,
+.videoButton {
+  font-size: 20px;
+  color: #1890ff;
+  transition: all 0.3s;
+}
+
+.audioButton:hover,
+.videoButton:hover {
+  color: #40a9ff;
+  background-color: rgba(24, 144, 255, 0.1);
+}
+
+.audioButton[disabled],
+.videoButton[disabled] {
+  color: rgba(0, 0, 0, 0.25);
+  cursor: not-allowed;
+} 

@@ -1,0 +1,263 @@
+.layout {
+  min-height: 100vh;
+  background: #f0f2f5;
+}
+
+.header {
+  background: #fff;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+}
+
+.headerContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-left: 16px;
+}
+
+.title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.menuButton {
+  font-size: 20px;
+  padding: 0;
+  color: #1a1a1a;
+}
+
+.newChatButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.content {
+  margin-top: 64px;
+  padding: 24px;
+  background: #fff;
+  border-radius: 8px;
+  margin: 88px 24px 24px;
+  min-height: calc(100vh - 112px);
+}
+
+.drawerContent {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.searchInput {
+  margin-bottom: 16px;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  color: #8c8c8c;
+}
+
+.emptyState h2 {
+  margin: 16px 0 8px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.emptyState p {
+  margin-bottom: 24px;
+  font-size: 16px;
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 0 16px;
+  }
+
+  .content {
+    margin: 88px 16px 16px;
+    padding: 16px;
+  }
+
+  .title {
+    font-size: 18px;
+  }
+
+  .newChatButton span {
+    display: none;
+  }
+}
+
+.container {
+  display: flex;
+  height: 100vh;
+  background: #f0f2f5;
+}
+
+.sidebar {
+  width: 320px;
+  background: #fff;
+  border-right: 1px solid #e8e8e8;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s;
+}
+
+.sidebarHeader {
+  padding: 16px;
+  border-bottom: 1px solid #e8e8e8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1890ff;
+}
+
+.logo img {
+  width: 32px;
+  height: 32px;
+}
+
+.searchBar {
+  padding: 8px 16px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.conversationList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.chatArea {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  margin: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.chatHeader {
+  padding: 16px;
+  border-bottom: 1px solid #e8e8e8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chatTitle {
+  font-size: 16px;
+  font-weight: 500;
+  color: #262626;
+}
+
+.messageList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #8c8c8c;
+  font-size: 16px;
+}
+
+.emptyState p {
+  margin: 8px 0;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 1000;
+    transform: translateX(-100%);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .chatArea {
+    margin: 0;
+    border-radius: 0;
+  }
+
+  .mobileHeader {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+/* Custom scrollbar */
+.conversationList::-webkit-scrollbar,
+.messageList::-webkit-scrollbar {
+  width: 6px;
+}
+
+.conversationList::-webkit-scrollbar-track,
+.messageList::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.conversationList::-webkit-scrollbar-thumb,
+.messageList::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.conversationList::-webkit-scrollbar-thumb:hover,
+.messageList::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.messageList > * {
+  animation: fadeIn 0.3s ease-out;
+} 

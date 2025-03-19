@@ -1,0 +1,31 @@
+.loginContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f0f2f5;
+}
+
+.loginCard {
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+.loginCard :global(.ant-card-head-title) {
+  text-align: center;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.loginCard :global(.ant-form-item:last-child) {
+  margin-bottom: 0;
+}
+
+@media (max-width: 480px) {
+  .loginCard {
+    max-width: 90%;
+    margin: 0 20px;
+  }
+} 

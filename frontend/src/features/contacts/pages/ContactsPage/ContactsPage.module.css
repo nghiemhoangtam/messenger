@@ -1,0 +1,91 @@
+.container {
+  padding: 24px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: #fff;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 24px;
+  color: #1a1a1a;
+}
+
+.searchInput {
+  margin-bottom: 24px;
+}
+
+:global(.ant-tabs-nav) {
+  margin-bottom: 16px;
+}
+
+:global(.ant-list-item) {
+  padding: 12px 24px;
+  border-radius: 8px;
+  transition: background-color 0.3s;
+}
+
+:global(.ant-list-item:hover) {
+  background-color: #f5f5f5;
+}
+
+:global(.ant-list-item-meta-title) {
+  margin-bottom: 4px;
+  font-size: 16px;
+}
+
+:global(.ant-list-item-meta-description) {
+  font-size: 14px;
+  color: #8c8c8c;
+}
+
+:global(.ant-avatar) {
+  background-color: #1890ff;
+}
+
+:global(.ant-badge-count) {
+  background-color: #ff4d4f;
+}
+
+:global(.ant-modal-content) {
+  border-radius: 8px;
+}
+
+:global(.ant-modal-header) {
+  border-radius: 8px 8px 0 0;
+  padding: 16px 24px;
+}
+
+:global(.ant-modal-body) {
+  padding: 24px;
+}
+
+:global(.ant-input-search) {
+  margin-bottom: 16px;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
+
+  .header {
+    margin-bottom: 16px;
+  }
+
+  .header h2 {
+    font-size: 20px;
+  }
+
+  :global(.ant-list-item) {
+    padding: 8px 16px;
+  }
+} 

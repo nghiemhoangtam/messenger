@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background Circle -->
+    <circle cx="64" cy="64" r="60" fill="#1890FF" />
+
+    <!-- Message Bubble -->
+    <path
+        d="M40 40h48c4.4 0 8 3.6 8 8v32c0 4.4-3.6 8-8 8H64l-12 12V88H40c-4.4 0-8-3.6-8-8V48c0-4.4 3.6-8 8-8z"
+        fill="white" />
+
+    <!-- Message Lines -->
+    <rect x="48" y="52" width="32" height="4" rx="2" fill="#1890FF" />
+    <rect x="48" y="64" width="24" height="4" rx="2" fill="#1890FF" />
+    <rect x="48" y="76" width="28" height="4" rx="2" fill="#1890FF" />
+</svg> 

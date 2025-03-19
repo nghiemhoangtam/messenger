@@ -1,0 +1,27 @@
+.avatarWrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.avatar {
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.status {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid white;
+}
+
+.online {
+  background-color: #52c41a;
+}
+
+.offline {
+  background-color: #d9d9d9;
+} 

@@ -1,0 +1,27 @@
+.userCard {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.userCard:hover {
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+.info {
+  margin-left: 12px;
+  flex: 1;
+}
+
+.name {
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.85);
+  margin-bottom: 2px;
+}
+
+.lastSeen {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+} 

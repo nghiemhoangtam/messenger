@@ -1,0 +1,75 @@
+.modal {
+  :global(.ant-modal-content) {
+    background: transparent;
+    box-shadow: none;
+  }
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.avatar {
+  margin-bottom: 16px;
+}
+
+.name {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.status {
+  font-size: 16px;
+  color: rgba(0, 0, 0, 0.45);
+  margin-bottom: 24px;
+}
+
+.controls {
+  display: flex;
+  gap: 16px;
+}
+
+.rejectButton,
+.answerButton,
+.endButton {
+  width: 48px;
+  height: 48px;
+  font-size: 24px;
+}
+
+.rejectButton {
+  background-color: #ff4d4f;
+  border-color: #ff4d4f;
+}
+
+.rejectButton:hover {
+  background-color: #ff7875;
+  border-color: #ff7875;
+}
+
+.answerButton {
+  background-color: #52c41a;
+  border-color: #52c41a;
+}
+
+.answerButton:hover {
+  background-color: #73d13d;
+  border-color: #73d13d;
+}
+
+.endButton {
+  background-color: #ff4d4f;
+  border-color: #ff4d4f;
+}
+
+.endButton:hover {
+  background-color: #ff7875;
+  border-color: #ff7875;
+} 

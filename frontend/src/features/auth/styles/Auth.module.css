@@ -1,0 +1,180 @@
+.container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #1890ff 0%, #722ed1 100%);
+  padding: 20px;
+}
+
+.card {
+  width: 100%;
+  max-width: 400px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  padding: 32px;
+  animation: slideUp 0.5s ease-out;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.logo {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 16px;
+}
+
+.title {
+  font-size: 24px;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  color: #666;
+  font-size: 14px;
+}
+
+.form {
+  margin-bottom: 24px;
+}
+
+.formItem {
+  margin-bottom: 16px;
+}
+
+.formItem:last-child {
+  margin-bottom: 24px;
+}
+
+.input {
+  height: 40px;
+}
+
+.button {
+  width: 100%;
+  height: 40px;
+  font-size: 16px;
+}
+
+.divider {
+  margin: 24px 0;
+  color: #d9d9d9;
+}
+
+.socialLogin {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.socialButton {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d9d9d9;
+  background: white;
+  transition: all 0.3s;
+}
+
+.socialButton:hover {
+  border-color: #1890ff;
+  color: #1890ff;
+}
+
+.footer {
+  text-align: center;
+  color: #666;
+  font-size: 14px;
+}
+
+.link {
+  color: #1890ff;
+  text-decoration: none;
+  margin-left: 4px;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.errorMessage {
+  color: #ff4d4f;
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+/* Animation */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .card {
+    padding: 24px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+
+  .logo {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+/* Custom Ant Design styles */
+:global(.ant-input-affix-wrapper) {
+  height: 40px;
+}
+
+:global(.ant-input-affix-wrapper:hover) {
+  border-color: #1890ff;
+}
+
+:global(.ant-input-affix-wrapper-focused) {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+:global(.ant-btn-primary) {
+  background: #1890ff;
+  border-color: #1890ff;
+}
+
+:global(.ant-btn-primary:hover) {
+  background: #40a9ff;
+  border-color: #40a9ff;
+}
+
+:global(.ant-form-item-explain-error) {
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+:global(.ant-divider) {
+  color: #d9d9d9;
+  font-size: 14px;
+}
+
+:global(.ant-divider::before),
+:global(.ant-divider::after) {
+  border-top-color: #d9d9d9;
+} 

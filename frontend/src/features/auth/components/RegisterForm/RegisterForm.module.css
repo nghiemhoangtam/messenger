@@ -1,0 +1,33 @@
+.container {
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 24px;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.alert {
+  margin-bottom: 24px;
+}
+
+.form {
+  margin-bottom: 24px;
+}
+
+.footer {
+  text-align: center;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.footer a {
+  color: #1890ff;
+}
+
+.footer a:hover {
+  color: #40a9ff;
+} 
