@@ -2,7 +2,11 @@ export interface User {
     id: string;
     username: string;
     email: string;
-    avatar?: string;
+    avatar?: string | null;
+    status?: 'online' | 'offline' | 'away';
+    lastSeen?: string;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface LoginCredentials {

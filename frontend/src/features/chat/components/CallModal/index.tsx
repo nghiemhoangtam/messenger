@@ -9,7 +9,7 @@ interface CallModalProps {
   caller: {
     id: string;
     username: string;
-    avatar?: string;
+    avatar?: string | null;
   };
   onAnswer: () => void;
   onReject: () => void;

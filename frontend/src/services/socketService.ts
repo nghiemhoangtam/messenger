@@ -1,9 +1,13 @@
 import { io, Socket } from 'socket.io-client';
 import { receiveIncomingCall } from '../features/calls/callsSlice';
-import { store } from '../store';
 
 class SocketService {
     private socket: Socket | null = null;
+    private dispatch: Function | null = null;
+
+    initialize(dispatch: Function) {
+        this.dispatch = dispatch;
+    }
 
     connect(userId: string) {
         this.socket = io(process.env.REACT_APP_SOCKET_URL || 'http://localhost:3000', {
@@ -19,7 +23,7 @@ class SocketService {
         });
 
         this.socket.on('incoming_call', (call) => {
-            store.dispatch(receiveIncomingCall(call));
+            this.dispatch?.(receiveIncomingCall(call));
         });
 
         this.socket.on('call_accepted', (call) => {
@@ -73,4 +77,4 @@ class SocketService {
     }
 }
 
-export const socketService = new SocketService(); 
+export const socketService = new SocketService();

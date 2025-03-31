@@ -6,7 +6,6 @@ import {
     answerCallFailure,
     answerCallRequest,
     answerCallSuccess,
-    Call,
     endCallFailure,
     endCallRequest,
     endCallSuccess,
@@ -16,9 +15,9 @@ import {
     startCallFailure,
     startCallRequest,
     startCallSuccess,
-    updateCallStatus,
+    updateCallStatus
 } from './callsSlice';
-
+import { Call } from './types';
 // Mock API calls
 const mockFetchCalls = async (): Promise<Call[]> => {
     await delay(1000);
@@ -79,9 +78,12 @@ function* handleEndCall() {
     }
 }
 
+console.log(1, fetchCallsRequest);
+
 export function* callsSaga() {
+    console.log(2, "So you think you can dance");
     yield takeLatest(fetchCallsRequest.type, handleFetchCalls);
     yield takeLatest(startCallRequest.type, handleStartCall);
     yield takeLatest(answerCallRequest.type, handleAnswerCall);
     yield takeLatest(endCallRequest.type, handleEndCall);
-} 
+}

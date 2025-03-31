@@ -1,44 +1,10 @@
 .layout {
-  min-height: 100vh;
-}
-
-.sider {
-  background-color: white !important;
-  border-right: 1px solid #f0f0f0;
-  overflow: auto;
   height: 100vh;
-  position: fixed;
-  left: 0;
-  top: 0;
-  bottom: 0;
-}
-
-.logo {
-  height: 64px;
-  padding: 16px;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.logo h1 {
-  color: #1890ff;
-  margin: 0;
-  font-size: 24px;
-  font-weight: 600;
-}
-
-.userInfo {
-  padding: 16px;
-  border-bottom: 1px solid #f0f0f0;
-  color: rgba(0, 0, 0, 0.85);
-  font-weight: 500;
 }
 
 .content {
-  margin-left: 250px;
-  padding: 24px;
-  min-height: 100vh;
-  background-color: #f0f2f5;
+  flex: 1;
+  overflow: auto;
+  background-color: #fff;
 } 

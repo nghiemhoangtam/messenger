@@ -10,7 +10,7 @@ interface MessageBubbleProps {
   isOwn: boolean;
   timestamp: string;
   status: Message["status"];
-  senderAvatar?: string;
+  senderAvatar?: string | null;
   senderName?: string;
 }
 

@@ -5,7 +5,7 @@ import styles from "./CallCard.module.css";
 
 interface CallCardProps {
   username: string;
-  avatar?: string;
+  avatar?: string | null;
   type: "audio" | "video";
   status: "ringing" | "ongoing" | "ended" | "missed" | "incoming" | "outgoing";
   timestamp: string;

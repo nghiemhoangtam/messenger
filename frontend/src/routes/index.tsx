@@ -8,7 +8,7 @@ import {
   Routes,
 } from "react-router-dom";
 import { LoginPage, RegisterPage } from "../features/auth";
-import { CallsPage } from "../features/calls/pages/CallsPage";
+import { CallsPage } from "../features/calls";
 import { ChatPage } from "../features/chat/pages/ChatPage";
 import { ContactsPage } from "../features/contacts/pages/ContactsPage";
 import { ProfilePage } from "../features/profile/pages/ProfilePage";

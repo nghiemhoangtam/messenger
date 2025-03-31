@@ -8,7 +8,7 @@ import React from "react";
 import { useDispatch } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { AppDispatch } from "../../../../store";
-import { loginRequest } from "../../../../store/slices/authSlice";
+import { loginRequest } from "../../authSlice";
 import styles from "../../styles/Auth.module.css";
 
 interface LoginForm {

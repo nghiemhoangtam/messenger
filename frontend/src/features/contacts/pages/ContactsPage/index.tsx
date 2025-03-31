@@ -9,7 +9,7 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import friendService from "../../../../services/friendService";
 import { RootState } from "../../../../store";
-import { User } from "../../../../types";
+import { User } from "../../../auth";
 import styles from "./ContactsPage.module.css";
 
 const { TabPane } = Tabs;

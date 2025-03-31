@@ -3,7 +3,7 @@ import React from "react";
 import { useSelector } from "react-redux";
 import { CallCard } from "../../../../components/molecules/CallCard";
 import { RootState } from "../../../../store";
-import { Call } from "../../callsSlice";
+import { Call } from "../../types";
 import styles from "./CallsPage.module.css";
 
 const { TabPane } = Tabs;

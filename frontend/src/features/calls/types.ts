@@ -4,11 +4,11 @@ export interface Call {
     id: string;
     caller: User;
     receiver: User;
-    status: 'ringing' | 'connected' | 'ended' | 'missed' | 'incoming' | 'outgoing';
+    type: 'audio' | 'video';
+    status: 'ringing' | 'connected' | 'ended' | 'missed' | 'rejected' | 'incoming' | 'outgoing';
     startTime?: Date;
     endTime?: Date;
-    type: 'audio' | 'video';
-    duration?: string;
+    duration?: number;
 }
 
 export interface CallsState {

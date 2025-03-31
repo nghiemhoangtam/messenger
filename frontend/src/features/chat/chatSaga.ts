@@ -22,7 +22,8 @@ const mockMessages: Message[] = [
             id: '1',
             username: 'John Doe',
             email: 'john@example.com',
-            avatar: 'https://i.pravatar.cc/150?img=1'
+            avatar: 'https://i.pravatar.cc/150?img=1',
+            status: 'online'
         },
         content: 'Xin chào!',
         createdAt: new Date(),

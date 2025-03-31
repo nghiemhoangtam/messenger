@@ -10,8 +10,8 @@ import { Avatar, Layout, Menu, Tooltip } from "antd";
 import React from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
+import { logout } from "../../../../features/auth/authSlice";
 import { RootState } from "../../../../store";
-import { logout } from "../../../../store/slices/authSlice";
 import styles from "./Sidebar.module.css";
 
 const { Sider } = Layout;

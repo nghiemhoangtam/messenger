@@ -26,7 +26,8 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import groupService from "../../../../services/groupService";
 import { RootState } from "../../../../store";
-import { Group, User } from "../../../../types";
+import { User } from "../../../auth";
+import { Group } from "../../types";
 import styles from "./GroupsPage.module.css";
 
 const { TabPane } = Tabs;
