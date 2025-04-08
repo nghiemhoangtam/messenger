@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { API_URL } from '../config/constants';
+import { API_URL } from '../config';
 import { Conversation, Message } from '../features/chat/types';
 
 export const chatService = {

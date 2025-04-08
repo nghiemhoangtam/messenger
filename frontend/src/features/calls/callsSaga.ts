@@ -78,10 +78,7 @@ function* handleEndCall() {
     }
 }
 
-console.log(1, fetchCallsRequest);
-
 export function* callsSaga() {
-    console.log(2, "So you think you can dance");
     yield takeLatest(fetchCallsRequest.type, handleFetchCalls);
     yield takeLatest(startCallRequest.type, handleStartCall);
     yield takeLatest(answerCallRequest.type, handleAnswerCall);

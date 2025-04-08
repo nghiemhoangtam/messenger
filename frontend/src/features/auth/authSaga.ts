@@ -18,7 +18,6 @@ import {
 import { LoginCredentials, RegisterCredentials, SocialAuthCredentials, User } from './types';
 
 function* handleLogin(action: PayloadAction<LoginCredentials>) {
-    console.log('handleLogin');
     try {
         const user: User = yield call(authService.login, action.payload);
         yield put(loginSuccess(user));

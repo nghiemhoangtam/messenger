@@ -5,9 +5,9 @@ import {
 } from "@ant-design/icons";
 import { Button, Divider, Form, Input, message } from "antd";
 import React from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
-import { AppDispatch } from "../../../../store";
+import { AppDispatch, RootState } from "../../../../store";
 import { registerRequest } from "../../authSlice";
 import styles from "../../styles/Auth.module.css";
 
@@ -19,6 +19,7 @@ interface RegisterForm {
 }
 
 export const RegisterPage: React.FC = () => {
+  const auth = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const [form] = Form.useForm<RegisterForm>();
@@ -30,7 +31,12 @@ export const RegisterPage: React.FC = () => {
         return;
       }
       await dispatch(registerRequest(values));
-      message.success("Đăng ký thành công");
+      if (auth.error) {
+        message.error(auth.error);
+        return;
+      } else {
+        message.success("Đăng ký thành công");
+      }
       navigate("/login");
     } catch (error) {
       message.error("Đăng ký thất bại");

@@ -1,7 +1,11 @@
 import { LoginCredentials, RegisterCredentials, SocialAuthCredentials, User } from '../features/auth/types';
 
 class AuthService {
-    private baseUrl = 'http://localhost:3001/api/auth';
+    private baseUrl = 'http://localhost:3000/auth';
+
+    constructor() {
+        this.register = this.register.bind(this);
+    }
 
     async login(credentials: LoginCredentials): Promise<User> {
         const response = await fetch(`${this.baseUrl}/login`, {
@@ -22,21 +26,26 @@ class AuthService {
     }
 
     async register(credentials: RegisterCredentials): Promise<User> {
-        const response = await fetch(`${this.baseUrl}/register`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(credentials),
-        });
+        try {
+            const response = await fetch(`${this.baseUrl}/register`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(credentials),
+            });
 
-        if (!response.ok) {
+            if (!response.ok) {
+                throw new Error('Đăng ký thất bại');
+            }
+
+            const data = await response.json();
+            localStorage.setItem('token', data.token);
+            return data.user;
+        } catch (error) {
+            console.error('Error during registration:', error);
             throw new Error('Đăng ký thất bại');
         }
-
-        const data = await response.json();
-        localStorage.setItem('token', data.token);
-        return data.user;
     }
 
     async socialAuth({ provider, token }: SocialAuthCredentials): Promise<User> {
