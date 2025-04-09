@@ -15,6 +15,7 @@ import { UsersModule } from './apis/user/users.module';
         DB_NAME: Joi.string().default('your_database'),
         DB_USERNAME: Joi.string().default('your_username'),
         DB_PASSWORD: Joi.string().default('your_password'),
+        JWT_SECRET: Joi.string().default('your_jwt_secret'),
       }),
     }),
     MongooseModule.forRootAsync({

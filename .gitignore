@@ -12,6 +12,9 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
+# Ignore all package-lock.json files
+**/package-lock.json
+
 # OS
 .DS_Store
 

@@ -2,9 +2,11 @@
   "devDependencies": {
     "@commitlint/cli": "^19.8.0",
     "@commitlint/config-conventional": "^19.8.0",
+    "@types/jest": "^29.5.14",
+    "commitlint": "^19.8.0",
     "husky": "^9.1.7",
     "lint-staged": "^15.5.0",
-    "commitlint": "^19.8.0"
+    "ts-jest": "^29.3.1"
   },
   "scripts": {
     "prepare": "husky install"
@@ -25,5 +27,8 @@
     "extends": [
       "@commitlint/config-conventional"
     ]
+  },
+  "dependencies": {
+    "react-router-dom": "^7.5.0"
   }
 }
