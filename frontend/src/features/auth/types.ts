@@ -1,33 +1,33 @@
 export interface User {
-    id: string;
-    username: string;
-    email: string;
-    avatar?: string | null;
-    status?: 'online' | 'offline' | 'away';
-    lastSeen?: string;
-    createdAt?: string;
-    updatedAt?: string;
+  id: string;
+  username: string;
+  email: string;
+  avatar?: string | null;
+  status?: "online" | "offline" | "away";
+  lastSeen?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface LoginCredentials {
-    email: string;
-    password: string;
+  email: string;
+  password: string;
 }
 
 export interface RegisterCredentials extends LoginCredentials {
-    username: string;
+  username: string;
 }
 
 export interface SocialAuthCredentials {
-    provider: AuthProvider;
-    token: string;
+  provider: AuthProvider;
+  token: string;
 }
 
-export type AuthProvider = 'google' | 'facebook' | 'twitter';
+export type AuthProvider = "google" | "facebook" | "twitter";
 
 export interface AuthState {
-    user: User | null;
-    isAuthenticated: boolean;
-    loading: boolean;
-    error: string | null;
-} 
+  user: User | null;
+  isAuthenticated: boolean;
+  loading: boolean;
+  error: string | null;
+}
