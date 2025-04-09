@@ -1,80 +1,83 @@
-import { io, Socket } from 'socket.io-client';
-import { receiveIncomingCall } from '../features/calls/callsSlice';
+import { io, Socket } from "socket.io-client";
+import { receiveIncomingCall } from "../features/calls/callsSlice";
 
 class SocketService {
-    private socket: Socket | null = null;
-    private dispatch: Function | null = null;
+  private socket: Socket | null = null;
+  private dispatch: Function | null = null;
 
-    initialize(dispatch: Function) {
-        this.dispatch = dispatch;
+  initialize(dispatch: Function) {
+    this.dispatch = dispatch;
+  }
+
+  connect(userId: string) {
+    this.socket = io(
+      process.env.REACT_APP_SOCKET_URL || "http://localhost:3000",
+      {
+        query: { userId },
+      },
+    );
+
+    this.socket.on("connect", () => {
+      console.log("Connected to socket server");
+    });
+
+    this.socket.on("disconnect", () => {
+      console.log("Disconnected from socket server");
+    });
+
+    this.socket.on("incoming_call", (call) => {
+      this.dispatch?.(receiveIncomingCall(call));
+    });
+
+    this.socket.on("call_accepted", (call) => {
+      // Handle call accepted
+    });
+
+    this.socket.on("call_rejected", (call) => {
+      // Handle call rejected
+    });
+
+    this.socket.on("call_ended", (call) => {
+      // Handle call ended
+    });
+  }
+
+  disconnect() {
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
     }
+  }
 
-    connect(userId: string) {
-        this.socket = io(process.env.REACT_APP_SOCKET_URL || 'http://localhost:3000', {
-            query: { userId },
-        });
+  // Chat methods
+  sendMessage(message: any) {
+    this.socket?.emit("send_message", message);
+  }
 
-        this.socket.on('connect', () => {
-            console.log('Connected to socket server');
-        });
+  joinConversation(conversationId: string) {
+    this.socket?.emit("join_conversation", conversationId);
+  }
 
-        this.socket.on('disconnect', () => {
-            console.log('Disconnected from socket server');
-        });
+  leaveConversation(conversationId: string) {
+    this.socket?.emit("leave_conversation", conversationId);
+  }
 
-        this.socket.on('incoming_call', (call) => {
-            this.dispatch?.(receiveIncomingCall(call));
-        });
+  // Call methods
+  startCall(receiverId: string, type: "audio" | "video") {
+    this.socket?.emit("start_call", { receiverId, type });
+  }
 
-        this.socket.on('call_accepted', (call) => {
-            // Handle call accepted
-        });
+  answerCall(callerId: string) {
+    this.socket?.emit("answer_call", { callerId });
+  }
 
-        this.socket.on('call_rejected', (call) => {
-            // Handle call rejected
-        });
+  rejectCall(callerId: string) {
+    this.socket?.emit("reject_call", { callerId });
+  }
 
-        this.socket.on('call_ended', (call) => {
-            // Handle call ended
-        });
-    }
-
-    disconnect() {
-        if (this.socket) {
-            this.socket.disconnect();
-            this.socket = null;
-        }
-    }
-
-    // Chat methods
-    sendMessage(message: any) {
-        this.socket?.emit('send_message', message);
-    }
-
-    joinConversation(conversationId: string) {
-        this.socket?.emit('join_conversation', conversationId);
-    }
-
-    leaveConversation(conversationId: string) {
-        this.socket?.emit('leave_conversation', conversationId);
-    }
-
-    // Call methods
-    startCall(receiverId: string, type: 'audio' | 'video') {
-        this.socket?.emit('start_call', { receiverId, type });
-    }
-
-    answerCall(callerId: string) {
-        this.socket?.emit('answer_call', { callerId });
-    }
-
-    rejectCall(callerId: string) {
-        this.socket?.emit('reject_call', { callerId });
-    }
-
-    endCall(participantId: string) {
-        this.socket?.emit('end_call', { participantId });
-    }
+  endCall(participantId: string) {
+    this.socket?.emit("end_call", { participantId });
+  }
 }
 
 export const socketService = new SocketService();
