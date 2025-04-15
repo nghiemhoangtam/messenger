@@ -1,9 +1,8 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Prop, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { Message } from 'src/apis/chat/schemas/messages.schema';
 import { User } from 'src/apis/user/schemas';
 
-@Schema({ timestamps: true })
 export class File extends Document {
   @Prop({ type: Types.ObjectId, ref: 'User' })
   uploader: User;

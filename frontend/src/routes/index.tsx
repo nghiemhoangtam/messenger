@@ -8,6 +8,8 @@ import {
   Routes,
 } from "react-router-dom";
 import { LoginPage, RegisterPage } from "../features/auth";
+import { ResultVerifyTokenPage } from "../features/auth/pages/ResultVerifyTokenPage";
+import { VerifyTokenPage } from "../features/auth/pages/VerifyTokenPage";
 import { CallsPage } from "../features/calls";
 import { ChatPage } from "../features/chat/pages/ChatPage";
 import { ContactsPage } from "../features/contacts/pages/ContactsPage";
@@ -50,7 +52,22 @@ export const AppRoutes: React.FC = () => {
             </PublicRoute>
           }
         />
-
+        <Route
+          path="/verify-token"
+          element={
+            <PublicRoute>
+              <VerifyTokenPage />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/result-verify-token"
+          element={
+            <PublicRoute>
+              <ResultVerifyTokenPage />
+            </PublicRoute>
+          }
+        />
         {/* Private Routes - All wrapped in MainLayout */}
         <Route
           path="/"
