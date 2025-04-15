@@ -15,7 +15,7 @@ export interface LoginCredentials {
 }
 
 export interface RegisterCredentials extends LoginCredentials {
-  username: string;
+  display_name: string;
 }
 
 export interface SocialAuthCredentials {
@@ -24,10 +24,11 @@ export interface SocialAuthCredentials {
 }
 
 export type AuthProvider = "google" | "facebook" | "twitter";
+export type RequestStatus = "idle" | "loading" | "succeeded" | "failed";
 
 export interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
-  loading: boolean;
+  status: RequestStatus;
   error: string | null;
 }
