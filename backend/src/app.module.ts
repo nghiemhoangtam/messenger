@@ -4,6 +4,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import * as Joi from 'joi';
 import { AuthModule } from './apis/auth/auth.module';
 import { UsersModule } from './apis/user/users.module';
+import { MessageModule } from './common/messages/message.module';
 
 @Module({
   imports: [
@@ -16,6 +17,8 @@ import { UsersModule } from './apis/user/users.module';
         DB_USERNAME: Joi.string().default('your_username'),
         DB_PASSWORD: Joi.string().default('your_password'),
         JWT_SECRET: Joi.string().default('your_jwt_secret'),
+        SERVER_PORT: Joi.number().default(3000),
+        SERVER_HOST: Joi.string().default('localhost'),
       }),
     }),
     MongooseModule.forRootAsync({
@@ -27,6 +30,7 @@ import { UsersModule } from './apis/user/users.module';
     }),
     UsersModule,
     AuthModule,
+    MessageModule,
     ConfigModule.forRoot({ isGlobal: true }),
   ],
   // controllers: [AppController,UsersController],

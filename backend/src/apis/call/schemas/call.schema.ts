@@ -1,9 +1,8 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Prop, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { Room } from 'src/apis/chat/schemas/rooms.schema';
 import { User } from 'src/apis/user/schemas';
 
-@Schema({ timestamps: true })
 export class Call extends Document {
   @Prop({ type: Types.ObjectId, ref: 'Room', required: true })
   room: Room;
