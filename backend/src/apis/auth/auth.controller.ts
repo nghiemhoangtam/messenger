@@ -1,11 +1,24 @@
-import { Body, Controller, Get, Post, Query, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  Post,
+  Query,
+  Req,
+} from '@nestjs/common';
+import { MessageCode } from 'src/common/messages/message.enum';
+import { MessageService } from 'src/common/messages/message.service';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly messageService: MessageService,
+  ) {}
 
   @Post('register')
   async register(@Body() registerDto: RegisterDto, @Req() req: Request) {
@@ -13,7 +26,9 @@ export class AuthController {
     if (origin) {
       return await this.authService.register(registerDto, origin);
     }
-    return { message: 'Origin header not found' };
+    throw new ForbiddenException(
+      this.messageService.getMessage(MessageCode.CORS_ORIGIN_MISSING),
+    );
   }
 
   @Post('login')
@@ -27,7 +42,9 @@ export class AuthController {
     if (origin) {
       return this.authService.resendVerification(email, origin);
     }
-    return { message: 'Origin header not found' };
+    throw new ForbiddenException(
+      this.messageService.getMessage(MessageCode.CORS_ORIGIN_MISSING),
+    );
   }
 
   @Get('verify-token')

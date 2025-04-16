@@ -4,6 +4,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import * as Joi from 'joi';
 import { AuthModule } from './apis/auth/auth.module';
 import { UsersModule } from './apis/user/users.module';
+import { MessageModule } from './common/messages/message.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { UsersModule } from './apis/user/users.module';
     }),
     UsersModule,
     AuthModule,
+    MessageModule,
     ConfigModule.forRoot({ isGlobal: true }),
   ],
   // controllers: [AppController,UsersController],
