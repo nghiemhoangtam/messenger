@@ -1,20 +1,16 @@
 import { Injectable } from '@nestjs/common';
+import { I18nContext, I18nService } from 'nestjs-i18n';
 import { MessageCode } from './message.enum';
-import { MessageTemplates } from './message.template';
 
 @Injectable()
 export class MessageService {
-  getMessage(code: MessageCode, params?: Record<string, string>): string {
-    let template = MessageTemplates[code];
+  constructor(private readonly i18n: I18nService) {}
 
-    if (!template) return code;
-
-    if (params) {
-      for (const [key, value] of Object.entries(params)) {
-        template = template.replace(new RegExp(`{{${key}}}`, 'g'), value);
-      }
-    }
-
-    return template;
+  async get(code: MessageCode, params?: Record<string, any>): Promise<string> {
+    const key = `messages.${code}`;
+    return this.i18n.t(key, {
+      args: params,
+      lang: I18nContext.current()?.lang ?? 'en',
+    });
   }
 }

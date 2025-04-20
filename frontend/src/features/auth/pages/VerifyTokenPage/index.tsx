@@ -1,22 +1,23 @@
 import { Button, Spin } from "antd";
-import React, { useEffect } from "react";
+import React from "react";
+import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate } from "react-router-dom";
 import CountDown from "../../../../components/molecules/CountDown";
+import { useInternalError } from "../../../../hooks/useInternalError";
 import { AppDispatch, RootState } from "../../../../store";
+import * as translator from "../../../../utils/translator";
 import {
-  resendVerificationRequest,
-  resetStatusAndError,
+  resendVerificationRequest
 } from "../../authSlice";
 import styles from "../../styles/Auth.module.css";
 
 export const VerifyTokenPage: React.FC = () => {
   const auth = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch<AppDispatch>();
+  const { t } = useTranslation();
 
-  useEffect(() => {
-    dispatch(resetStatusAndError());
-  }, [dispatch]);
+  useInternalError(auth.error);
 
   if (auth.isAuthenticated) {
     return <Navigate to="/" />;
@@ -50,14 +51,21 @@ export const VerifyTokenPage: React.FC = () => {
             alt="Messenger Logo"
             className={styles.logo}
           />
-          <h1 className={styles.title}>Xác thực tài khoản</h1>
-          <p className={styles.subtitle}>Kiểm tra email {auth.user.email}</p>
+          <h1 className={styles.title}>
+            {translator.common.validate_field(t, translator.common.account(t))}
+          </h1>
+          <p className={styles.subtitle}>
+            {translator.common.check_field(t, `email ${auth.user.email}`)}
+          </p>
           <CountDown seconds={60} />
         </div>
         <div className={styles.footer}>
-          Bạn chưa nhận email xác thực?
-          <Button className={styles.link} onClick={() => handleResendVerification()}>
-            Gửi lại
+          {translator.auth.have_not_receive_email(t)}
+          <Button
+            className={styles.link}
+            onClick={() => handleResendVerification()}
+          >
+            {translator.auth.resend(t)}
           </Button>
         </div>
       </div>

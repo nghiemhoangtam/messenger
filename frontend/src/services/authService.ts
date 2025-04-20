@@ -1,3 +1,4 @@
+import axios from "axios";
 import {
   LoginCredentials,
   RegisterCredentials,
@@ -19,114 +20,86 @@ class AuthService {
   }
 
   async login(credentials: LoginCredentials): Promise<User> {
-    const response = await fetch(`${this.baseUrl}/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(credentials),
-    });
+    try {
+      const response = await axios.post(`${this.baseUrl}/login`, credentials, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
-    if (!response.ok) {
-      throw new Error("Đăng nhập thất bại");
+      const data = response.data;
+
+      localStorage.setItem("token", data.data.token);
+      return data.data.user;
+    } catch (error: any) {
+      const message = error.response?.data?.message;
+      throw new Error(message);
     }
-
-    const data = await response.json();
-    localStorage.setItem("token", data.token);
-    return data.user;
   }
 
   async register(credentials: RegisterCredentials): Promise<User> {
     try {
-      const response = await fetch(`${this.baseUrl}/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(credentials),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message);
-      }
-
-      localStorage.setItem("token", data.token);
-      return data;
-    } catch (error) {
-      throw new Error(
-        error instanceof Error ? error.message : "Đăng ký thất bại",
-      );
-    }
-  }
-
-  async resendVerification(email: string): Promise<void> {
-    try {
-      const response = await fetch(`${this.baseUrl}/resend-verification`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message);
-      }
-
-      return data;
-    } catch (error) {
-      throw new Error(
-        error instanceof Error ? error.message : "Gửi lại mã xác minh thất bại",
-      );
-    }
-  }
-
-  async verifyToken(token: string): Promise<void> {
-    try {
-      const response = await fetch(
-        `${this.baseUrl}/verify-token?token=${token}`,
+      const response = await axios.post(
+        `${this.baseUrl}/register`,
+        credentials,
         {
-          method: "GET",
           headers: {
             "Content-Type": "application/json",
           },
         },
       );
 
-      const data = await response.json();
+      return response.data.data;
+    } catch (error: any) {
+      const message = error.response?.data?.message;
+      throw new Error(message);
+    }
+  }
 
-      if (!response.ok) {
-        throw new Error(data.message);
-      }
+  async resendVerification(email: string): Promise<void> {
+    try {
+      const response = await axios.post(`${this.baseUrl}/resend-verification`, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
 
-      return data;
-    } catch (error) {
-      throw new Error(
-        error instanceof Error ? error.message : "Xác thực mã thất bại",
+      return response.data.data;
+    } catch (error: any) {
+      const message = error.response?.data?.message;
+      throw new Error(message);
+    }
+  }
+
+  async verifyToken(token: string): Promise<void> {
+    try {
+      const response = await axios.get(
+        `${this.baseUrl}/verify-token?token=${token}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
       );
+
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.message;
+      throw new Error(message);
     }
   }
 
   async socialAuth({ provider, token }: SocialAuthCredentials): Promise<User> {
-    const response = await fetch(`${this.baseUrl}/${provider}`, {
-      method: "POST",
+    const response = await axios.post(`${this.baseUrl}/${provider}`, {
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ token }),
     });
 
-    if (!response.ok) {
-      throw new Error("Đăng nhập bằng mạng xã hội thất bại");
-    }
-
-    const data = await response.json();
-    localStorage.setItem("token", data.token);
-    return data.user;
+    localStorage.setItem("token", response.data.token);
+    return response.data.user;
   }
 
   async logout(): Promise<void> {
@@ -137,19 +110,13 @@ class AuthService {
     const token = localStorage.getItem("token");
     if (!token) return null;
 
-    const response = await fetch(`${this.baseUrl}/me`, {
+    const response = await axios.get(`${this.baseUrl}/me`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
 
-    if (!response.ok) {
-      localStorage.removeItem("token");
-      return null;
-    }
-
-    const data = await response.json();
-    return data.user;
+    return response.data.user;
   }
 }
 

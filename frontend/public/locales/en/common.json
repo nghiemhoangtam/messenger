@@ -1,0 +1,17 @@
+{
+  "welcome": "Welcome to our app",
+  "email": "Email",
+  "pass": "Password",
+  "display_name": "Display name",
+  "enter_field_message": "Enter your {{field}}",
+  "invalid_field_message": "{{field}} is invalid",
+  "result_of": "Result of {{action}}",
+  "or": "Or",
+  "at_least_letter": "{{field}} at least {{count}} letters",
+  "prompt_field_confirm": "Please confirm {{field}}",
+  "confirmation": "confirmation",
+  "validate_field": "{{field}} validation",
+  "check_field": "Check {{field}}",
+  "account": "account",
+  "internal_server": "Internal server error"
+}
