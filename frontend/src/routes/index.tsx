@@ -8,6 +8,8 @@ import {
   Routes,
 } from "react-router-dom";
 import { LoginPage, RegisterPage } from "../features/auth";
+import { ForgotPasswordPage } from "../features/auth/pages/ForgotPasswordPage";
+import { ResetPasswordPage } from "../features/auth/pages/ResetPasswordPage";
 import { ResultVerifyTokenPage } from "../features/auth/pages/ResultVerifyTokenPage";
 import { VerifyTokenPage } from "../features/auth/pages/VerifyTokenPage";
 import { CallsPage } from "../features/calls";
@@ -65,6 +67,22 @@ export const AppRoutes: React.FC = () => {
           element={
             <PublicRoute>
               <ResultVerifyTokenPage />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/forgot-password"
+          element={
+            <PublicRoute>
+              <ForgotPasswordPage />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/reset-password"
+          element={
+            <PublicRoute>
+              <ResetPasswordPage />
             </PublicRoute>
           }
         />

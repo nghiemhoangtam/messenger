@@ -35,6 +35,11 @@ declare module "i18next" {
         new_account: string;
         have_not_receive_email: string;
         resend: string;
+        forgot_password: string;
+        remember_me: string;
+        send_validate_code: string;
+        new_password: string;
+        setup_new_password: string;
       };
     };
   }

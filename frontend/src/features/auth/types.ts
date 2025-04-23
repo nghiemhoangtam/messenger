@@ -18,6 +18,11 @@ export interface RegisterCredentials extends LoginCredentials {
   display_name: string;
 }
 
+export interface ResetPassword {
+  password: string;
+  token: string;
+}
+
 export interface SocialAuthCredentials {
   provider: AuthProvider;
   token: string;

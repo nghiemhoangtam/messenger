@@ -1,30 +1,23 @@
-import {
-  FacebookOutlined,
-  GithubOutlined,
-  GoogleOutlined,
-} from "@ant-design/icons";
-import { Button, Divider, Form, Input, message, Spin } from "antd";
+import { Button, Form, Input, message, Spin } from "antd";
 import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from "react-redux";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useInternalError } from "../../../../hooks/useInternalError";
 import { AppDispatch, RootState } from "../../../../store";
 import * as translator from "../../../../utils/translator";
-import { registerRequest, resetStatus } from "../../authSlice";
+import { resetPasswordRequest, resetStatus } from "../../authSlice";
 import styles from "../../styles/Auth.module.css";
-interface RegisterForm {
-  email: string;
+interface ResetPasswordForm {
   password: string;
-  display_name: string;
   confirmPassword: string;
 }
 
-export const RegisterPage: React.FC = () => {
+export const ResetPasswordPage: React.FC = () => {
   const auth = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-  const [form] = Form.useForm<RegisterForm>();
+  const [form] = Form.useForm<ResetPasswordForm>();
   const { t } = useTranslation();
 
   useInternalError(auth.error);
@@ -38,31 +31,33 @@ export const RegisterPage: React.FC = () => {
   useEffect(() => {
     if (auth.status === "succeeded") {
       message.success(
-        translator.common.success_message(t, translator.auth.login(t))
+        translator.common.success_message(
+          t,
+          translator.auth.setup_new_password(t)
+        )
       );
       dispatch(resetStatus());
-      navigate("/verify-token");
+      navigate("/login");
       return;
     }
   }, [auth.status, navigate, t, dispatch]);
 
-  const onFinish = async (values: RegisterForm): Promise<void> => {
+  const onFinish = async (values: ResetPasswordForm): Promise<void> => {
     if (values.password !== values.confirmPassword) {
       message.error(translator.auth.password_not_match(t));
       return;
     }
-    dispatch(
-      registerRequest({
-        display_name: values.display_name,
-        email: values.email,
-        password: values.password,
-      })
-    );
-  };
-
-  const handleSocialRegister = (provider: string): void => {
-    // Implement social register logic here
-    console.log(`Register with ${provider}`);
+    const token = new URLSearchParams(window.location.search).get("token");
+    if (token) {
+      dispatch(
+        resetPasswordRequest({
+          password: values.password,
+          token,
+        })
+      );
+    } else {
+      message.error(translator.common.invalid_field_message(t, "Token"));
+    }
   };
 
   if (auth.status === "loading") {
@@ -84,59 +79,15 @@ export const RegisterPage: React.FC = () => {
             alt="Messenger Logo"
             className={styles.logo}
           />
-          <h1 className={styles.title}>{translator.auth.register(t)}</h1>
-          <p className={styles.subtitle}>{translator.auth.new_account(t)}</p>
+          <h1 className={styles.title}>{translator.auth.new_password(t)}</h1>
         </div>
 
         <Form
           form={form}
-          name="register"
+          name="reset_password"
           onFinish={onFinish}
           className={styles.form}
         >
-          <Form.Item
-            name="display_name"
-            rules={[
-              {
-                required: true,
-                message: translator.common.enter_field_message(
-                  t,
-                  translator.common.display_name(t)
-                ),
-              },
-            ]}
-            className={styles.formItem}
-          >
-            <Input
-              placeholder={translator.common.display_name(t)}
-              size="large"
-              className={styles.input}
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="email"
-            rules={[
-              {
-                required: true,
-                message: translator.common.enter_field_message(
-                  t,
-                  translator.common.email(t)
-                ),
-              },
-              {
-                type: "email",
-                message: translator.common.invalid_field_message(
-                  t,
-                  translator.common.email(t)
-                ),
-              },
-            ]}
-            className={styles.formItem}
-          >
-            <Input placeholder="Email" size="large" className={styles.input} />
-          </Form.Item>
-
           <Form.Item
             name="password"
             rules={[
@@ -144,14 +95,14 @@ export const RegisterPage: React.FC = () => {
                 required: true,
                 message: translator.common.enter_field_message(
                   t,
-                  translator.common.pass(t)
+                  translator.auth.new_password(t)
                 ),
               },
               {
                 min: 6,
                 message: translator.common.at_least_letter(
                   t,
-                  translator.common.pass(t),
+                  translator.auth.new_password(t),
                   6
                 ),
               },
@@ -159,7 +110,7 @@ export const RegisterPage: React.FC = () => {
             className={styles.formItem}
           >
             <Input.Password
-              placeholder={translator.common.pass(t)}
+              placeholder={translator.auth.new_password(t)}
               size="large"
               className={styles.input}
             />
@@ -173,7 +124,7 @@ export const RegisterPage: React.FC = () => {
                 required: true,
                 message: translator.common.prompt_field_confirm(
                   t,
-                  translator.common.pass(t)
+                  translator.auth.new_password(t)
                 ),
               },
               ({ getFieldValue }) => ({
@@ -192,7 +143,7 @@ export const RegisterPage: React.FC = () => {
             <Input.Password
               placeholder={translator.common.prompt_field_confirm(
                 t,
-                translator.common.pass(t)
+                translator.auth.new_password(t)
               )}
               size="large"
               className={styles.input}
@@ -206,37 +157,10 @@ export const RegisterPage: React.FC = () => {
               size="large"
               className={styles.button}
             >
-              {translator.auth.register(t)}
+              {translator.auth.setup_new_password(t)}
             </Button>
           </Form.Item>
         </Form>
-
-        <Divider className={styles.divider}>{translator.common.or(t)}</Divider>
-
-        <div className={styles.socialLogin}>
-          <Button
-            icon={<GoogleOutlined />}
-            className={styles.socialButton}
-            onClick={() => handleSocialRegister("google")}
-          />
-          <Button
-            icon={<FacebookOutlined />}
-            className={styles.socialButton}
-            onClick={() => handleSocialRegister("facebook")}
-          />
-          <Button
-            icon={<GithubOutlined />}
-            className={styles.socialButton}
-            onClick={() => handleSocialRegister("github")}
-          />
-        </div>
-
-        <div className={styles.footer}>
-          {translator.auth.do_have_account(t)}
-          <Link to="/login" className={styles.link}>
-            {translator.auth.login(t)}
-          </Link>
-        </div>
       </div>
     </div>
   );

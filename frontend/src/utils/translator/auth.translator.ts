@@ -55,3 +55,33 @@ export const resend = (t: TFunction) =>
     ns,
     defaultValue: "Resend",
   });
+
+export const forgot_password = (t: TFunction) =>
+  t("forgot_password", {
+    ns,
+    defaultValue: "Forgot password",
+  });
+
+export const remember_me = (t: TFunction) =>
+  t("remember_me", {
+    ns,
+    defaultValue: "Remember me",
+  });
+
+export const send_validate_code = (t: TFunction) =>
+  t("send_validate_code", {
+    ns,
+    defaultValue: "Send validate code",
+  });
+
+export const new_password = (t: TFunction) =>
+  t("new_password", {
+    ns,
+    defaultValue: "New password",
+  });
+
+export const setup_new_password = (t: TFunction) =>
+  t("setup_new_password", {
+    ns,
+    defaultValue: "Setup new password",
+  });
