@@ -1,6 +1,7 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import * as passport from 'passport';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
@@ -16,9 +17,9 @@ async function bootstrap() {
       transform: true, // tự động convert types (VD: string -> number)
     }),
   );
+  app.use(passport.initialize());
   app.useGlobalInterceptors(new ResponseInterceptor());
   app.useGlobalFilters(new AllExceptionsFilter());
-
   const configService = app.get(ConfigService);
   const port = configService.get<number>('SERVER_PORT', 3000);
   app.enableCors({
