@@ -44,8 +44,14 @@ export class AuthController {
   }
 
   @Post('login')
-  async login(@Body() loginDto: LoginDto) {
-    return this.authService.localLogin(loginDto);
+  async login(
+    @Body() loginDto: LoginDto,
+    @Ip() ip: string,
+    @Req() req: Request,
+  ) {
+    const user_agent = (req.headers['user-agent'] as string) || undefined;
+    const token = await this.authService.localLogin(loginDto, ip, user_agent);
+    return token;
   }
 
   @Post('resend-verification')
@@ -136,6 +142,21 @@ export class AuthController {
       const msg = await this.messageService.get(MessageCode.FORBIDDEN);
       throw new ForbiddenException(msg);
     }
+  }
+
+  @Post('refresh_token')
+  async refreshToken(
+    @Body('refresh_token') refresh_token: string,
+    @Ip() ip: string,
+    @Req() req: Request,
+  ) {
+    const user_agent = (req.headers['user-agent'] as string) || undefined;
+    const token = await this.authService.refreshToken(
+      refresh_token,
+      ip,
+      user_agent,
+    );
+    return token;
   }
 
   @Get('facebook')

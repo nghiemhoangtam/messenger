@@ -57,7 +57,11 @@ export class AuthService {
     return await this.createNewUser(registerDto);
   }
 
-  async localLogin(loginDto: LoginDto) {
+  async localLogin(
+    loginDto: LoginDto,
+    ip_address: string,
+    user_agent?: string,
+  ) {
     try {
       const user = await this.userModel.findOne({ email: loginDto.email });
       if (!user || !(await bcrypt.compare(loginDto.password, user.password))) {
@@ -66,11 +70,36 @@ export class AuthService {
         );
         throw new UnauthorizedException(msg);
       }
-      const token = this.jwtService.sign({
-        id: user._id,
-        email: user.email,
+      const token = this.createNewToken(user);
+      const existingToken = await this.tokenModel.findOne({
+        user: user._id,
       });
-      return { token };
+      if (existingToken) {
+        existingToken.access_token = token.access_token;
+        existingToken.refresh_token = token.refresh_token;
+        if (user_agent) {
+          existingToken.user_agent = user_agent;
+        }
+        if (ip_address) {
+          existingToken.ip_address = ip_address;
+        }
+        existingToken.expired_at = plusMinute(1);
+        await existingToken.save();
+      } else {
+        const newToken = new this.tokenModel({
+          user: user._id,
+          access_token: token.access_token,
+          refresh_token: token.refresh_token,
+          user_agent: user_agent,
+          ip_address: ip_address,
+          expired_at: plusMinute(1),
+        });
+        await newToken.save();
+      }
+      return {
+        access_token: token.access_token,
+        refresh_token: token.refresh_token,
+      };
     } catch {
       const msg = await this.messageService.get(
         MessageCode.INVALID_CREDENTIALS,
@@ -432,5 +461,47 @@ export class AuthService {
       const msg = await this.messageService.get(MessageCode.INTERNAL_SERVER);
       throw new NotFoundException(msg);
     }
+  }
+
+  async refreshToken(
+    refresh_token: string,
+    ip_address: string,
+    user_agent?: string,
+  ): Promise<{ access_token: string; refresh_token: string }> {
+    const token = await this.tokenModel.findOne({
+      refresh_token,
+      ip_address,
+      user_agent,
+    });
+    if (!token) {
+      const msg = await this.messageService.get(MessageCode.INVALID_TOKEN);
+      throw new UnauthorizedException(msg);
+    }
+    if (token.expired_at.getTime() < Date.now()) {
+      const msg = await this.messageService.get(MessageCode.TOKEN_EXPIRED);
+      throw new UnauthorizedException(msg);
+    }
+    if (token.revoked_at) {
+      const msg = await this.messageService.get(
+        MessageCode.REFRESH_TOKEN_IS_USED,
+      );
+      throw new UnauthorizedException(msg);
+    }
+    const user = await this.userModel.findById(token.user);
+    if (!user) {
+      const msg = await this.messageService.get(MessageCode.USER_NOT_FOUND, {
+        email: token.user,
+      });
+      throw new NotFoundException(msg);
+    }
+    const newToken = this.createNewToken(user);
+    token.access_token = newToken.access_token;
+    token.refresh_token = newToken.refresh_token;
+    token.expired_at = plusMinute(1);
+    await token.save();
+    return {
+      access_token: newToken.access_token,
+      refresh_token: newToken.refresh_token,
+    };
   }
 }

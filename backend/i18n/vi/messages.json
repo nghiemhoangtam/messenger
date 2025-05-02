@@ -13,5 +13,6 @@
   "UNAUTHORIZED": "Bạn không có quyền truy cập vào tài nguyên này.",
   "FORBIDDEN": "Bạn không có quyền truy cập vào tài nguyên này.",
   "BAD_REQUEST": "Yêu cầu không hợp lệ.",
-  "INTERNAL_SERVER": "Lỗi máy chủ nội bộ."
+  "INTERNAL_SERVER": "Lỗi máy chủ nội bộ.",
+  "REFRESH_TOKEN_IS_USED": "Mã thông báo làm mới đã được sử dụng."
 }
