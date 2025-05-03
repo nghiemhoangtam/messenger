@@ -153,6 +153,22 @@ const authSlice = createSlice({
       state.error = null;
       state.status = "idle";
     },
+
+    // Set user info
+    getUserInfoRequest: (state, action: PayloadAction<void>) => {
+      state.status = "loading";
+      state.error = null;
+    },
+    getUserInfoSuccess: (state, action: PayloadAction<User>) => {
+      state.user = action.payload;
+      state.status = "succeeded";
+      state.error = null;
+      state.isAuthenticated = true;
+    },
+    getUserInfoFailure: (state, action: PayloadAction<string>) => {
+      state.status = "failed";
+      state.error = action.payload;
+    },
   },
 });
 
@@ -184,6 +200,9 @@ export const {
   logout,
   resetStatus,
   resetStatusAndError,
+  getUserInfoRequest,
+  getUserInfoSuccess,
+  getUserInfoFailure,
 } = authSlice.actions;
 
 export default authSlice.reducer;

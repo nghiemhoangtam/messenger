@@ -6,6 +6,9 @@ import {
   forgotPasswordFailure,
   forgotPasswordRequest,
   forgotPasswordSuccess,
+  getUserInfoFailure,
+  getUserInfoRequest,
+  getUserInfoSuccess,
   loginFailure,
   loginRequest,
   loginSuccess,
@@ -155,6 +158,21 @@ function* handleLogout() {
   }
 }
 
+function* handleGetUserInfo() {
+  try {
+    const user: User = yield call(authService.getUserInfo);
+    yield put(getUserInfoSuccess(user));
+  } catch (error) {
+    yield put(
+      getUserInfoFailure(
+        error instanceof Error && error.message
+          ? error.message
+          : INTERNAL_SERVER,
+      ),
+    );
+  }
+}
+
 export function* authSaga() {
   yield takeLatest(loginRequest.type, handleLogin);
   yield takeLatest(registerRequest.type, handleRegister);
@@ -164,4 +182,5 @@ export function* authSaga() {
   yield takeLatest(resetPasswordRequest.type, handleResetPassword);
   yield takeLatest(socialAuthRequest.type, handleSocialAuth);
   yield takeLatest(logoutRequest.type, handleLogout);
+  yield takeLatest(getUserInfoRequest.type, handleGetUserInfo);
 }

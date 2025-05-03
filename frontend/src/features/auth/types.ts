@@ -1,12 +1,8 @@
 export interface User {
   id: string;
-  username: string;
   email: string;
+  display_name: string;
   avatar?: string | null;
-  status?: "online" | "offline" | "away";
-  lastSeen?: string;
-  createdAt?: string;
-  updatedAt?: string;
 }
 
 export interface LoginCredentials {

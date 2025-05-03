@@ -1,5 +1,5 @@
 import React from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import {
   BrowserRouter,
   Navigate,
@@ -7,8 +7,11 @@ import {
   Route,
   Routes,
 } from "react-router-dom";
+import Loading from "../components/atoms/Loading/Loading";
 import { LoginPage, RegisterPage } from "../features/auth";
+import { getUserInfoRequest } from "../features/auth/authSlice";
 import { ForgotPasswordPage } from "../features/auth/pages/ForgotPasswordPage";
+import { RedirectSocialLoginPage } from "../features/auth/pages/RedirectSocialLoginPage";
 import { ResetPasswordPage } from "../features/auth/pages/ResetPasswordPage";
 import { ResultVerifyTokenPage } from "../features/auth/pages/ResultVerifyTokenPage";
 import { VerifyTokenPage } from "../features/auth/pages/VerifyTokenPage";
@@ -24,7 +27,15 @@ import { RootState } from "../store";
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const dispatch = useDispatch();
+  const { isAuthenticated, status } = useSelector(
+    (state: RootState) => state.auth
+  );
+  if (status === "idle") {
+    dispatch(getUserInfoRequest());
+    return <Loading />;
+  }
+  if (status === "loading") return <Loading />;
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
 };
 
@@ -83,6 +94,14 @@ export const AppRoutes: React.FC = () => {
           element={
             <PublicRoute>
               <ResetPasswordPage />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/auth/callback"
+          element={
+            <PublicRoute>
+              <RedirectSocialLoginPage />
             </PublicRoute>
           }
         />
