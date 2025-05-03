@@ -1,2 +1,3 @@
 echo "👉 Running lint-staged..."
 npx lint-staged
+npm --prefix backend run generate:endpoints && git add ./backend/ENDPOINTS.md
