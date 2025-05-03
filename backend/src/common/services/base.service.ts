@@ -1,0 +1,28 @@
+// base.service.ts
+import { HttpException, InternalServerErrorException } from '@nestjs/common';
+import { MessageCode } from '../messages/message.enum';
+import { MessageService } from '../messages/message.service';
+
+export abstract class BaseService {
+  constructor(protected readonly messageService: MessageService) {}
+
+  protected async handle<T>(
+    fn: () => Promise<T>,
+    customErrorHandler?: (error: unknown) => Promise<void> | void,
+  ): Promise<T> {
+    try {
+      return await fn();
+    } catch (error) {
+      if (customErrorHandler) {
+        await customErrorHandler(error);
+      }
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      const msg = await this.messageService.get(MessageCode.INTERNAL_SERVER);
+      throw new InternalServerErrorException(msg);
+    }
+  }
+}
