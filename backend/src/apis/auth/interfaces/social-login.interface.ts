@@ -1,4 +1,4 @@
-export interface SocialLogin {
+export interface ISocialLogin {
   email: string;
   display_name: string;
   avatar?: string;

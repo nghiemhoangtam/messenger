@@ -4,7 +4,7 @@ import { JwtService, TokenExpiredError } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { AuthGuard } from '@nestjs/passport';
 import { Model } from 'mongoose';
-import { JwtRequest } from 'src/apis/auth/interfaces/profile-request.interface';
+import { IJwtRequest } from 'src/apis/auth/interfaces';
 import { User } from 'src/apis/user/schemas';
 import { MessageCode } from '../messages/message.enum';
 import { MessageService } from '../messages/message.service';
@@ -20,7 +20,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request: JwtRequest = context.switchToHttp().getRequest();
+    const request: IJwtRequest = context.switchToHttp().getRequest();
     const token = this.extractTokenFromHeader(request);
     try {
       if (!token) {
@@ -56,7 +56,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     return true;
   }
 
-  private extractTokenFromHeader(request: JwtRequest): string | null {
+  private extractTokenFromHeader(request: IJwtRequest): string | null {
     const authHeader = request.headers['authorization'];
     if (!authHeader) return null;
 

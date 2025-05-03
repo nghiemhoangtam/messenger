@@ -20,12 +20,10 @@ import { plusMinute } from 'src/utils/date.utils';
 import { randomString } from 'src/utils/random.utils';
 import { sendSimpleMail } from 'src/utils/sendmail.utils';
 import { User } from '../user/schemas';
-import { LoginDto, RegisterDto } from './dto';
-import { ResetPasswordDto } from './dto/reset-password.dto';
-import { SocialLogin } from './interfaces/social-login.interface';
-import { CurrentUserResponse } from './response/current-user.response';
-import { PasswordResetToken, SocialAccount } from './schemas';
-import { Token } from './schemas/tokens.schema';
+import { LoginDto, RegisterDto, ResetPasswordDto } from './dto';
+import { ISocialLogin } from './interfaces';
+import { CurrentUserResponse, LoginInfoResponse } from './response';
+import { PasswordResetToken, SocialAccount, Token } from './schemas';
 @Injectable()
 export class AuthService extends BaseService {
   constructor(
@@ -68,7 +66,7 @@ export class AuthService extends BaseService {
     loginDto: LoginDto,
     ip_address: string,
     user_agent?: string,
-  ) {
+  ): Promise<LoginInfoResponse> {
     return this.handle(async () => {
       const user = await this.userModel.findOne({ email: loginDto.email });
       if (!user || !(await bcrypt.compare(loginDto.password, user.password))) {
@@ -110,7 +108,7 @@ export class AuthService extends BaseService {
     });
   }
 
-  async socialLogin(socialLogin: SocialLogin) {
+  async socialLogin(socialLogin: ISocialLogin): Promise<LoginInfoResponse> {
     try {
       let user = await this.findUser(socialLogin.email);
       if (!user) {
@@ -458,7 +456,7 @@ export class AuthService extends BaseService {
     refresh_token: string,
     ip_address: string,
     user_agent?: string,
-  ): Promise<{ access_token: string; refresh_token: string }> {
+  ): Promise<LoginInfoResponse> {
     return this.handle(async () => {
       const token = await this.tokenModel.findOne({
         refresh_token,
