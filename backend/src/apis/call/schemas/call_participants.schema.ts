@@ -1,9 +1,8 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Prop, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { User } from 'src/apis/user/schemas';
 import { Call } from './call.schema';
 
-@Schema({ timestamps: true })
 export class CallParticipant extends Document {
   @Prop({ type: Types.ObjectId, ref: 'Call', required: true })
   call: Call;

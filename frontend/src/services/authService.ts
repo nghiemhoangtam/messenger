@@ -6,10 +6,16 @@ import {
 } from "../features/auth/types";
 
 class AuthService {
-  private baseUrl = "http://localhost:3000/auth";
+  private baseUrl = "http://localhost:8080/auth";
 
   constructor() {
     this.register = this.register.bind(this);
+    this.login = this.login.bind(this);
+    this.resendVerification = this.resendVerification.bind(this);
+    this.socialAuth = this.socialAuth.bind(this);
+    this.logout = this.logout.bind(this);
+    this.getCurrentUser = this.getCurrentUser.bind(this);
+    this.verifyToken = this.verifyToken.bind(this);
   }
 
   async login(credentials: LoginCredentials): Promise<User> {
@@ -40,16 +46,68 @@ class AuthService {
         body: JSON.stringify(credentials),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error("Đăng ký thất bại");
+        throw new Error(data.message);
       }
 
-      const data = await response.json();
       localStorage.setItem("token", data.token);
-      return data.user;
+      return data;
     } catch (error) {
-      console.error("Error during registration:", error);
-      throw new Error("Đăng ký thất bại");
+      throw new Error(
+        error instanceof Error ? error.message : "Đăng ký thất bại",
+      );
+    }
+  }
+
+  async resendVerification(email: string): Promise<void> {
+    try {
+      const response = await fetch(`${this.baseUrl}/resend-verification`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message);
+      }
+
+      return data;
+    } catch (error) {
+      throw new Error(
+        error instanceof Error ? error.message : "Gửi lại mã xác minh thất bại",
+      );
+    }
+  }
+
+  async verifyToken(token: string): Promise<void> {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/verify-token?token=${token}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message);
+      }
+
+      return data;
+    } catch (error) {
+      throw new Error(
+        error instanceof Error ? error.message : "Xác thực mã thất bại",
+      );
     }
   }
 

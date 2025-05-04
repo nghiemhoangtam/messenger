@@ -15,7 +15,7 @@ import {
 
 export const useAuth = () => {
   const dispatch = useDispatch();
-  const { user, isAuthenticated, loading, error } = useSelector(
+  const { user, isAuthenticated, status, error } = useSelector(
     (state: RootState) => state.auth,
   );
 
@@ -47,7 +47,7 @@ export const useAuth = () => {
   return {
     user,
     isAuthenticated,
-    loading,
+    status,
     error,
     login,
     register,

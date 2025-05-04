@@ -3,18 +3,18 @@ import {
   GithubOutlined,
   GoogleOutlined,
 } from "@ant-design/icons";
-import { Button, Divider, Form, Input, message } from "antd";
-import React from "react";
+import { Button, Divider, Form, Input, message, Spin } from "antd";
+import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { AppDispatch, RootState } from "../../../../store";
-import { registerRequest } from "../../authSlice";
+import { registerRequest, resetStatusAndError } from "../../authSlice";
 import styles from "../../styles/Auth.module.css";
 
 interface RegisterForm {
-  username: string;
   email: string;
   password: string;
+  display_name: string;
   confirmPassword: string;
 }
 
@@ -22,31 +22,58 @@ export const RegisterPage: React.FC = () => {
   const auth = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-  const [form] = Form.useForm<RegisterForm>();
+  const [form] = Form.useForm<RegisterForm>(); 
+
+  useEffect(() => {
+    dispatch(resetStatusAndError());
+  }, [dispatch]);
+  
+  useEffect(() => {
+    if (auth.isAuthenticated) {
+      navigate("/");
+    }
+  }, [auth.isAuthenticated, navigate]);
+
+  useEffect(() => {
+    if (auth.error) {
+      message.error(auth.error);
+    }
+  }, [auth.error]);
+
+  useEffect(() => {
+    if (auth.status === "succeeded") {
+      message.success("Đăng ký thành công");
+      navigate("/verify-token");
+      return ;
+    }
+  }, [auth.status, navigate]);
 
   const onFinish = async (values: RegisterForm): Promise<void> => {
-    try {
       if (values.password !== values.confirmPassword) {
         message.error("Mật khẩu xác nhận không khớp");
         return;
       }
-      await dispatch(registerRequest(values));
-      if (auth.error) {
-        message.error(auth.error);
-        return;
-      } else {
-        message.success("Đăng ký thành công");
-      }
-      navigate("/login");
-    } catch (error) {
-      message.error("Đăng ký thất bại");
-    }
+      dispatch(registerRequest({
+        display_name: values.display_name,
+        email: values.email,
+        password: values.password,
+      }));
   };
 
   const handleSocialRegister = (provider: string): void => {
     // Implement social register logic here
     console.log(`Register with ${provider}`);
   };
+
+    if(auth.status === "loading") {
+      return (
+        <div className={styles.container}>
+          <div className={styles.card}>
+            <Spin size="large" className={styles.loading} />
+          </div>
+        </div>
+      );
+    }
 
   return (
     <div className={styles.container}>
@@ -68,7 +95,7 @@ export const RegisterPage: React.FC = () => {
           className={styles.form}
         >
           <Form.Item
-            name="username"
+            name="display_name"
             rules={[
               { required: true, message: "Vui lòng nhập tên người dùng" },
             ]}

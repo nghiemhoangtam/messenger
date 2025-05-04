@@ -11,9 +11,14 @@ import {
   registerFailure,
   registerRequest,
   registerSuccess,
+  resendVerificationFailure,
+  resendVerificationRequest,
+  resendVerificationSuccess,
   socialAuthFailure,
   socialAuthRequest,
   socialAuthSuccess,
+  verifyTokenRequest,
+  verifyTokenSuccess,
 } from "./authSlice";
 import {
   LoginCredentials,
@@ -43,6 +48,32 @@ function* handleRegister(action: PayloadAction<RegisterCredentials>) {
     yield put(
       registerFailure(
         error instanceof Error ? error.message : "Đăng ký thất bại",
+      ),
+    );
+  }
+}
+
+function* handleResendVerification(action: PayloadAction<string>) {
+  try {
+    yield call(authService.resendVerification, action.payload);
+    yield put(resendVerificationSuccess());
+  } catch (error) {
+    yield put(
+      resendVerificationFailure(
+        error instanceof Error ? error.message : "Gửi lại mã xác thực thất bại",
+      ),
+    );
+  }
+}
+
+function* handleVerifyToken(action: PayloadAction<string>) {
+  try {
+    yield call(authService.verifyToken, action.payload);
+    yield put(verifyTokenSuccess());
+  } catch (error) {
+    yield put(
+      resendVerificationFailure(
+        error instanceof Error ? error.message : "Xác thực mã thất bại",
       ),
     );
   }
@@ -79,6 +110,8 @@ function* handleLogout() {
 export function* authSaga() {
   yield takeLatest(loginRequest.type, handleLogin);
   yield takeLatest(registerRequest.type, handleRegister);
+  yield takeLatest(resendVerificationRequest.type, handleResendVerification);
+  yield takeLatest(verifyTokenRequest.type, handleVerifyToken);
   yield takeLatest(socialAuthRequest.type, handleSocialAuth);
   yield takeLatest(logoutRequest.type, handleLogout);
 }

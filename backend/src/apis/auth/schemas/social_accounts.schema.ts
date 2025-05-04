@@ -1,8 +1,7 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Prop, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { User } from 'src/apis/user/schemas';
 
-@Schema({ timestamps: true })
 export class SocialAccount extends Document {
   @Prop({ type: Types.ObjectId, ref: 'User' })
   user: User;
