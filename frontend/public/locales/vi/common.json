@@ -1,0 +1,17 @@
+{
+  "welcome": "Chào mừng đến với ứng dụng của chúng tôi",
+  "email": "Email",
+  "pass": "Mật khẩu",
+  "display_name": "Tên hiển thị",
+  "enter_field_message": "Vui lòng nhập {{field}}",
+  "invalid_field_message": "{{field}} không hợp lệ",
+  "result_of": "Kết quả của {{action}}",
+  "or": "Hoặc",
+  "at_least_letter": "{{field}} phải có ít nhất {{count}} ký tự",
+  "prompt_field_confirm": "Vui lòng xác nhận {{field}}",
+  "confirmation": "xác nhận",
+  "validate_field": "Xác thực {{field}}",
+  "check_field": "Kiểm tra {{field}}",
+  "account": "tài khoản",
+  "internal_server": "Lỗi máy chủ"
+}

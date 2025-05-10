@@ -1,6 +1,7 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { call, put, takeLatest } from "redux-saga/effects";
 import { authService } from "../../services/authService";
+import { INTERNAL_SERVER } from "../../utils/constants/message.constant";
 import {
   loginFailure,
   loginRequest,
@@ -34,7 +35,9 @@ function* handleLogin(action: PayloadAction<LoginCredentials>) {
   } catch (error) {
     yield put(
       loginFailure(
-        error instanceof Error ? error.message : "Đăng nhập thất bại",
+        error instanceof Error && error.message
+          ? error.message
+          : INTERNAL_SERVER,
       ),
     );
   }
@@ -47,7 +50,9 @@ function* handleRegister(action: PayloadAction<RegisterCredentials>) {
   } catch (error) {
     yield put(
       registerFailure(
-        error instanceof Error ? error.message : "Đăng ký thất bại",
+        error instanceof Error && error.message
+          ? error.message
+          : INTERNAL_SERVER,
       ),
     );
   }
@@ -60,7 +65,9 @@ function* handleResendVerification(action: PayloadAction<string>) {
   } catch (error) {
     yield put(
       resendVerificationFailure(
-        error instanceof Error ? error.message : "Gửi lại mã xác thực thất bại",
+        error instanceof Error
+          ? error.message && error.message
+          : INTERNAL_SERVER,
       ),
     );
   }
@@ -73,7 +80,9 @@ function* handleVerifyToken(action: PayloadAction<string>) {
   } catch (error) {
     yield put(
       resendVerificationFailure(
-        error instanceof Error ? error.message : "Xác thực mã thất bại",
+        error instanceof Error
+          ? error.message && error.message
+          : INTERNAL_SERVER,
       ),
     );
   }
@@ -86,9 +95,9 @@ function* handleSocialAuth(action: PayloadAction<SocialAuthCredentials>) {
   } catch (error) {
     yield put(
       socialAuthFailure(
-        error instanceof Error
+        error instanceof Error && error.message
           ? error.message
-          : "Đăng nhập bằng mạng xã hội thất bại",
+          : INTERNAL_SERVER,
       ),
     );
   }
@@ -101,7 +110,9 @@ function* handleLogout() {
   } catch (error) {
     yield put(
       logoutFailure(
-        error instanceof Error ? error.message : "Đăng xuất thất bại",
+        error instanceof Error && error.message
+          ? error.message
+          : INTERNAL_SERVER,
       ),
     );
   }

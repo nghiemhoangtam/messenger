@@ -1,0 +1,10 @@
+{
+  "INVALID_CREDENTIALS": "Username or password is incorrect.",
+  "TOKEN_EXPIRED": "Token expired.",
+  "INVALID_TOKEN": "Invalid token.",
+  "USER_ALREADY_EXISTS": "Email {email} already exists",
+  "VERIFY_EMAIL_SUBJECT": "Verify Your Email",
+  "VERIFY_EMAIL_TEMPLATE": "<p>Click <a href=\"{url}\">here</a> to verify your email.</p>",
+  "CORS_ORIGIN_MISSING": "Origin header is missing. Possible CORS violation or non-browser request.",
+  "USER_NOT_FOUND": "Email {email} is not found"
+}

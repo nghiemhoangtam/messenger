@@ -1,7 +1,15 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
-import * as Joi from 'joi';
+import Joi from 'joi';
+import {
+  AcceptLanguageResolver,
+  CookieResolver,
+  HeaderResolver,
+  I18nModule,
+  QueryResolver,
+} from 'nestjs-i18n';
+import * as path from 'path';
 import { AuthModule } from './apis/auth/auth.module';
 import { UsersModule } from './apis/user/users.module';
 import { MessageModule } from './common/messages/message.module';
@@ -30,8 +38,21 @@ import { MessageModule } from './common/messages/message.module';
     }),
     UsersModule,
     AuthModule,
-    MessageModule,
     ConfigModule.forRoot({ isGlobal: true }),
+    I18nModule.forRoot({
+      fallbackLanguage: 'en',
+      loaderOptions: {
+        path: path.join(process.cwd(), 'i18n'),
+        watch: true,
+      },
+      resolvers: [
+        new QueryResolver(['lang', 'l', 'lng']),
+        new HeaderResolver(['Accept-Language']),
+        new CookieResolver(),
+        AcceptLanguageResolver,
+      ],
+    }),
+    MessageModule,
   ],
   // controllers: [AppController,UsersController],
   // providers: [AppService],

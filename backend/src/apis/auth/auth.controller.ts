@@ -7,6 +7,7 @@ import {
   Query,
   Req,
 } from '@nestjs/common';
+import { I18n, I18nContext, I18nService } from 'nestjs-i18n';
 import { MessageCode } from 'src/common/messages/message.enum';
 import { MessageService } from 'src/common/messages/message.service';
 import { AuthService } from './auth.service';
@@ -18,6 +19,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly messageService: MessageService,
+    private readonly i18n: I18nService,
   ) {}
 
   @Post('register')
@@ -26,9 +28,8 @@ export class AuthController {
     if (origin) {
       return await this.authService.register(registerDto, origin);
     }
-    throw new ForbiddenException(
-      this.messageService.getMessage(MessageCode.CORS_ORIGIN_MISSING),
-    );
+    const msg = await this.messageService.get(MessageCode.CORS_ORIGIN_MISSING);
+    throw new ForbiddenException(msg);
   }
 
   @Post('login')
@@ -42,14 +43,13 @@ export class AuthController {
     if (origin) {
       return this.authService.resendVerification(email, origin);
     }
-    throw new ForbiddenException(
-      this.messageService.getMessage(MessageCode.CORS_ORIGIN_MISSING),
-    );
+    const msg = await this.messageService.get(MessageCode.CORS_ORIGIN_MISSING);
+    throw new ForbiddenException(msg);
   }
 
   @Get('verify-token')
-  async verifyToken(@Query('token') token: string) {
-    return this.authService.verifyToken(token);
+  async verifyToken(@Query('token') token: string, @I18n() i18n: I18nContext) {
+    return this.authService.verifyToken(token, i18n);
   }
 
   private getOrigin(req: Request): string | undefined {

@@ -1,8 +1,11 @@
-import { message, Spin } from "antd";
+import { Spin } from "antd";
 import React, { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { useInternalError } from "../../../../hooks/useInternalError";
 import { AppDispatch, RootState } from "../../../../store";
+import * as translator from "../../../../utils/translator";
 import { verifyTokenRequest } from "../../authSlice";
 import styles from "../../styles/Auth.module.css";
 
@@ -10,6 +13,9 @@ export const ResultVerifyTokenPage: React.FC = () => {
   const auth = useSelector((state: RootState) => state.auth);
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
+  const { t } = useTranslation();
+
+  useInternalError(auth.error);
 
   useEffect(() => {
     const token = new URLSearchParams(window.location.search).get("token");
@@ -19,12 +25,6 @@ export const ResultVerifyTokenPage: React.FC = () => {
       dispatch(verifyTokenRequest(token));
     }
   }, [dispatch, navigate]);
-
-  useEffect(() => {
-    if (auth.error) {
-      message.error(auth.error);
-    }
-  }, [auth.error]);
 
   if (auth.status === "loading") {
     return (
@@ -41,13 +41,23 @@ export const ResultVerifyTokenPage: React.FC = () => {
       <div className={styles.container}>
         <div className={styles.card}>
           <div className={styles.header}>
-            <h1 className={styles.title}>Kết quả xác thực</h1>
+            <h1 className={styles.title}>
+              {translator.common.result_of(
+                t,
+                translator.common.confirmation(t)
+              )}
+            </h1>
             <img
               src="/assets/images/fail.svg"
               alt="Messenger Logo"
               className={styles.logo}
             />
-            <p>Xác thực thất bại</p>
+            <p>
+              {translator.common.fail_message(
+                t,
+                translator.common.confirmation(t)
+              )}
+            </p>
           </div>
         </div>
       </div>
@@ -63,18 +73,28 @@ export const ResultVerifyTokenPage: React.FC = () => {
       <div className={styles.container}>
         <div className={styles.card}>
           <div className={styles.header}>
-            <h1 className={styles.title}>Kết quả xác thực</h1>
+            <h1 className={styles.title}>
+              {translator.common.result_of(
+                t,
+                translator.common.confirmation(t)
+              )}
+            </h1>
             <img
               src="/assets/images/success.svg"
               alt="Messenger Logo"
               className={styles.logo}
             />
-            <p>Xác thực thành công</p>
+            <p>
+              {translator.common.success_message(
+                t,
+                translator.common.confirmation(t)
+              )}
+            </p>
           </div>
         </div>
       </div>
     );
   }
 
-  return <div></div>
+  return <div></div>;
 };

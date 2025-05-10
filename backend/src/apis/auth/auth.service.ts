@@ -1,10 +1,15 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 import { Model } from 'mongoose';
+import { I18nContext } from 'nestjs-i18n';
 import * as nodemailer from 'nodemailer';
 import { MessageCode } from 'src/common/messages/message.enum';
 import { MessageService } from 'src/common/messages/message.service';
@@ -20,7 +25,19 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto, origin: string): Promise<User> {
-    await this.validateInputRegister(registerDto.email);
+    const isExistValidUser: boolean = await this.existsUser(
+      registerDto.email,
+      true,
+    );
+    if (isExistValidUser) {
+      const msg = await this.messageService.get(
+        MessageCode.USER_ALREADY_EXISTS,
+        {
+          email: registerDto.email,
+        },
+      );
+      throw new UnauthorizedException(msg);
+    }
     await this.deleteUserByEmail(registerDto.email);
     await this.createVerifyEmail(registerDto.email, origin);
     return await this.createNewUser(registerDto);
@@ -29,9 +46,10 @@ export class AuthService {
   async login(loginDto: LoginDto) {
     const user = await this.userModel.findOne({ email: loginDto.email });
     if (!user || !(await bcrypt.compare(loginDto.password, user.password))) {
-      throw new UnauthorizedException(
-        this.messageService.getMessage(MessageCode.INVALID_CREDENTIALS),
+      const msg = await this.messageService.get(
+        MessageCode.INVALID_CREDENTIALS,
       );
+      throw new UnauthorizedException(msg);
     }
     const token = this.jwtService.sign({
       id: user._id,
@@ -41,10 +59,17 @@ export class AuthService {
   }
 
   async resendVerification(email: string, origin: string) {
+    const existsValidUser: boolean = await this.existsUser(email);
+    if (!existsValidUser) {
+      const msg = await this.messageService.get(MessageCode.USER_NOT_FOUND, {
+        email,
+      });
+      throw new NotFoundException(msg);
+    }
     await this.createVerifyEmail(email, origin);
   }
 
-  async verifyToken(token: string): Promise<User> {
+  async verifyToken(token: string, i18n: I18nContext): Promise<User> {
     let decoded: { email: string };
     try {
       decoded = this.jwtService.verify<{ email: string }>(token, {
@@ -52,37 +77,48 @@ export class AuthService {
       });
     } catch (error: unknown) {
       if (error instanceof jwt.TokenExpiredError) {
-        throw new UnauthorizedException(
-          this.messageService.getMessage(MessageCode.TOKEN_EXPIRED),
+        const msg = await this.messageService.get(
+          MessageCode.TOKEN_EXPIRED,
+          i18n,
         );
+        throw new UnauthorizedException(msg);
       } else {
-        throw new UnauthorizedException(
-          this.messageService.getMessage(MessageCode.INVALID_TOKEN),
+        const msg = await this.messageService.get(
+          MessageCode.INVALID_TOKEN,
+          i18n,
         );
+        throw new UnauthorizedException(msg);
       }
     }
     const user = await this.userModel.findOne({ email: decoded.email });
     if (!user) {
-      throw new UnauthorizedException(
-        this.messageService.getMessage(MessageCode.INVALID_TOKEN),
+      const msg = await this.messageService.get(
+        MessageCode.INVALID_TOKEN,
+        i18n,
       );
+      throw new UnauthorizedException(msg);
     }
     user.is_active = true;
     return await user.save();
   }
 
-  private async validateInputRegister(email: string) {
-    const existingUser = await this.userModel.findOne({
-      email,
-      is_active: true,
-    });
-    if (existingUser) {
-      throw new UnauthorizedException(
-        this.messageService.getMessage(MessageCode.USER_ALREADY_EXISTS, {
-          email,
-        }),
-      );
+  private async findUser(
+    email: string,
+    is_active?: boolean,
+  ): Promise<User | null> {
+    const filter: Partial<Record<'email' | 'is_active', any>> = { email };
+    if (typeof is_active === 'boolean') {
+      filter.is_active = is_active;
     }
+    return await this.userModel.findOne(filter);
+  }
+
+  private async existsUser(
+    email: string,
+    is_active?: boolean,
+  ): Promise<boolean> {
+    const existingUser = await this.findUser(email, is_active);
+    return existingUser != null;
   }
 
   private async deleteUserByEmail(email: string) {
@@ -123,12 +159,19 @@ export class AuthService {
       },
     });
 
+    const subject = await this.messageService.get(
+      MessageCode.VERIFY_EMAIL_SUBJECT,
+    );
+
+    const html = await this.messageService.get(
+      MessageCode.VERIFY_EMAIL_TEMPLATE,
+      { url },
+    );
+
     await transporter.sendMail({
       to: email,
-      subject: this.messageService.getMessage(MessageCode.VERIFY_EMAIL_SUBJECT),
-      html: this.messageService.getMessage(MessageCode.VERIFY_EMAIL_TEMPLATE, {
-        url,
-      }),
+      subject,
+      html,
     });
   }
 }

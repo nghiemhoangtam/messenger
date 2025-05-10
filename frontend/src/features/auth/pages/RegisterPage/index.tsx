@@ -5,12 +5,14 @@ import {
 } from "@ant-design/icons";
 import { Button, Divider, Form, Input, message, Spin } from "antd";
 import React, { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
+import { useInternalError } from "../../../../hooks/useInternalError";
 import { AppDispatch, RootState } from "../../../../store";
-import { registerRequest, resetStatusAndError } from "../../authSlice";
+import * as translator from "../../../../utils/translator";
+import { registerRequest } from "../../authSlice";
 import styles from "../../styles/Auth.module.css";
-
 interface RegisterForm {
   email: string;
   password: string;
@@ -22,12 +24,11 @@ export const RegisterPage: React.FC = () => {
   const auth = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-  const [form] = Form.useForm<RegisterForm>(); 
+  const [form] = Form.useForm<RegisterForm>();
+  const { t } = useTranslation();
 
-  useEffect(() => {
-    dispatch(resetStatusAndError());
-  }, [dispatch]);
-  
+  useInternalError(auth.error);
+
   useEffect(() => {
     if (auth.isAuthenticated) {
       navigate("/");
@@ -35,29 +36,27 @@ export const RegisterPage: React.FC = () => {
   }, [auth.isAuthenticated, navigate]);
 
   useEffect(() => {
-    if (auth.error) {
-      message.error(auth.error);
-    }
-  }, [auth.error]);
-
-  useEffect(() => {
     if (auth.status === "succeeded") {
-      message.success("Đăng ký thành công");
+      message.success(
+        translator.common.success_message(t, translator.auth.login(t))
+      );
       navigate("/verify-token");
-      return ;
+      return;
     }
-  }, [auth.status, navigate]);
+  }, [auth.status, navigate, t]);
 
   const onFinish = async (values: RegisterForm): Promise<void> => {
-      if (values.password !== values.confirmPassword) {
-        message.error("Mật khẩu xác nhận không khớp");
-        return;
-      }
-      dispatch(registerRequest({
+    if (values.password !== values.confirmPassword) {
+      message.error(translator.auth.password_not_match(t));
+      return;
+    }
+    dispatch(
+      registerRequest({
         display_name: values.display_name,
         email: values.email,
         password: values.password,
-      }));
+      })
+    );
   };
 
   const handleSocialRegister = (provider: string): void => {
@@ -65,15 +64,15 @@ export const RegisterPage: React.FC = () => {
     console.log(`Register with ${provider}`);
   };
 
-    if(auth.status === "loading") {
-      return (
-        <div className={styles.container}>
-          <div className={styles.card}>
-            <Spin size="large" className={styles.loading} />
-          </div>
+  if (auth.status === "loading") {
+    return (
+      <div className={styles.container}>
+        <div className={styles.card}>
+          <Spin size="large" className={styles.loading} />
         </div>
-      );
-    }
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>
@@ -84,8 +83,8 @@ export const RegisterPage: React.FC = () => {
             alt="Messenger Logo"
             className={styles.logo}
           />
-          <h1 className={styles.title}>Đăng ký</h1>
-          <p className={styles.subtitle}>Tạo tài khoản mới</p>
+          <h1 className={styles.title}>{translator.auth.register(t)}</h1>
+          <p className={styles.subtitle}>{translator.auth.new_account(t)}</p>
         </div>
 
         <Form
@@ -97,12 +96,18 @@ export const RegisterPage: React.FC = () => {
           <Form.Item
             name="display_name"
             rules={[
-              { required: true, message: "Vui lòng nhập tên người dùng" },
+              {
+                required: true,
+                message: translator.common.enter_field_message(
+                  t,
+                  translator.common.display_name(t)
+                ),
+              },
             ]}
             className={styles.formItem}
           >
             <Input
-              placeholder="Tên người dùng"
+              placeholder={translator.common.display_name(t)}
               size="large"
               className={styles.input}
             />
@@ -111,8 +116,20 @@ export const RegisterPage: React.FC = () => {
           <Form.Item
             name="email"
             rules={[
-              { required: true, message: "Vui lòng nhập email" },
-              { type: "email", message: "Email không hợp lệ" },
+              {
+                required: true,
+                message: translator.common.enter_field_message(
+                  t,
+                  translator.common.email(t)
+                ),
+              },
+              {
+                type: "email",
+                message: translator.common.invalid_field_message(
+                  t,
+                  translator.common.email(t)
+                ),
+              },
             ]}
             className={styles.formItem}
           >
@@ -122,13 +139,26 @@ export const RegisterPage: React.FC = () => {
           <Form.Item
             name="password"
             rules={[
-              { required: true, message: "Vui lòng nhập mật khẩu" },
-              { min: 6, message: "Mật khẩu phải có ít nhất 6 ký tự" },
+              {
+                required: true,
+                message: translator.common.enter_field_message(
+                  t,
+                  translator.common.pass(t)
+                ),
+              },
+              {
+                min: 6,
+                message: translator.common.at_least_letter(
+                  t,
+                  translator.common.pass(t),
+                  6
+                ),
+              },
             ]}
             className={styles.formItem}
           >
             <Input.Password
-              placeholder="Mật khẩu"
+              placeholder={translator.common.pass(t)}
               size="large"
               className={styles.input}
             />
@@ -138,14 +168,20 @@ export const RegisterPage: React.FC = () => {
             name="confirmPassword"
             dependencies={["password"]}
             rules={[
-              { required: true, message: "Vui lòng xác nhận mật khẩu" },
+              {
+                required: true,
+                message: translator.common.prompt_field_confirm(
+                  t,
+                  translator.common.pass(t)
+                ),
+              },
               ({ getFieldValue }) => ({
                 validator(_, value) {
                   if (!value || getFieldValue("password") === value) {
                     return Promise.resolve();
                   }
                   return Promise.reject(
-                    new Error("Mật khẩu xác nhận không khớp")
+                    new Error(translator.auth.password_not_match(t))
                   );
                 },
               }),
@@ -153,7 +189,10 @@ export const RegisterPage: React.FC = () => {
             className={styles.formItem}
           >
             <Input.Password
-              placeholder="Xác nhận mật khẩu"
+              placeholder={translator.common.prompt_field_confirm(
+                t,
+                translator.common.pass(t)
+              )}
               size="large"
               className={styles.input}
             />
@@ -166,12 +205,12 @@ export const RegisterPage: React.FC = () => {
               size="large"
               className={styles.button}
             >
-              Đăng ký
+              {translator.auth.register(t)}
             </Button>
           </Form.Item>
         </Form>
 
-        <Divider className={styles.divider}>Hoặc</Divider>
+        <Divider className={styles.divider}>{translator.common.or(t)}</Divider>
 
         <div className={styles.socialLogin}>
           <Button
@@ -192,9 +231,9 @@ export const RegisterPage: React.FC = () => {
         </div>
 
         <div className={styles.footer}>
-          Đã có tài khoản?
+          {translator.auth.do_have_account(t)}
           <Link to="/login" className={styles.link}>
-            Đăng nhập
+            {translator.auth.login(t)}
           </Link>
         </div>
       </div>
