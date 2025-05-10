@@ -176,6 +176,7 @@ async function generateEndpoints(): Promise<void> {
     );
 
     await app.close();
+    process.exit(0);
   } catch (error) {
     console.error('❌ Error generating endpoints documentation:', error);
     process.exit(1);

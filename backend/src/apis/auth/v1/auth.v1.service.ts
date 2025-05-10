@@ -76,31 +76,15 @@ export class AuthV1Service extends BaseService {
         throw new UnauthorizedException(msg);
       }
       const token = this.createNewToken(user);
-      const existingToken = await this.tokenModel.findOne({
+      const newToken = new this.tokenModel({
         user: user._id,
+        access_token: token.access_token,
+        refresh_token: token.refresh_token,
+        user_agent: user_agent,
+        ip_address: ip_address,
+        expired_at: plusMinute(1),
       });
-      if (existingToken) {
-        existingToken.access_token = token.access_token;
-        existingToken.refresh_token = token.refresh_token;
-        if (user_agent) {
-          existingToken.user_agent = user_agent;
-        }
-        if (ip_address) {
-          existingToken.ip_address = ip_address;
-        }
-        existingToken.expired_at = plusMinute(1);
-        await existingToken.save();
-      } else {
-        const newToken = new this.tokenModel({
-          user: user._id,
-          access_token: token.access_token,
-          refresh_token: token.refresh_token,
-          user_agent: user_agent,
-          ip_address: ip_address,
-          expired_at: plusMinute(1),
-        });
-        await newToken.save();
-      }
+      await newToken.save();
       return {
         access_token: token.access_token,
         refresh_token: token.refresh_token,
@@ -141,31 +125,16 @@ export class AuthV1Service extends BaseService {
       await socialAccount.save();
 
       const token = this.createNewToken(user);
-      const existingToken = await this.tokenModel.findOne({
+      const newToken = new this.tokenModel({
         user: user._id,
+        access_token: token.access_token,
+        refresh_token: token.refresh_token,
+        user_agent: socialLogin.user_agent,
+        ip_address: socialLogin.ip_address,
+        expired_at: plusMinute(1),
       });
-      if (existingToken) {
-        existingToken.access_token = token.access_token;
-        existingToken.refresh_token = token.refresh_token;
-        if (socialLogin.user_agent) {
-          existingToken.user_agent = socialLogin.user_agent;
-        }
-        if (socialLogin.ip_address) {
-          existingToken.ip_address = socialLogin.ip_address;
-        }
-        existingToken.expired_at = plusMinute(1);
-        await existingToken.save();
-      } else {
-        const newToken = new this.tokenModel({
-          user: user._id,
-          access_token: token.access_token,
-          refresh_token: token.refresh_token,
-          user_agent: socialLogin.user_agent,
-          ip_address: socialLogin.ip_address,
-          expired_at: plusMinute(1),
-        });
-        await newToken.save();
-      }
+      await newToken.save();
+
       return {
         access_token: token.access_token,
         refresh_token: token.refresh_token,

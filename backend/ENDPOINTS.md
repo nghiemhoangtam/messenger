@@ -2,12 +2,27 @@
 
 This document provides a comprehensive overview of all API endpoints in the application.
 
-Generated automatically on 2025-05-03T12:38:46.571Z.
+Generated automatically on 2025-05-10T07:22:02.331Z.
 
-## /auth/register
+## /auth/welcome (Version: v1)
+
+### GET /auth/welcome
+
+- **Version**: v1
+- **Tags**: auth
+- **Summary**: Welcome to auth api
+- **Description**: Welcome to auth api
+
+#### Responses
+
+- **200**: Test auth api successfully
+
+---
+## /auth/register (Version: v1)
 
 ### POST /auth/register
 
+- **Version**: v1
 - **Tags**: auth
 - **Summary**: Register a new user
 - **Description**: Creates a new user account and sends a verification email.
@@ -39,10 +54,11 @@ Generated automatically on 2025-05-03T12:38:46.571Z.
 - **403**: Missing CORS origin
 
 ---
-## /auth/login
+## /auth/login (Version: v1)
 
 ### POST /auth/login
 
+- **Version**: v1
 - **Tags**: auth
 - **Summary**: User login
 - **Description**: Authenticates a user and returns access and refresh tokens.
@@ -74,10 +90,11 @@ Generated automatically on 2025-05-03T12:38:46.571Z.
 - **401**: Invalid credentials
 
 ---
-## /auth/resend-verification
+## /auth/resend-verification (Version: v1)
 
 ### POST /auth/resend-verification
 
+- **Version**: v1
 - **Tags**: auth
 - **Summary**: Resend verification email
 - **Description**: Sends a new verification email to the user.
@@ -109,10 +126,11 @@ Generated automatically on 2025-05-03T12:38:46.571Z.
 - **403**: Missing CORS origin
 
 ---
-## /auth/verify-token
+## /auth/verify-token (Version: v1)
 
 ### GET /auth/verify-token
 
+- **Version**: v1
 - **Tags**: auth
 - **Summary**: Verify email token
 - **Description**: Verifies the email verification token and activates the user account.
@@ -135,10 +153,11 @@ Generated automatically on 2025-05-03T12:38:46.571Z.
 - **400**: Invalid or expired token
 
 ---
-## /auth/forgot-password
+## /auth/forgot-password (Version: v1)
 
 ### POST /auth/forgot-password
 
+- **Version**: v1
 - **Tags**: auth
 - **Summary**: Request password reset
 - **Description**: Sends a password reset email to the user.
@@ -170,10 +189,11 @@ Generated automatically on 2025-05-03T12:38:46.571Z.
 - **403**: Missing CORS origin
 
 ---
-## /auth/reset-password
+## /auth/reset-password (Version: v1)
 
 ### POST /auth/reset-password
 
+- **Version**: v1
 - **Tags**: auth
 - **Summary**: Reset password
 - **Description**: Resets the user password using a reset token.
@@ -199,10 +219,11 @@ Generated automatically on 2025-05-03T12:38:46.571Z.
 - **400**: Invalid or expired token
 
 ---
-## /auth/google
+## /auth/google (Version: v1)
 
 ### GET /auth/google
 
+- **Version**: v1
 - **Tags**: auth
 - **Summary**: Initiate Google login
 - **Description**: Redirects to Google OAuth login page.
@@ -212,10 +233,11 @@ Generated automatically on 2025-05-03T12:38:46.571Z.
 - **302**: Redirect to Google login
 
 ---
-## /auth/google/callback
+## /auth/google/callback (Version: v1)
 
 ### GET /auth/google/callback
 
+- **Version**: v1
 - **Tags**: auth
 - **Summary**: Google login callback
 - **Description**: Handles Google OAuth callback and redirects with tokens.
@@ -226,10 +248,11 @@ Generated automatically on 2025-05-03T12:38:46.571Z.
 - **403**: Forbidden access
 
 ---
-## /auth/refresh_token
+## /auth/refresh_token (Version: v1)
 
 ### POST /auth/refresh_token
 
+- **Version**: v1
 - **Tags**: auth
 - **Summary**: Refresh access token
 - **Description**: Generates a new access token using a refresh token.
@@ -266,10 +289,11 @@ Generated automatically on 2025-05-03T12:38:46.571Z.
 - **401**: Invalid refresh token
 
 ---
-## /auth/facebook
+## /auth/facebook (Version: v1)
 
 ### GET /auth/facebook
 
+- **Version**: v1
 - **Tags**: auth
 - **Summary**: Initiate Facebook login
 - **Description**: Redirects to Facebook OAuth login page.
@@ -279,10 +303,11 @@ Generated automatically on 2025-05-03T12:38:46.571Z.
 - **302**: Redirect to Facebook login
 
 ---
-## /auth/facebook/callback
+## /auth/facebook/callback (Version: v1)
 
 ### GET /auth/facebook/callback
 
+- **Version**: v1
 - **Tags**: auth
 - **Summary**: Facebook login callback
 - **Description**: Handles Facebook OAuth callback and redirects with tokens.
@@ -293,10 +318,11 @@ Generated automatically on 2025-05-03T12:38:46.571Z.
 - **403**: Forbidden access
 
 ---
-## /auth/me
+## /auth/me (Version: v1)
 
 ### GET /auth/me
 
+- **Version**: v1
 - **Tags**: auth
 - **Authentication**: bearer
 - **Summary**: Get current user profile
@@ -314,3 +340,23 @@ Generated automatically on 2025-05-03T12:38:46.571Z.
 - **403**: Forbidden access
 
 ---
+
+# Endpoint Summary
+
+The following table lists all API endpoints for quick reference:
+
+| Path | Method | Version | Tags | Summary |
+|------|--------|---------|------|---------|
+| /auth/welcome | GET | v1 | auth | Welcome to auth api |
+| /auth/register | POST | v1 | auth | Register a new user |
+| /auth/login | POST | v1 | auth | User login |
+| /auth/resend-verification | POST | v1 | auth | Resend verification email |
+| /auth/verify-token | GET | v1 | auth | Verify email token |
+| /auth/forgot-password | POST | v1 | auth | Request password reset |
+| /auth/reset-password | POST | v1 | auth | Reset password |
+| /auth/google | GET | v1 | auth | Initiate Google login |
+| /auth/google/callback | GET | v1 | auth | Google login callback |
+| /auth/refresh_token | POST | v1 | auth | Refresh access token |
+| /auth/facebook | GET | v1 | auth | Initiate Facebook login |
+| /auth/facebook/callback | GET | v1 | auth | Facebook login callback |
+| /auth/me | GET | v1 | auth | Get current user profile |
