@@ -82,7 +82,6 @@ export class AuthV1Service extends BaseService {
         refresh_token: token.refresh_token,
         user_agent: user_agent,
         ip_address: ip_address,
-        expired_at: plusMinute(1),
       });
       await newToken.save();
       return {
@@ -131,7 +130,6 @@ export class AuthV1Service extends BaseService {
         refresh_token: token.refresh_token,
         user_agent: socialLogin.user_agent,
         ip_address: socialLogin.ip_address,
-        expired_at: plusMinute(1),
       });
       await newToken.save();
 
@@ -467,7 +465,6 @@ export class AuthV1Service extends BaseService {
           refresh_token: token.refresh_token,
           user_agent: user_agent,
           ip_address,
-          expired_at: plusMinute(1),
         });
         await newToken.save();
 
