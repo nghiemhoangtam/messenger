@@ -14,11 +14,12 @@ export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
     private configService: ConfigService,
     private authService: AuthService,
   ) {
-    const facebookClientID = configService.get<string>('OAUTH_FACEBOOK_ID');
-    const facebookClientSecret = configService.get<string>(
+    const facebookClientID: string | undefined =
+      configService.get<string>('OAUTH_FACEBOOK_ID');
+    const facebookClientSecret: string | undefined = configService.get<string>(
       'OAUTH_FACEBOOK_SECRET',
     );
-    const facebookCallbackURL = configService.get<string>(
+    const facebookCallbackURL: string | undefined = configService.get<string>(
       'OAUTH_FACEBOOK_REDIRECT_URL',
     );
     if (!facebookClientID || !facebookClientSecret || !facebookCallbackURL) {

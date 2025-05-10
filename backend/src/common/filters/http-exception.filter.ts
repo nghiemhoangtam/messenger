@@ -4,11 +4,14 @@ import {
   ExceptionFilter,
   HttpException,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
+  private readonly logger = new Logger(AllExceptionsFilter.name);
+
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
@@ -16,7 +19,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Internal server error';
-    let error = 'Internal Server Error';
+    let errorType = 'Internal Server Error';
+    let stack = '';
 
     if (exception instanceof HttpException) {
       const res = exception.getResponse();
@@ -26,19 +30,46 @@ export class AllExceptionsFilter implements ExceptionFilter {
         message = Array.isArray(errRes.message)
           ? errRes.message.join(', ')
           : (errRes.message ?? exception.message);
-        error = errRes.error ?? exception.name;
+        errorType = errRes.error ?? exception.name;
+        stack = exception.stack ?? '';
       } else {
         message = exception.message;
-        error = exception.name;
+        errorType = exception.name;
+        stack = exception.stack ?? '';
       }
     }
+
+    const fileInfo = this.extractFileLine(stack);
+    this.logger.error(
+      `[${errorType}] ${message}\nAt: ${fileInfo}\nRequest: ${request.method} ${request.url}`,
+    );
 
     response.status(status).json({
       statusCode: status,
       message,
-      error,
+      errorType,
       timestamp: new Date().toISOString(),
       path: request.url,
     });
+  }
+
+  private extractFileLine(stack: string): string {
+    const lines = stack.split('\n');
+    const relevantLine = lines.find(
+      (line) => line.includes('.ts') || line.includes('.js'),
+    );
+    if (!relevantLine) return 'unknown';
+
+    const match = relevantLine.match(/\((.*):(\d+):(\d+)\)/);
+    if (match) {
+      return `${match[1]}:${match[2]}:${match[3]}`;
+    }
+
+    const inlineMatch = relevantLine.match(/at (.*):(\d+):(\d+)/);
+    if (inlineMatch) {
+      return `${inlineMatch[1]}:${inlineMatch[2]}:${inlineMatch[3]}`;
+    }
+
+    return 'unknown';
   }
 }

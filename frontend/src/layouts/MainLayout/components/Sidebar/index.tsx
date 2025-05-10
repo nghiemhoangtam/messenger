@@ -7,7 +7,7 @@ import {
   UserOutlined,
 } from "@ant-design/icons";
 import { Avatar, Layout, Menu, Tooltip } from "antd";
-import React from "react";
+import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
 import { logout } from "../../../../features/auth/authSlice";
@@ -21,6 +21,10 @@ export const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useSelector((state: RootState) => state.auth);
+
+  useEffect(() => {
+    console.log("User data:", user);
+  }, [user]);
 
   const menuItems = [
     {
@@ -62,7 +66,7 @@ export const Sidebar: React.FC = () => {
     <Sider className={styles.sidebar} width={80}>
       <div className={styles.logo}>
         <Avatar src={user?.avatar} size={40}>
-          {user?.username?.[0]?.toUpperCase()}
+          {user?.display_name.toUpperCase()}
         </Avatar>
       </div>
       <Menu

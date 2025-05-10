@@ -39,8 +39,7 @@ export const LoginPage: React.FC = () => {
   };
 
   const handleSocialLogin = (provider: string): void => {
-    // Implement social login logic here
-    console.log(`Login with ${provider}`);
+    window.location.href = `${process.env.REACT_APP_BASE_URL}/auth/${provider}?redirect=${window.location.origin}/auth/callback`;
   };
   if (auth.status === "loading") {
     return (

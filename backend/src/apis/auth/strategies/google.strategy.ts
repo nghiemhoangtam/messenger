@@ -16,9 +16,12 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     private configService: ConfigService,
     private authService: AuthService,
   ) {
-    const googleClientID = configService.get<string>('OAUTH_GOOGLE_ID');
-    const googleClientSecret = configService.get<string>('OAUTH_GOOGLE_SECRET');
-    const googleCallbackURL = configService.get<string>(
+    const googleClientID: string | undefined =
+      configService.get<string>('OAUTH_GOOGLE_ID');
+    const googleClientSecret: string | undefined = configService.get<string>(
+      'OAUTH_GOOGLE_SECRET',
+    );
+    const googleCallbackURL: string | undefined = configService.get<string>(
       'OAUTH_GOOGLE_REDIRECT_URL',
     );
     if (!googleClientID || !googleClientSecret || !googleCallbackURL) {
