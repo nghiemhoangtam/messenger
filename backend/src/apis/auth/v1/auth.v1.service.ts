@@ -19,13 +19,13 @@ import { BaseService } from 'src/common/services/base.service';
 import { plusMinute } from 'src/utils/date.utils';
 import { randomString } from 'src/utils/random.utils';
 import { sendSimpleMail } from 'src/utils/sendmail.utils';
-import { User } from '../user/schemas';
-import { LoginDto, RegisterDto, ResetPasswordDto } from './dto';
-import { ISocialLogin } from './interfaces';
-import { CurrentUserResponse, LoginInfoResponse } from './response';
-import { PasswordResetToken, SocialAccount, Token } from './schemas';
+import { User } from '../../user/schemas';
+import { LoginDto, RegisterDto, ResetPasswordDto } from '../common/dto';
+import { ISocialLogin } from '../common/interfaces';
+import { CurrentUserResponse, LoginInfoResponse } from '../common/response';
+import { PasswordResetToken, SocialAccount, Token } from '../common/schemas';
 @Injectable()
-export class AuthService extends BaseService {
+export class AuthV1Service extends BaseService {
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
     @InjectModel(SocialAccount.name)

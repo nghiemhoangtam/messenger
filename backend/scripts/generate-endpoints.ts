@@ -27,6 +27,14 @@ interface MethodDetails {
   security?: Array<Record<string, string[]>>;
 }
 
+interface EndpointSummary {
+  path: string;
+  method: string;
+  version: string;
+  tags: string;
+  summary: string;
+}
+
 async function generateEndpoints(): Promise<void> {
   try {
     const app = await NestFactory.create(AppModule);
@@ -47,15 +55,34 @@ async function generateEndpoints(): Promise<void> {
       'This document provides a comprehensive overview of all API endpoints in the application.\n\n';
     output += `Generated automatically on ${new Date().toISOString()}.\n\n`;
 
+    // Collect endpoint summaries for the table
+    const endpointSummaries: EndpointSummary[] = [];
+
     // Loop through the API paths
     for (const [path, methods] of Object.entries(paths)) {
-      output += `## ${path}\n\n`;
+      // Extract version from path (e.g., /api/v1/auth) or default to v1
+      const versionMatch = path.match(/\/v(\d+)/);
+      const version = versionMatch ? `v${versionMatch[1]}` : 'v1';
+
+      output += `## ${path} (Version: ${version})\n\n`;
 
       for (const [method, details] of Object.entries(methods)) {
         const methodDetails = details as MethodDetails;
 
+        // Add to endpoint summaries
+        endpointSummaries.push({
+          path,
+          method: method.toUpperCase(),
+          version,
+          tags: methodDetails.tags?.join(', ') || 'None',
+          summary: methodDetails.summary || 'No summary provided',
+        });
+
         // Tiêu đề cho method
         output += `### ${method.toUpperCase()} ${path}\n\n`;
+
+        // Version
+        output += `- **Version**: ${version}\n`;
 
         // Tags
         if (methodDetails.tags?.length) {
@@ -131,6 +158,16 @@ async function generateEndpoints(): Promise<void> {
         output += '\n---\n';
       }
     }
+
+    // Append summary table
+    output += '\n# Endpoint Summary\n\n';
+    output +=
+      'The following table lists all API endpoints for quick reference:\n\n';
+    output += '| Path | Method | Version | Tags | Summary |\n';
+    output += '|------|--------|---------|------|---------|\n';
+    endpointSummaries.forEach((endpoint) => {
+      output += `| ${endpoint.path} | ${endpoint.method} | ${endpoint.version} | ${endpoint.tags} | ${endpoint.summary} |\n`;
+    });
 
     // Ghi file ENDPOINTS.md
     writeFileSync('ENDPOINTS.md', output, { encoding: 'utf8' });

@@ -21,6 +21,7 @@
   "include": [
     "src",
     "src/i18n/**/*",
-    "scripts"
+    "scripts",
+    "public"
   ]
 }

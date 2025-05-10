@@ -8,13 +8,13 @@ import {
   StrategyOptionsWithRequest,
   VerifyCallback,
 } from 'passport-google-oauth20';
-import { AuthService } from '../auth.service';
+import { AuthV1Service } from '../../v1/auth.v1.service';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor(
     private configService: ConfigService,
-    private authService: AuthService,
+    private authService: AuthV1Service,
   ) {
     const googleClientID: string | undefined =
       configService.get<string>('OAUTH_GOOGLE_ID');

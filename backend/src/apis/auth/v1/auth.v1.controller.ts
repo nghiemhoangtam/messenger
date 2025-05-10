@@ -27,19 +27,32 @@ import { GoogleAuthGuard } from 'src/common/guards/google-auth.guard';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { MessageCode } from 'src/common/messages/message.enum';
 import { MessageService } from 'src/common/messages/message.service';
-import { User } from '../user/schemas';
-import { AuthService } from './auth.service';
-import { LoginDto, RegisterDto, ResetPasswordDto } from './dto';
-import { IJwtRequest, ISocialLogin, IUserRequest } from './interfaces';
-import { LoginInfoResponse } from './response';
+import { User } from '../../user/schemas';
+import { LoginDto, RegisterDto, ResetPasswordDto } from '../common/dto';
+import { IJwtRequest, ISocialLogin, IUserRequest } from '../common/interfaces';
+import { LoginInfoResponse } from '../common/response';
+import { AuthV1Service } from './auth.v1.service';
 
 @ApiTags('auth')
-@Controller('auth')
-export class AuthController {
+@Controller({ path: 'auth', version: '1' })
+export class AuthV1Controller {
   constructor(
-    private readonly authService: AuthService,
+    private readonly authService: AuthV1Service,
     private readonly messageService: MessageService,
   ) {}
+
+  @Get('welcome')
+  @ApiOperation({
+    summary: 'Welcome to auth api',
+    description: 'Welcome to auth api',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Test auth api successfully',
+  })
+  welcome() {
+    return 'Welcome to auth v1';
+  }
 
   @Post('register')
   @ApiOperation({
