@@ -94,8 +94,6 @@ class AuthService {
 
   async getUserInfo(): Promise<User | null> {
     try {
-      const access_token = localStorage.getItem("access_token");
-      if (!access_token) return null;
       const response = await accessTokenAxiosClient.get("/auth/me");
       return response.data.data;
     } catch (error: any) {

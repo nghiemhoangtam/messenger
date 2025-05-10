@@ -4,7 +4,7 @@ import { JwtService, TokenExpiredError } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { AuthGuard } from '@nestjs/passport';
 import { Model } from 'mongoose';
-import { IJwtRequest } from 'src/apis/auth/interfaces';
+import { IJwtRequest } from 'src/apis/auth/common/interfaces';
 import { User } from 'src/apis/user/schemas';
 import { MessageCode } from '../messages/message.enum';
 import { MessageService } from '../messages/message.service';

@@ -17,9 +17,6 @@ export class Token extends Document {
   created_at: Date;
 
   @Prop()
-  expired_at: Date;
-
-  @Prop()
   revoked_at: Date;
 
   @Prop()

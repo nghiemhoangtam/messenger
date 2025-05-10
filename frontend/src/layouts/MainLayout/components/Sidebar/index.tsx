@@ -7,7 +7,7 @@ import {
   UserOutlined,
 } from "@ant-design/icons";
 import { Avatar, Layout, Menu, Tooltip } from "antd";
-import React, { useEffect } from "react";
+import React from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
 import { logout } from "../../../../features/auth/authSlice";
@@ -21,10 +21,6 @@ export const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useSelector((state: RootState) => state.auth);
-
-  useEffect(() => {
-    console.log("User data:", user);
-  }, [user]);
 
   const menuItems = [
     {

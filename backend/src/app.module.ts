@@ -10,7 +10,8 @@ import {
   QueryResolver,
 } from 'nestjs-i18n';
 import * as path from 'path';
-import { AuthModule } from './apis/auth/auth.module';
+import { AuthV1Module } from './apis/auth/v1/auth.v1.module';
+import { AuthV2Module } from './apis/auth/v2/auth.v2.module';
 import { UsersModule } from './apis/user/users.module';
 import { MessageModule } from './common/messages/message.module';
 
@@ -27,6 +28,12 @@ import { MessageModule } from './common/messages/message.module';
         JWT_SECRET: Joi.string().default('your_jwt_secret'),
         SERVER_PORT: Joi.number().default(3000),
         SERVER_HOST: Joi.string().default('localhost'),
+        ACCESS_TOKEN_TTL: Joi.number().default(3600), // 1 hour
+        REFRESH_TOKEN_TTL: Joi.number().default(604800), // 7 days
+        REDIS_HOST: Joi.string().default('localhost'),
+        REDIS_PORT: Joi.number().default(6379),
+        REDIS_USERNAME: Joi.string().default(''),
+        REDIS_PASSWORD: Joi.string().default(''),
       }),
     }),
     MongooseModule.forRootAsync({
@@ -37,7 +44,8 @@ import { MessageModule } from './common/messages/message.module';
       inject: [ConfigService],
     }),
     UsersModule,
-    AuthModule,
+    AuthV1Module,
+    AuthV2Module,
     ConfigModule.forRoot({ isGlobal: true }),
     I18nModule.forRoot({
       fallbackLanguage: 'en',

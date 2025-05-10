@@ -6,13 +6,13 @@ import {
   Strategy,
   StrategyOptionsWithRequest,
 } from 'passport-facebook';
-import { AuthService } from '../auth.service';
+import { AuthV1Service } from '../../v1/auth.v1.service';
 
 @Injectable()
 export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
   constructor(
     private configService: ConfigService,
-    private authService: AuthService,
+    private authService: AuthV1Service,
   ) {
     const facebookClientID: string | undefined =
       configService.get<string>('OAUTH_FACEBOOK_ID');

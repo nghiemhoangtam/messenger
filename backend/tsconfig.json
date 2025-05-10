@@ -20,6 +20,8 @@
   },
   "include": [
     "src",
-    "src/i18n/**/*"
+    "src/i18n/**/*",
+    "scripts",
+    "public"
   ]
 }
