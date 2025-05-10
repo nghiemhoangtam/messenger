@@ -1,7 +1,8 @@
-import { Prop, SchemaFactory } from '@nestjs/mongoose';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { User } from 'src/apis/user/schemas';
 
+@Schema({ collection: 'tokens' })
 export class Token extends Document {
   @Prop({ type: Types.ObjectId, ref: 'User' })
   user: User;
@@ -17,6 +18,15 @@ export class Token extends Document {
 
   @Prop()
   expired_at: Date;
+
+  @Prop()
+  revoked_at: Date;
+
+  @Prop()
+  user_agent: string;
+
+  @Prop()
+  ip_address: string;
 }
 
 export const TokenSchema = SchemaFactory.createForClass(Token);

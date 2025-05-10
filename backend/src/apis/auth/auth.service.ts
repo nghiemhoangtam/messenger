@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -10,15 +11,28 @@ import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 import { Model } from 'mongoose';
 import { I18nContext } from 'nestjs-i18n';
-import * as nodemailer from 'nodemailer';
 import { MessageCode } from 'src/common/messages/message.enum';
 import { MessageService } from 'src/common/messages/message.service';
+import { plusMinute } from 'src/utils/date.utils';
+import { randomString } from 'src/utils/random.utils';
+import { sendSimpleMail } from 'src/utils/sendmail.utils';
 import { User } from '../user/schemas';
 import { LoginDto, RegisterDto } from './dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { SocialLogin } from './interfaces/social-login.interface';
+import { CurrentUserResponse } from './response/current-user.response';
+import { PasswordResetToken, SocialAccount } from './schemas';
+import { Token } from './schemas/tokens.schema';
 @Injectable()
 export class AuthService {
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel(SocialAccount.name)
+    private socialAccountModel: Model<SocialAccount>,
+    @InjectModel(PasswordResetToken.name)
+    private passwordResetTokenModel: Model<PasswordResetToken>,
+    @InjectModel(Token.name)
+    private tokenModel: Model<Token>,
     private jwtService: JwtService,
     private configService: ConfigService,
     private messageService: MessageService,
@@ -43,19 +57,89 @@ export class AuthService {
     return await this.createNewUser(registerDto);
   }
 
-  async login(loginDto: LoginDto) {
-    const user = await this.userModel.findOne({ email: loginDto.email });
-    if (!user || !(await bcrypt.compare(loginDto.password, user.password))) {
+  async localLogin(loginDto: LoginDto) {
+    try {
+      const user = await this.userModel.findOne({ email: loginDto.email });
+      if (!user || !(await bcrypt.compare(loginDto.password, user.password))) {
+        const msg = await this.messageService.get(
+          MessageCode.INVALID_CREDENTIALS,
+        );
+        throw new UnauthorizedException(msg);
+      }
+      const token = this.jwtService.sign({
+        id: user._id,
+        email: user.email,
+      });
+      return { token };
+    } catch {
       const msg = await this.messageService.get(
         MessageCode.INVALID_CREDENTIALS,
       );
       throw new UnauthorizedException(msg);
     }
-    const token = this.jwtService.sign({
-      id: user._id,
-      email: user.email,
+  }
+
+  async socialLogin(socialLogin: SocialLogin) {
+    let user = await this.findUser(socialLogin.email);
+    if (!user) {
+      user = new this.userModel({
+        email: socialLogin.email,
+        display_name: socialLogin.display_name,
+        avatar: socialLogin.avatar,
+        is_active: true,
+      });
+    } else {
+      if (!user.is_active) {
+        user.is_active = true;
+      }
+      user.avatar = socialLogin.avatar;
+    }
+    await user.save();
+
+    await this.socialAccountModel.deleteMany({
+      provider: socialLogin.provider,
+      provider_id: socialLogin.provider_id,
     });
-    return { token };
+
+    const socialAccount = new this.socialAccountModel({
+      user: user._id,
+      provider: socialLogin.provider,
+      provider_id: socialLogin.provider_id,
+      access_token: socialLogin.access_token,
+      refresh_token: socialLogin.refresh_token,
+    });
+    await socialAccount.save();
+
+    const token = this.createNewToken(user);
+    const existingToken = await this.tokenModel.findOne({
+      user: user._id,
+    });
+    if (existingToken) {
+      existingToken.access_token = token.access_token;
+      existingToken.refresh_token = token.refresh_token;
+      if (socialLogin.user_agent) {
+        existingToken.user_agent = socialLogin.user_agent;
+      }
+      if (socialLogin.ip_address) {
+        existingToken.ip_address = socialLogin.ip_address;
+      }
+      existingToken.expired_at = plusMinute(1);
+      await existingToken.save();
+    } else {
+      const newToken = new this.tokenModel({
+        user: user._id,
+        access_token: token.access_token,
+        refresh_token: token.refresh_token,
+        user_agent: socialLogin.user_agent,
+        ip_address: socialLogin.ip_address,
+        expired_at: plusMinute(1),
+      });
+      await newToken.save();
+    }
+    return {
+      access_token: token.access_token,
+      refresh_token: token.refresh_token,
+    };
   }
 
   async resendVerification(email: string, origin: string) {
@@ -102,6 +186,109 @@ export class AuthService {
     return await user.save();
   }
 
+  async forgotPassword(email: string, origin: string) {
+    const validUser: User | null = await this.findUser(email, true);
+    if (validUser) {
+      await this.createTokenResetPassword(validUser, origin);
+    } else {
+      const msg = await this.messageService.get(MessageCode.USER_NOT_FOUND, {
+        email,
+      });
+      throw new NotFoundException(msg);
+    }
+  }
+
+  async resetPassword(resetPasswordDto: ResetPasswordDto) {
+    const tokenSearch: PasswordResetToken | null =
+      await this.passwordResetTokenModel.findOne({
+        token: resetPasswordDto.token,
+        is_used: false,
+      });
+    if (!tokenSearch) {
+      const msg = await this.messageService.get(MessageCode.INVALID_TOKEN);
+      throw new BadRequestException(msg);
+    } else {
+      if (tokenSearch.expired_at.getTime() < Date.now()) {
+        const msg = await this.messageService.get(MessageCode.TOKEN_EXPIRED);
+        throw new UnauthorizedException(msg);
+      } else {
+        const hashedPassword = await bcrypt.hash(resetPasswordDto.password, 10);
+        await this.passwordResetTokenModel.deleteMany({
+          user: tokenSearch._id,
+        });
+        await this.userModel.updateOne(
+          {
+            _id: tokenSearch.user,
+          },
+          {
+            $set: {
+              password: hashedPassword,
+            },
+          },
+        );
+      }
+    }
+  }
+
+  async validateOrCreateSocialUser(data: {
+    email: string;
+    provider: string;
+    providerId: string;
+    accessToken: string;
+    refreshToken: string;
+    displayName: string;
+  }) {
+    let user = await this.findUser(data.email);
+
+    if (!user) {
+      user = new this.userModel({
+        email: data.email,
+        display_name: data.displayName,
+        is_active: true,
+      });
+      await user.save();
+    }
+
+    const existingSocial = await this.socialAccountModel.findOne({
+      where: {
+        provider: data.provider,
+        providerId: data.providerId,
+      },
+    });
+
+    if (!existingSocial) {
+      const socialAccount = new this.socialAccountModel({
+        user: user._id,
+        provider: data.provider,
+        provider_id: data.providerId,
+        access_token: data.accessToken,
+        refresh_token: data.refreshToken,
+      });
+
+      await socialAccount.save();
+    } else {
+      existingSocial.access_token = data.accessToken;
+      existingSocial.refresh_token = data.refreshToken;
+      await existingSocial.save();
+    }
+  }
+
+  private async createTokenResetPassword(user: User, origin: string) {
+    const token = randomString(10);
+    const url = `${origin}/reset-password?token=${token}`;
+    await this.passwordResetTokenModel.deleteMany({
+      user: user._id,
+    });
+    const resetPasswordModel = new this.passwordResetTokenModel({
+      user: user._id,
+      token,
+      expired_at: plusMinute(1),
+    });
+
+    await resetPasswordModel.save();
+    await this.sendResetPasswordEmail(user.email, url);
+  }
+
   private async findUser(
     email: string,
     is_active?: boolean,
@@ -146,19 +333,50 @@ export class AuthService {
       display_name: registerDto.display_name,
       password: hashedPassword,
     });
-
     return await user.save();
   }
 
-  private async sendVerificationEmail(email: string, url: string) {
-    const transporter = nodemailer.createTransport({
-      service: 'Gmail', // or SMTP config
-      auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS,
-      },
-    });
+  private async sendResetPasswordEmail(email: string, url: string) {
+    const subject = await this.messageService.get(
+      MessageCode.RESET_PASSWORD_SUBJECT,
+    );
 
+    const html = await this.messageService.get(
+      MessageCode.RESET_EMAIL_TEMPLATE,
+      { url },
+    );
+
+    await sendSimpleMail(email, subject, html);
+  }
+
+  async getUserInfo(access_token: string) {
+    try {
+      const payload: { id: string; email: string } = this.jwtService.verify(
+        access_token,
+        {
+          secret: this.configService.get<string>('JWT_SECRET'),
+        },
+      );
+      const user = await this.userModel.findById(payload.id);
+      if (!user) {
+        const msg = await this.messageService.get(MessageCode.USER_NOT_FOUND, {
+          email: payload.email,
+        });
+        throw new NotFoundException(msg);
+      }
+      return user;
+    } catch (error) {
+      if (error instanceof jwt.TokenExpiredError) {
+        const msg = await this.messageService.get(MessageCode.TOKEN_EXPIRED);
+        throw new UnauthorizedException(msg);
+      } else {
+        const msg = await this.messageService.get(MessageCode.INVALID_TOKEN);
+        throw new UnauthorizedException(msg);
+      }
+    }
+  }
+
+  private async sendVerificationEmail(email: string, url: string) {
     const subject = await this.messageService.get(
       MessageCode.VERIFY_EMAIL_SUBJECT,
     );
@@ -167,11 +385,52 @@ export class AuthService {
       MessageCode.VERIFY_EMAIL_TEMPLATE,
       { url },
     );
+    await sendSimpleMail(email, subject, html);
+  }
 
-    await transporter.sendMail({
-      to: email,
-      subject,
-      html,
-    });
+  private createNewToken(user: User) {
+    const access_token = this.jwtService.sign(
+      {
+        id: user._id,
+        email: user.email,
+      },
+      {
+        expiresIn: '1h',
+        secret: this.configService.get<string>('JWT_SECRET'),
+      },
+    );
+    const refresh_token = this.jwtService.sign(
+      {
+        id: user._id,
+        email: user.email,
+      },
+      {
+        expiresIn: '7d',
+        secret: this.configService.get<string>('JWT_SECRET'),
+      },
+    );
+    return { access_token, refresh_token };
+  }
+
+  async getCurrentUser(userId: string): Promise<CurrentUserResponse> {
+    try {
+      const user = await this.userModel.findById(userId);
+      if (!user) {
+        const msg = await this.messageService.get(MessageCode.FORBIDDEN);
+        throw new NotFoundException(msg);
+      }
+      const response: CurrentUserResponse = {
+        id: user._id as string,
+        email: user.email,
+        display_name: user.display_name,
+        avatar: user.avatar,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+      };
+      return response;
+    } catch {
+      const msg = await this.messageService.get(MessageCode.INTERNAL_SERVER);
+      throw new NotFoundException(msg);
+    }
   }
 }
