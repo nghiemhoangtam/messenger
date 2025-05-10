@@ -76,31 +76,15 @@ export class AuthV1Service extends BaseService {
         throw new UnauthorizedException(msg);
       }
       const token = this.createNewToken(user);
-      const existingToken = await this.tokenModel.findOne({
+      const newToken = new this.tokenModel({
         user: user._id,
+        access_token: token.access_token,
+        refresh_token: token.refresh_token,
+        user_agent: user_agent,
+        ip_address: ip_address,
+        expired_at: plusMinute(1),
       });
-      if (existingToken) {
-        existingToken.access_token = token.access_token;
-        existingToken.refresh_token = token.refresh_token;
-        if (user_agent) {
-          existingToken.user_agent = user_agent;
-        }
-        if (ip_address) {
-          existingToken.ip_address = ip_address;
-        }
-        existingToken.expired_at = plusMinute(1);
-        await existingToken.save();
-      } else {
-        const newToken = new this.tokenModel({
-          user: user._id,
-          access_token: token.access_token,
-          refresh_token: token.refresh_token,
-          user_agent: user_agent,
-          ip_address: ip_address,
-          expired_at: plusMinute(1),
-        });
-        await newToken.save();
-      }
+      await newToken.save();
       return {
         access_token: token.access_token,
         refresh_token: token.refresh_token,
@@ -141,31 +125,16 @@ export class AuthV1Service extends BaseService {
       await socialAccount.save();
 
       const token = this.createNewToken(user);
-      const existingToken = await this.tokenModel.findOne({
+      const newToken = new this.tokenModel({
         user: user._id,
+        access_token: token.access_token,
+        refresh_token: token.refresh_token,
+        user_agent: socialLogin.user_agent,
+        ip_address: socialLogin.ip_address,
+        expired_at: plusMinute(1),
       });
-      if (existingToken) {
-        existingToken.access_token = token.access_token;
-        existingToken.refresh_token = token.refresh_token;
-        if (socialLogin.user_agent) {
-          existingToken.user_agent = socialLogin.user_agent;
-        }
-        if (socialLogin.ip_address) {
-          existingToken.ip_address = socialLogin.ip_address;
-        }
-        existingToken.expired_at = plusMinute(1);
-        await existingToken.save();
-      } else {
-        const newToken = new this.tokenModel({
-          user: user._id,
-          access_token: token.access_token,
-          refresh_token: token.refresh_token,
-          user_agent: socialLogin.user_agent,
-          ip_address: socialLogin.ip_address,
-          expired_at: plusMinute(1),
-        });
-        await newToken.save();
-      }
+      await newToken.save();
+
       return {
         access_token: token.access_token,
         refresh_token: token.refresh_token,
@@ -458,37 +427,47 @@ export class AuthV1Service extends BaseService {
     user_agent?: string,
   ): Promise<LoginInfoResponse> {
     return this.handle(async () => {
-      const token = await this.tokenModel.findOne({
+      const tokenSearched = await this.tokenModel.findOne({
         refresh_token,
         ip_address,
         user_agent,
       });
-      if (!token) {
+      if (!tokenSearched) {
         const msg = await this.messageService.get(MessageCode.INVALID_TOKEN);
         throw new UnauthorizedException(msg);
       }
-      if (token.expired_at.getTime() < Date.now()) {
+      if (tokenSearched.expired_at.getTime() < Date.now()) {
         const msg = await this.messageService.get(MessageCode.TOKEN_EXPIRED);
         throw new UnauthorizedException(msg);
       }
-      if (token.revoked_at) {
+      if (tokenSearched.revoked_at) {
         const msg = await this.messageService.get(
           MessageCode.REFRESH_TOKEN_IS_USED,
         );
         throw new UnauthorizedException(msg);
       }
-      const user = await this.userModel.findById(token.user);
+      const user = await this.userModel.findById(tokenSearched.user);
       if (!user) {
         const msg = await this.messageService.get(MessageCode.USER_NOT_FOUND, {
-          email: token.user,
+          email: tokenSearched.user,
         });
         throw new NotFoundException(msg);
       }
-      const newToken = this.createNewToken(user);
-      token.access_token = newToken.access_token;
-      token.refresh_token = newToken.refresh_token;
-      token.expired_at = plusMinute(1);
-      await token.save();
+
+      tokenSearched.revoked_at = new Date();
+      await tokenSearched.save();
+
+      const token = this.createNewToken(user);
+      const newToken = new this.tokenModel({
+        user: user._id,
+        access_token: token.access_token,
+        refresh_token: token.refresh_token,
+        user_agent: user_agent,
+        ip_address,
+        expired_at: plusMinute(1),
+      });
+      await newToken.save();
+
       return {
         access_token: newToken.access_token,
         refresh_token: newToken.refresh_token,
