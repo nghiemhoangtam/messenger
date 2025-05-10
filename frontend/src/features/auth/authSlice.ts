@@ -3,6 +3,7 @@ import {
   AuthState,
   LoginCredentials,
   RegisterCredentials,
+  ResetPassword,
   SocialAuthCredentials,
   User,
 } from "./types";
@@ -62,6 +63,7 @@ const authSlice = createSlice({
       state.status = "failed";
       state.error = action.payload;
     },
+
     // Verify email
     verifyTokenRequest: (state, action: PayloadAction<string>) => {
       state.status = "loading";
@@ -72,6 +74,34 @@ const authSlice = createSlice({
       state.error = null;
     },
     verifyTokenFailure: (state, action: PayloadAction<string>) => {
+      state.status = "failed";
+      state.error = action.payload;
+    },
+
+    // Forgot password
+    forgotPasswordRequest: (state, action: PayloadAction<string>) => {
+      state.status = "loading";
+      state.error = null;
+    },
+    forgotPasswordSuccess: (state) => {
+      state.status = "succeeded";
+      state.error = null;
+    },
+    forgotPasswordFailure: (state, action: PayloadAction<string>) => {
+      state.status = "failed";
+      state.error = action.payload;
+    },
+
+    // Reset password
+    resetPasswordRequest: (state, action: PayloadAction<ResetPassword>) => {
+      state.status = "loading";
+      state.error = null;
+    },
+    resetPasswordSuccess: (state) => {
+      state.status = "succeeded";
+      state.error = null;
+    },
+    resetPasswordFailure: (state, action: PayloadAction<string>) => {
       state.status = "failed";
       state.error = action.payload;
     },
@@ -116,6 +146,9 @@ const authSlice = createSlice({
       state.error = null;
     },
 
+    resetStatus: (state, action: PayloadAction<void>) => {
+      state.status = "idle";
+    },
     resetStatusAndError: (state) => {
       state.error = null;
       state.status = "idle";
@@ -136,6 +169,12 @@ export const {
   verifyTokenRequest,
   verifyTokenSuccess,
   verifyTokenFailure,
+  forgotPasswordRequest,
+  forgotPasswordSuccess,
+  forgotPasswordFailure,
+  resetPasswordRequest,
+  resetPasswordSuccess,
+  resetPasswordFailure,
   socialAuthRequest,
   socialAuthSuccess,
   socialAuthFailure,
@@ -143,6 +182,7 @@ export const {
   logoutSuccess,
   logoutFailure,
   logout,
+  resetStatus,
   resetStatusAndError,
 } = authSlice.actions;
 

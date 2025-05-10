@@ -3,7 +3,7 @@ import {
   GithubOutlined,
   GoogleOutlined,
 } from "@ant-design/icons";
-import { Button, Divider, Form, Input } from "antd";
+import { Button, Checkbox, Divider, Flex, Form, Input, Spin } from "antd";
 import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from "react-redux";
@@ -42,6 +42,15 @@ export const LoginPage: React.FC = () => {
     // Implement social login logic here
     console.log(`Login with ${provider}`);
   };
+  if (auth.status === "loading") {
+    return (
+      <div className={styles.container}>
+        <div className={styles.card}>
+          <Spin size="large" className={styles.loading} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>
@@ -55,7 +64,6 @@ export const LoginPage: React.FC = () => {
           <h1 className={styles.title}>{translator.auth.login(t)}</h1>
           <p className={styles.subtitle}>{translator.common.welcome(t)}</p>
         </div>
-
         <Form
           form={form}
           name="login"
@@ -88,7 +96,6 @@ export const LoginPage: React.FC = () => {
               className={styles.input}
             />
           </Form.Item>
-
           <Form.Item
             name="password"
             rules={[
@@ -108,7 +115,16 @@ export const LoginPage: React.FC = () => {
               className={styles.input}
             />
           </Form.Item>
-
+          <Form.Item>
+            <Flex justify="space-between" align="center">
+              <Form.Item name="remember" valuePropName="checked" noStyle>
+                <Checkbox>{translator.auth.remember_me(t)}</Checkbox>
+              </Form.Item>
+              <Link to="/forgot-password" className={styles.link}>
+                {translator.auth.forgot_password(t)}
+              </Link>
+            </Flex>
+          </Form.Item>
           <Form.Item className={styles.formItem}>
             <Button
               type="primary"
@@ -120,7 +136,6 @@ export const LoginPage: React.FC = () => {
             </Button>
           </Form.Item>
         </Form>
-
         <Divider className={styles.divider}>{translator.common.or(t)}</Divider>
 
         <div className={styles.socialLogin}>

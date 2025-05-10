@@ -2,6 +2,7 @@ import axios from "axios";
 import {
   LoginCredentials,
   RegisterCredentials,
+  ResetPassword,
   SocialAuthCredentials,
   User,
 } from "../features/auth/types";
@@ -17,6 +18,8 @@ class AuthService {
     this.logout = this.logout.bind(this);
     this.getCurrentUser = this.getCurrentUser.bind(this);
     this.verifyToken = this.verifyToken.bind(this);
+    this.forgotPassword = this.forgotPassword.bind(this);
+    this.resetPassword = this.resetPassword.bind(this);
   }
 
   async login(credentials: LoginCredentials): Promise<User> {
@@ -58,12 +61,15 @@ class AuthService {
 
   async resendVerification(email: string): Promise<void> {
     try {
-      const response = await axios.post(`${this.baseUrl}/resend-verification`, {
-        headers: {
-          "Content-Type": "application/json",
+      const response = await axios.post(
+        `${this.baseUrl}/resend-verification`,
+        { email },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
         },
-        body: JSON.stringify({ email }),
-      });
+      );
 
       return response.data.data;
     } catch (error: any) {
@@ -76,6 +82,44 @@ class AuthService {
     try {
       const response = await axios.get(
         `${this.baseUrl}/verify-token?token=${token}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.message;
+      throw new Error(message);
+    }
+  }
+
+  async forgotPassword(email: string): Promise<void> {
+    try {
+      const response = await axios.post(
+        `${this.baseUrl}/forgot-password`,
+        { email },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.message;
+      throw new Error(message);
+    }
+  }
+
+  async resetPassword(resetPassword: ResetPassword): Promise<void> {
+    try {
+      const response = await axios.post(
+        `${this.baseUrl}/reset-password`,
+        { password: resetPassword.password, token: resetPassword.token },
         {
           headers: {
             "Content-Type": "application/json",

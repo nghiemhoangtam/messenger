@@ -3,6 +3,9 @@ import { call, put, takeLatest } from "redux-saga/effects";
 import { authService } from "../../services/authService";
 import { INTERNAL_SERVER } from "../../utils/constants/message.constant";
 import {
+  forgotPasswordFailure,
+  forgotPasswordRequest,
+  forgotPasswordSuccess,
   loginFailure,
   loginRequest,
   loginSuccess,
@@ -15,6 +18,9 @@ import {
   resendVerificationFailure,
   resendVerificationRequest,
   resendVerificationSuccess,
+  resetPasswordFailure,
+  resetPasswordRequest,
+  resetPasswordSuccess,
   socialAuthFailure,
   socialAuthRequest,
   socialAuthSuccess,
@@ -24,6 +30,7 @@ import {
 import {
   LoginCredentials,
   RegisterCredentials,
+  ResetPassword,
   SocialAuthCredentials,
   User,
 } from "./types";
@@ -65,8 +72,8 @@ function* handleResendVerification(action: PayloadAction<string>) {
   } catch (error) {
     yield put(
       resendVerificationFailure(
-        error instanceof Error
-          ? error.message && error.message
+        error instanceof Error && error.message
+          ? error.message
           : INTERNAL_SERVER,
       ),
     );
@@ -80,8 +87,38 @@ function* handleVerifyToken(action: PayloadAction<string>) {
   } catch (error) {
     yield put(
       resendVerificationFailure(
-        error instanceof Error
-          ? error.message && error.message
+        error instanceof Error && error.message
+          ? error.message
+          : INTERNAL_SERVER,
+      ),
+    );
+  }
+}
+
+function* handleForgotPassword(action: PayloadAction<string>) {
+  try {
+    yield call(authService.forgotPassword, action.payload);
+    yield put(forgotPasswordSuccess());
+  } catch (error) {
+    yield put(
+      forgotPasswordFailure(
+        error instanceof Error && error.message
+          ? error.message
+          : INTERNAL_SERVER,
+      ),
+    );
+  }
+}
+
+function* handleResetPassword(action: PayloadAction<ResetPassword>) {
+  try {
+    yield call(authService.resetPassword, action.payload);
+    yield put(resetPasswordSuccess());
+  } catch (error) {
+    yield put(
+      resetPasswordFailure(
+        error instanceof Error && error.message
+          ? error.message
           : INTERNAL_SERVER,
       ),
     );
@@ -123,6 +160,8 @@ export function* authSaga() {
   yield takeLatest(registerRequest.type, handleRegister);
   yield takeLatest(resendVerificationRequest.type, handleResendVerification);
   yield takeLatest(verifyTokenRequest.type, handleVerifyToken);
+  yield takeLatest(forgotPasswordRequest.type, handleForgotPassword);
+  yield takeLatest(resetPasswordRequest.type, handleResetPassword);
   yield takeLatest(socialAuthRequest.type, handleSocialAuth);
   yield takeLatest(logoutRequest.type, handleLogout);
 }
