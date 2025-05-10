@@ -426,52 +426,62 @@ export class AuthV1Service extends BaseService {
     ip_address: string,
     user_agent?: string,
   ): Promise<LoginInfoResponse> {
-    return this.handle(async () => {
-      const tokenSearched = await this.tokenModel.findOne({
-        refresh_token,
-        ip_address,
-        user_agent,
-      });
-      if (!tokenSearched) {
-        const msg = await this.messageService.get(MessageCode.INVALID_TOKEN);
-        throw new UnauthorizedException(msg);
-      }
-      if (tokenSearched.expired_at.getTime() < Date.now()) {
-        const msg = await this.messageService.get(MessageCode.TOKEN_EXPIRED);
-        throw new UnauthorizedException(msg);
-      }
-      if (tokenSearched.revoked_at) {
-        const msg = await this.messageService.get(
-          MessageCode.REFRESH_TOKEN_IS_USED,
-        );
-        throw new UnauthorizedException(msg);
-      }
-      const user = await this.userModel.findById(tokenSearched.user);
-      if (!user) {
-        const msg = await this.messageService.get(MessageCode.USER_NOT_FOUND, {
-          email: tokenSearched.user,
+    return this.handle(
+      async () => {
+        const tokenSearched = await this.tokenModel.findOne({
+          refresh_token,
+          ip_address,
+          user_agent,
         });
-        throw new NotFoundException(msg);
-      }
+        if (!tokenSearched) {
+          const msg = await this.messageService.get(MessageCode.INVALID_TOKEN);
+          throw new UnauthorizedException(msg);
+        }
+        this.jwtService.verify(refresh_token, {
+          secret: this.configService.get<string>('JWT_SECRET'),
+        });
+        if (tokenSearched.revoked_at) {
+          const msg = await this.messageService.get(
+            MessageCode.REFRESH_TOKEN_IS_USED,
+          );
+          throw new UnauthorizedException(msg);
+        }
+        const user = await this.userModel.findById(tokenSearched.user);
+        if (!user) {
+          const msg = await this.messageService.get(
+            MessageCode.USER_NOT_FOUND,
+            {
+              email: tokenSearched.user,
+            },
+          );
+          throw new NotFoundException(msg);
+        }
 
-      tokenSearched.revoked_at = new Date();
-      await tokenSearched.save();
+        tokenSearched.revoked_at = new Date();
+        await tokenSearched.save();
 
-      const token = this.createNewToken(user);
-      const newToken = new this.tokenModel({
-        user: user._id,
-        access_token: token.access_token,
-        refresh_token: token.refresh_token,
-        user_agent: user_agent,
-        ip_address,
-        expired_at: plusMinute(1),
-      });
-      await newToken.save();
+        const token = this.createNewToken(user);
+        const newToken = new this.tokenModel({
+          user: user._id,
+          access_token: token.access_token,
+          refresh_token: token.refresh_token,
+          user_agent: user_agent,
+          ip_address,
+          expired_at: plusMinute(1),
+        });
+        await newToken.save();
 
-      return {
-        access_token: newToken.access_token,
-        refresh_token: newToken.refresh_token,
-      };
-    });
+        return {
+          access_token: newToken.access_token,
+          refresh_token: newToken.refresh_token,
+        };
+      },
+      async (error: unknown) => {
+        if (error instanceof jwt.TokenExpiredError) {
+          const msg = await this.messageService.get(MessageCode.TOKEN_EXPIRED);
+          throw new UnauthorizedException(msg);
+        }
+      },
+    );
   }
 }
