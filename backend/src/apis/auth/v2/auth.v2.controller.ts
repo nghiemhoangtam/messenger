@@ -1,11 +1,10 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { MessageService } from 'src/common/messages/message.service';
 
 @ApiTags('auth')
 @Controller({ path: 'auth', version: '2' })
 export class AuthV2Controller {
-  constructor(private readonly messageService: MessageService) {}
+  constructor() {}
 
   @Get('welcome')
   @ApiOperation({

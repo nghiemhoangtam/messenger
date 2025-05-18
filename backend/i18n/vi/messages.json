@@ -3,7 +3,7 @@
   "TOKEN_NOT_PROVIDED": "Không có mã token nào được cung cấp.",
   "TOKEN_EXPIRED": "Mã token đã hết hạn.",
   "INVALID_TOKEN": "Token không hợp lệ.",
-  "USER_ALREADY_EXISTS": "Email {email} đã tồn tại.",
+  "USER_ALREADY_EXISTS": "Email {params.email} đã tồn tại.",
   "VERIFY_EMAIL_SUBJECT": "Xác minh email của bạn",
   "VERIFY_EMAIL_TEMPLATE": "<p>Nhấn <a href=\"{url}\">vào đây</a> để xác minh email của bạn.</p>",
   "CORS_ORIGIN_MISSING": "Thiếu header Origin. Có thể có vi phạm CORS hoặc yêu cầu không phải từ trình duyệt.",

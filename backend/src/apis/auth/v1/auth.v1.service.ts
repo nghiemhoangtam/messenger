@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   HttpException,
   Injectable,
   InternalServerErrorException,
@@ -12,9 +13,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 import { Model } from 'mongoose';
-import { I18nContext } from 'nestjs-i18n';
 import { MessageCode } from 'src/common/messages/message.enum';
-import { MessageService } from 'src/common/messages/message.service';
 import { BaseService } from 'src/common/services/base.service';
 import { plusMinute } from 'src/utils/date.utils';
 import { randomString } from 'src/utils/random.utils';
@@ -36,9 +35,8 @@ export class AuthV1Service extends BaseService {
     private tokenModel: Model<Token>,
     private jwtService: JwtService,
     private configService: ConfigService,
-    messageService: MessageService,
   ) {
-    super(messageService);
+    super();
   }
 
   async register(registerDto: RegisterDto, origin: string): Promise<User> {
@@ -48,13 +46,14 @@ export class AuthV1Service extends BaseService {
         true,
       );
       if (isExistValidUser) {
-        const msg = await this.messageService.get(
-          MessageCode.USER_ALREADY_EXISTS,
+        throw new UnauthorizedException([
           {
-            email: registerDto.email,
+            code: MessageCode.USER_ALREADY_EXISTS,
+            params: {
+              email: registerDto.email,
+            },
           },
-        );
-        throw new UnauthorizedException(msg);
+        ]);
       }
       await this.deleteUserByEmail(registerDto.email);
       await this.createVerifyEmail(registerDto.email, origin);
@@ -70,10 +69,7 @@ export class AuthV1Service extends BaseService {
     return this.handle(async () => {
       const user = await this.userModel.findOne({ email: loginDto.email });
       if (!user || !(await bcrypt.compare(loginDto.password, user.password))) {
-        const msg = await this.messageService.get(
-          MessageCode.INVALID_CREDENTIALS,
-        );
-        throw new UnauthorizedException(msg);
+        throw new UnauthorizedException(MessageCode.INVALID_CREDENTIALS);
       }
       const token = this.createNewToken(user);
       const newToken = new this.tokenModel({
@@ -141,8 +137,7 @@ export class AuthV1Service extends BaseService {
       if (error instanceof HttpException) {
         throw error;
       }
-      const msg = await this.messageService.get(MessageCode.INTERNAL_SERVER);
-      throw new InternalServerErrorException(msg);
+      throw new InternalServerErrorException(MessageCode.INTERNAL_SERVER);
     }
   }
 
@@ -150,16 +145,15 @@ export class AuthV1Service extends BaseService {
     return this.handle(async () => {
       const existsValidUser: boolean = await this.existsUser(email);
       if (!existsValidUser) {
-        const msg = await this.messageService.get(MessageCode.USER_NOT_FOUND, {
-          email,
-        });
-        throw new NotFoundException(msg);
+        throw new NotFoundException([
+          { code: MessageCode.USER_NOT_FOUND, params: email },
+        ]);
       }
       await this.createVerifyEmail(email, origin);
     });
   }
 
-  async verifyToken(token: string, i18n: I18nContext): Promise<User> {
+  async verifyToken(token: string): Promise<User> {
     return this.handle(
       async () => {
         const decoded = this.jwtService.verify<{ email: string }>(token, {
@@ -169,23 +163,19 @@ export class AuthV1Service extends BaseService {
         const user = await this.userModel.findOne({ email: decoded.email });
 
         if (!user) {
-          const msg = await this.messageService.get(
-            MessageCode.INVALID_TOKEN,
-            i18n,
-          );
-          throw new UnauthorizedException(msg);
+          throw new UnauthorizedException([
+            { code: MessageCode.INVALID_TOKEN },
+          ]);
         }
 
         user.is_active = true;
         return user.save();
       },
-      async (error: unknown) => {
+      (error: unknown) => {
         if (error instanceof jwt.TokenExpiredError) {
-          const msg = await this.messageService.get(
-            MessageCode.TOKEN_EXPIRED,
-            i18n,
-          );
-          throw new UnauthorizedException(msg);
+          throw new UnauthorizedException([
+            { code: MessageCode.TOKEN_EXPIRED },
+          ]);
         }
       },
     );
@@ -197,10 +187,9 @@ export class AuthV1Service extends BaseService {
       if (validUser) {
         await this.createTokenResetPassword(validUser, origin);
       } else {
-        const msg = await this.messageService.get(MessageCode.USER_NOT_FOUND, {
-          email,
-        });
-        throw new NotFoundException(msg);
+        throw new NotFoundException([
+          { code: MessageCode.USER_NOT_FOUND, params: { email } },
+        ]);
       }
     });
   }
@@ -213,12 +202,12 @@ export class AuthV1Service extends BaseService {
           is_used: false,
         });
       if (!tokenSearch) {
-        const msg = await this.messageService.get(MessageCode.INVALID_TOKEN);
-        throw new BadRequestException(msg);
+        throw new BadRequestException({ code: MessageCode.INVALID_TOKEN });
       } else {
         if (tokenSearch.expired_at.getTime() < Date.now()) {
-          const msg = await this.messageService.get(MessageCode.TOKEN_EXPIRED);
-          throw new UnauthorizedException(msg);
+          throw new UnauthorizedException([
+            { code: MessageCode.TOKEN_EXPIRED },
+          ]);
         } else {
           const hashedPassword = await bcrypt.hash(
             resetPasswordDto.password,
@@ -319,15 +308,8 @@ export class AuthV1Service extends BaseService {
 
   private async sendResetPasswordEmail(email: string, url: string) {
     return this.handle(async () => {
-      const subject = await this.messageService.get(
-        MessageCode.RESET_PASSWORD_SUBJECT,
-      );
-
-      const html = await this.messageService.get(
-        MessageCode.RESET_EMAIL_TEMPLATE,
-        { url },
-      );
-
+      const subject = MessageCode.RESET_PASSWORD_SUBJECT;
+      const html = MessageCode.RESET_EMAIL_TEMPLATE + url;
       await sendSimpleMail(email, subject, html);
     });
   }
@@ -343,20 +325,15 @@ export class AuthV1Service extends BaseService {
         );
         const user = await this.userModel.findById(payload.id);
         if (!user) {
-          const msg = await this.messageService.get(
-            MessageCode.USER_NOT_FOUND,
-            {
-              email: payload.email,
-            },
-          );
-          throw new NotFoundException(msg);
+          throw new ForbiddenException([{ code: MessageCode.FORBIDDEN }]);
         }
         return user;
       },
-      async (error: unknown) => {
+      (error: unknown) => {
         if (error instanceof jwt.TokenExpiredError) {
-          const msg = await this.messageService.get(MessageCode.TOKEN_EXPIRED);
-          throw new UnauthorizedException(msg);
+          throw new UnauthorizedException([
+            { code: MessageCode.TOKEN_EXPIRED },
+          ]);
         }
       },
     );
@@ -364,14 +341,8 @@ export class AuthV1Service extends BaseService {
 
   private async sendVerificationEmail(email: string, url: string) {
     return this.handle(async () => {
-      const subject = await this.messageService.get(
-        MessageCode.VERIFY_EMAIL_SUBJECT,
-      );
-
-      const html = await this.messageService.get(
-        MessageCode.VERIFY_EMAIL_TEMPLATE,
-        { url },
-      );
+      const subject = MessageCode.VERIFY_EMAIL_SUBJECT;
+      const html = MessageCode.VERIFY_EMAIL_TEMPLATE + url;
       await sendSimpleMail(email, subject, html);
     });
   }
@@ -404,8 +375,7 @@ export class AuthV1Service extends BaseService {
     return this.handle(async () => {
       const user = await this.userModel.findById(userId);
       if (!user) {
-        const msg = await this.messageService.get(MessageCode.FORBIDDEN);
-        throw new NotFoundException(msg);
+        throw new NotFoundException([{ code: MessageCode.FORBIDDEN }]);
       }
       const response: CurrentUserResponse = {
         id: user._id as string,
@@ -432,27 +402,26 @@ export class AuthV1Service extends BaseService {
           user_agent,
         });
         if (!tokenSearched) {
-          const msg = await this.messageService.get(MessageCode.INVALID_TOKEN);
-          throw new UnauthorizedException(msg);
+          throw new UnauthorizedException([
+            { code: MessageCode.INVALID_TOKEN },
+          ]);
         }
         this.jwtService.verify(refresh_token, {
           secret: this.configService.get<string>('JWT_SECRET'),
         });
         if (tokenSearched.revoked_at) {
-          const msg = await this.messageService.get(
-            MessageCode.REFRESH_TOKEN_IS_USED,
-          );
-          throw new UnauthorizedException(msg);
+          throw new UnauthorizedException([
+            { code: MessageCode.REFRESH_TOKEN_IS_USED },
+          ]);
         }
         const user = await this.userModel.findById(tokenSearched.user);
         if (!user) {
-          const msg = await this.messageService.get(
-            MessageCode.USER_NOT_FOUND,
+          throw new NotFoundException([
             {
-              email: tokenSearched.user,
+              code: MessageCode.USER_NOT_FOUND,
+              email: tokenSearched.user.email,
             },
-          );
-          throw new NotFoundException(msg);
+          ]);
         }
 
         tokenSearched.revoked_at = new Date();
@@ -473,10 +442,11 @@ export class AuthV1Service extends BaseService {
           refresh_token: newToken.refresh_token,
         };
       },
-      async (error: unknown) => {
+      (error: unknown) => {
         if (error instanceof jwt.TokenExpiredError) {
-          const msg = await this.messageService.get(MessageCode.TOKEN_EXPIRED);
-          throw new UnauthorizedException(msg);
+          throw new UnauthorizedException([
+            { code: MessageCode.TOKEN_EXPIRED },
+          ]);
         }
       },
     );

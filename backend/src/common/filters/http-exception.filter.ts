@@ -8,6 +8,10 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 
+const VALIDATION_ERROR = 'VALIDATION_ERROR';
+const BUSINESS_ERROR = 'BUSINESS_ERROR';
+const NOT_FOUND_ERROR = 'NOT_FOUND';
+
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
@@ -17,40 +21,62 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    let status = HttpStatus.INTERNAL_SERVER_ERROR;
-    let message = 'Internal server error';
-    let errorType = 'Internal Server Error';
+    let errorType = '';
     let stack = '';
 
     if (exception instanceof HttpException) {
       const res = exception.getResponse();
-      status = exception.getStatus();
+      const status = exception.getStatus();
+
       if (typeof res === 'object' && res !== null) {
-        const errRes = res as { message?: string | string[]; error?: string };
-        message = Array.isArray(errRes.message)
-          ? errRes.message.join(', ')
-          : (errRes.message ?? exception.message);
+        const errRes = res as {
+          message: any[];
+          error?: string;
+        };
         errorType = errRes.error ?? exception.name;
         stack = exception.stack ?? '';
-      } else {
-        message = exception.message;
-        errorType = exception.name;
-        stack = exception.stack ?? '';
+        let errorCode: string;
+        let message: {
+          code: string;
+          params: any;
+        }[] = [];
+
+        if ((status as HttpStatus) === HttpStatus.BAD_REQUEST) {
+          errorCode = VALIDATION_ERROR;
+          message = errRes.message.map(
+            (item: { code: string; field: string }) => {
+              let code: string = 'UNDEFINED';
+              let params: string | null = null;
+              if (item.code === 'isNotEmpty') {
+                code = 'REQUIRED';
+                params = item.field;
+              }
+              return {
+                code,
+                params,
+              };
+            },
+          );
+        } else if ((status as HttpStatus) === HttpStatus.NOT_FOUND) {
+          errorCode = NOT_FOUND_ERROR;
+        } else {
+          errorCode = BUSINESS_ERROR;
+          message = errRes.message as { code: string; params: any }[];
+        }
+        response.status(status).json({
+          statusCode: status,
+          code: errorCode,
+          messages: message,
+          timestamp: new Date().toISOString(),
+          path: request.url,
+        });
       }
     }
 
     const fileInfo = this.extractFileLine(stack);
-    this.logger.error(
-      `[${errorType}] ${message}\nAt: ${fileInfo}\nRequest: ${request.method} ${request.url}`,
+    this.logger.warn(
+      `[${errorType}] \nAt: ${fileInfo}\nRequest: ${request.method} ${request.url}`,
     );
-
-    response.status(status).json({
-      statusCode: status,
-      message,
-      errorType,
-      timestamp: new Date().toISOString(),
-      path: request.url,
-    });
   }
 
   private extractFileLine(stack: string): string {
