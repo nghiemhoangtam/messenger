@@ -7,6 +7,7 @@ import { useShowError } from "../../../../hooks/useShowError";
 import { AppDispatch, RootState } from "../../../../store";
 import * as translator from "../../../../utils/translator";
 import { verifyTokenRequest } from "../../authSlice";
+import { useClearUpError } from "../../hooks/useClearUpError";
 import styles from "../../styles/Auth.module.css";
 
 export const ResultVerifyTokenPage: React.FC = () => {
@@ -16,6 +17,8 @@ export const ResultVerifyTokenPage: React.FC = () => {
   const { t } = useTranslation();
 
   useShowError(auth.error);
+
+  useClearUpError();
 
   useEffect(() => {
     const token = new URLSearchParams(window.location.search).get("token");

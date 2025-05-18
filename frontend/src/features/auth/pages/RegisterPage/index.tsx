@@ -12,6 +12,7 @@ import { useShowError } from "../../../../hooks/useShowError";
 import { AppDispatch, RootState } from "../../../../store";
 import * as translator from "../../../../utils/translator";
 import { registerRequest, resetStatus } from "../../authSlice";
+import { useClearUpError } from "../../hooks/useClearUpError";
 import styles from "../../styles/Auth.module.css";
 interface RegisterForm {
   email: string;
@@ -28,6 +29,8 @@ export const RegisterPage: React.FC = () => {
   const { t } = useTranslation();
 
   useShowError(auth.error);
+
+  useClearUpError();
 
   useEffect(() => {
     if (auth.isAuthenticated) {

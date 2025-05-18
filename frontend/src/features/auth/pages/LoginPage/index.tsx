@@ -12,6 +12,7 @@ import { useShowError } from "../../../../hooks/useShowError";
 import { AppDispatch, RootState } from "../../../../store";
 import * as translator from "../../../../utils/translator";
 import { loginRequest } from "../../authSlice";
+import { useClearUpError } from "../../hooks/useClearUpError";
 import styles from "../../styles/Auth.module.css";
 
 interface LoginForm {
@@ -27,6 +28,7 @@ export const LoginPage: React.FC = () => {
   const { t } = useTranslation();
 
   useShowError(auth.error);
+  useClearUpError();
 
   useEffect(() => {
     if (auth.isAuthenticated) {

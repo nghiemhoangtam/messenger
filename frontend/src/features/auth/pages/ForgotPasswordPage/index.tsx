@@ -7,6 +7,7 @@ import { useShowError } from "../../../../hooks/useShowError";
 import { AppDispatch, RootState } from "../../../../store";
 import * as translator from "../../../../utils/translator";
 import { forgotPasswordRequest, resetStatus } from "../../authSlice";
+import { useClearUpError } from "../../hooks/useClearUpError";
 import styles from "../../styles/Auth.module.css";
 
 interface ForgotPasswordForm {
@@ -21,6 +22,7 @@ export const ForgotPasswordPage: React.FC = () => {
   const { t } = useTranslation();
 
   useShowError(auth.error);
+  useClearUpError();
 
   useEffect(() => {
     if (auth.isAuthenticated) {

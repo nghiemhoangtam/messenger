@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useShowError } from "../../../../hooks/useShowError";
 import { RootState } from "../../../../store";
 import { getUserInfoRequest } from "../../authSlice";
+import { useClearUpError } from "../../hooks/useClearUpError";
 import styles from "../../styles/Auth.module.css";
 
 export const RedirectSocialLoginPage: React.FC = () => {
@@ -13,6 +14,8 @@ export const RedirectSocialLoginPage: React.FC = () => {
   const dispatch = useDispatch();
 
   useShowError(auth.error);
+
+  useClearUpError();
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);

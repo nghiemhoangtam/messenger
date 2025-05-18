@@ -10,6 +10,7 @@ import * as translator from "../../../../utils/translator";
 import {
   resendVerificationRequest
 } from "../../authSlice";
+import { useClearUpError } from "../../hooks/useClearUpError";
 import styles from "../../styles/Auth.module.css";
 
 export const VerifyTokenPage: React.FC = () => {
@@ -18,6 +19,8 @@ export const VerifyTokenPage: React.FC = () => {
   const { t } = useTranslation();
 
   useShowError(auth.error);
+
+  useClearUpError();
 
   if (auth.isAuthenticated) {
     return <Navigate to="/" />;
