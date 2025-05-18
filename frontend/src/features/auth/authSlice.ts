@@ -1,4 +1,5 @@
 import { PayloadAction, createSlice } from "@reduxjs/toolkit";
+import { ErrorState } from "../../types/error";
 import {
   AuthState,
   LoginCredentials,
@@ -15,130 +16,83 @@ const initialState: AuthState = {
   error: null,
 };
 
+const setLoading = (state: AuthState) => {
+  state.status = "loading";
+  state.error = null;
+};
+
 const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
     // Login with email/password
-    loginRequest: (state, action: PayloadAction<LoginCredentials>) => {
-      state.status = "loading";
-      state.error = null;
-    },
+    loginRequest: (state, action: PayloadAction<LoginCredentials>) =>
+      setLoading(state),
     loginSuccess: (state, action: PayloadAction<User>) => {
       state.user = action.payload;
       state.isAuthenticated = true;
       state.status = "succeeded";
       state.error = null;
     },
-    loginFailure: (state, action: PayloadAction<string>) => {
-      state.status = "failed";
-      state.error = action.payload;
-    },
 
     // Register with email/password
-    registerRequest: (state, action: PayloadAction<RegisterCredentials>) => {
-      state.status = "loading";
-      state.error = null;
-    },
+    registerRequest: (state, action: PayloadAction<RegisterCredentials>) =>
+      setLoading(state),
     registerSuccess: (state, action: PayloadAction<User>) => {
       state.user = action.payload;
       state.status = "succeeded";
       state.error = null;
     },
-    registerFailure: (state, action: PayloadAction<string>) => {
-      state.status = "failed";
-      state.error = action.payload;
-    },
 
     // Resend verification email
-    resendVerificationRequest: (state, action: PayloadAction<string>) => {
-      state.status = "loading";
-      state.error = null;
-    },
+    resendVerificationRequest: (state, action: PayloadAction<string>) =>
+      setLoading(state),
     resendVerificationSuccess: (state) => {
       state.status = "succeeded";
       state.error = null;
     },
-    resendVerificationFailure: (state, action: PayloadAction<string>) => {
-      state.status = "failed";
-      state.error = action.payload;
-    },
 
     // Verify email
-    verifyTokenRequest: (state, action: PayloadAction<string>) => {
-      state.status = "loading";
-      state.error = null;
-    },
+    verifyTokenRequest: (state, action: PayloadAction<string>) =>
+      setLoading(state),
     verifyTokenSuccess: (state) => {
       state.status = "succeeded";
       state.error = null;
     },
-    verifyTokenFailure: (state, action: PayloadAction<string>) => {
-      state.status = "failed";
-      state.error = action.payload;
-    },
 
     // Forgot password
-    forgotPasswordRequest: (state, action: PayloadAction<string>) => {
-      state.status = "loading";
-      state.error = null;
-    },
+    forgotPasswordRequest: (state, action: PayloadAction<string>) =>
+      setLoading(state),
     forgotPasswordSuccess: (state) => {
       state.status = "succeeded";
       state.error = null;
     },
-    forgotPasswordFailure: (state, action: PayloadAction<string>) => {
-      state.status = "failed";
-      state.error = action.payload;
-    },
 
     // Reset password
-    resetPasswordRequest: (state, action: PayloadAction<ResetPassword>) => {
-      state.status = "loading";
-      state.error = null;
-    },
+    resetPasswordRequest: (state, action: PayloadAction<ResetPassword>) =>
+      setLoading(state),
     resetPasswordSuccess: (state) => {
       state.status = "succeeded";
       state.error = null;
     },
-    resetPasswordFailure: (state, action: PayloadAction<string>) => {
-      state.status = "failed";
-      state.error = action.payload;
-    },
 
     // Social authentication
-    socialAuthRequest: (
-      state,
-      action: PayloadAction<SocialAuthCredentials>,
-    ) => {
-      state.status = "loading";
-      state.error = null;
-    },
+    socialAuthRequest: (state, action: PayloadAction<SocialAuthCredentials>) =>
+      setLoading(state),
     socialAuthSuccess: (state, action: PayloadAction<User>) => {
       state.user = action.payload;
       state.isAuthenticated = true;
       state.status = "succeeded";
       state.error = null;
     },
-    socialAuthFailure: (state, action: PayloadAction<string>) => {
-      state.status = "failed";
-      state.error = action.payload;
-    },
 
     // Logout
-    logoutRequest: (state) => {
-      state.status = "loading";
-      state.error = null;
-    },
+    logoutRequest: (state) => setLoading(state),
     logoutSuccess: (state) => {
       state.user = null;
       state.isAuthenticated = false;
       state.status = "succeeded";
       state.error = null;
-    },
-    logoutFailure: (state, action: PayloadAction<string>) => {
-      state.status = "failed";
-      state.error = action.payload;
     },
     logout: (state) => {
       state.user = null;
@@ -155,17 +109,15 @@ const authSlice = createSlice({
     },
 
     // Set user info
-    getUserInfoRequest: (state, action: PayloadAction<void>) => {
-      state.status = "loading";
-      state.error = null;
-    },
+    getUserInfoRequest: (state, action: PayloadAction<void>) =>
+      setLoading(state),
     getUserInfoSuccess: (state, action: PayloadAction<User>) => {
       state.user = action.payload;
       state.status = "succeeded";
       state.error = null;
       state.isAuthenticated = true;
     },
-    getUserInfoFailure: (state, action: PayloadAction<string>) => {
+    setCommonFailed: (state: AuthState, action: PayloadAction<ErrorState>) => {
       state.status = "failed";
       state.error = action.payload;
     },
@@ -175,34 +127,26 @@ const authSlice = createSlice({
 export const {
   loginRequest,
   loginSuccess,
-  loginFailure,
   registerRequest,
   registerSuccess,
-  registerFailure,
   resendVerificationRequest,
   resendVerificationSuccess,
-  resendVerificationFailure,
   verifyTokenRequest,
   verifyTokenSuccess,
-  verifyTokenFailure,
   forgotPasswordRequest,
   forgotPasswordSuccess,
-  forgotPasswordFailure,
   resetPasswordRequest,
   resetPasswordSuccess,
-  resetPasswordFailure,
   socialAuthRequest,
   socialAuthSuccess,
-  socialAuthFailure,
   logoutRequest,
   logoutSuccess,
-  logoutFailure,
   logout,
   resetStatus,
   resetStatusAndError,
   getUserInfoRequest,
   getUserInfoSuccess,
-  getUserInfoFailure,
+  setCommonFailed,
 } = authSlice.actions;
 
 export default authSlice.reducer;

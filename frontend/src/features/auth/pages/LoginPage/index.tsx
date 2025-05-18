@@ -8,7 +8,7 @@ import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
-import { useInternalError } from "../../../../hooks/useInternalError";
+import { useShowError } from "../../../../hooks/useShowError";
 import { AppDispatch, RootState } from "../../../../store";
 import * as translator from "../../../../utils/translator";
 import { loginRequest } from "../../authSlice";
@@ -26,7 +26,7 @@ export const LoginPage: React.FC = () => {
   const [form] = Form.useForm<LoginForm>();
   const { t } = useTranslation();
 
-  useInternalError(auth.error);
+  useShowError(auth.error);
 
   useEffect(() => {
     if (auth.isAuthenticated) {

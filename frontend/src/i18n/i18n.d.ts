@@ -41,6 +41,24 @@ declare module "i18next" {
         new_password: string;
         setup_new_password: string;
       };
+      messages: {
+        INVALID_CREDENTIALS: string;
+        TOKEN_NOT_PROVIDED: string;
+        TOKEN_EXPIRED: string;
+        INVALID_TOKEN: string;
+        USER_ALREADY_EXISTS: string;
+        VERIFY_EMAIL_SUBJECT: string;
+        VERIFY_EMAIL_TEMPLATE: string;
+        CORS_ORIGIN_MISSING: string;
+        USER_NOT_FOUND: string;
+        RESET_PASSWORD_SUBJECT: string;
+        RESET_EMAIL_TEMPLATE: string;
+        UNAUTHORIZED: string;
+        FORBIDDEN: string;
+        BAD_REQUEST: string;
+        INTERNAL_SERVER: string;
+        REFRESH_TOKEN_IS_USED: string;
+      };
     };
   }
 }

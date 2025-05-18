@@ -2,7 +2,7 @@
 
 This document provides a comprehensive overview of all API endpoints in the application.
 
-Generated automatically on 2025-05-18T16:47:14.683Z.
+Generated automatically on 2025-05-18T16:48:04.962Z.
 
 ## /auth/welcome (Version: v1)
 

@@ -1,3 +1,5 @@
+import { ErrorState } from "../../types/error";
+
 export interface User {
   id: string;
   email: string;
@@ -31,5 +33,5 @@ export interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   status: RequestStatus;
-  error: string | null;
+  error: ErrorState;
 }

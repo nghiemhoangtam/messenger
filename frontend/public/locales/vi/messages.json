@@ -1,0 +1,18 @@
+{
+  "INVALID_CREDENTIALS": "Tên đăng nhập hoặc mật khẩu không đúng.",
+  "TOKEN_NOT_PROVIDED": "Không có mã token nào được cung cấp.",
+  "TOKEN_EXPIRED": "Mã token đã hết hạn.",
+  "INVALID_TOKEN": "Token không hợp lệ.",
+  "USER_ALREADY_EXISTS": "Email {{params.email}} đã tồn tại.",
+  "VERIFY_EMAIL_SUBJECT": "Xác minh email của bạn",
+  "VERIFY_EMAIL_TEMPLATE": "<p>Nhấn <a href=\"{url}\">vào đây</a> để xác minh email của bạn.</p>",
+  "CORS_ORIGIN_MISSING": "Thiếu header Origin. Có thể có vi phạm CORS hoặc yêu cầu không phải từ trình duyệt.",
+  "USER_NOT_FOUND": "Không tìm thấy email {{params.email}}",
+  "RESET_PASSWORD_SUBJECT": "Thiết lập lại mật khẩu của bạn",
+  "RESET_EMAIL_TEMPLATE": "<p>Click <a href=\"{url}\">đây</a> để thiết lập lại tài khoản của bạn.</p>",
+  "UNAUTHORIZED": "Bạn không có quyền truy cập vào tài nguyên này.",
+  "FORBIDDEN": "Bạn không có quyền truy cập vào tài nguyên này.",
+  "BAD_REQUEST": "Yêu cầu không hợp lệ.",
+  "INTERNAL_SERVER": "Lỗi máy chủ nội bộ.",
+  "REFRESH_TOKEN_IS_USED": "Mã thông báo làm mới đã được sử dụng."
+}
