@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 
+const INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR';
 const VALIDATION_ERROR = 'VALIDATION_ERROR';
 const BUSINESS_ERROR = 'BUSINESS_ERROR';
 const NOT_FOUND_ERROR = 'NOT_FOUND';
@@ -59,6 +60,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
           );
         } else if ((status as HttpStatus) === HttpStatus.NOT_FOUND) {
           errorCode = NOT_FOUND_ERROR;
+          message = errRes.message as { code: string; params: any }[];
+        } else if (
+          (status as HttpStatus) === HttpStatus.INTERNAL_SERVER_ERROR
+        ) {
+          errorCode = INTERNAL_SERVER_ERROR;
         } else {
           errorCode = BUSINESS_ERROR;
           message = errRes.message as { code: string; params: any }[];
