@@ -3,11 +3,9 @@ import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { useShowError } from "../../../../hooks/useShowError";
 import { AppDispatch, RootState } from "../../../../store";
 import * as translator from "../../../../utils/translator";
 import { verifyTokenRequest } from "../../authSlice";
-import { useClearUpError } from "../../hooks/useClearUpError";
 import styles from "../../styles/Auth.module.css";
 
 export const ResultVerifyTokenPage: React.FC = () => {
@@ -15,10 +13,6 @@ export const ResultVerifyTokenPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const { t } = useTranslation();
-
-  useShowError(auth.error);
-
-  useClearUpError();
 
   useEffect(() => {
     const token = new URLSearchParams(window.location.search).get("token");

@@ -7,6 +7,7 @@ export function useClearUpError() {
 
   useEffect(() => {
     return () => {
+      console.log("unmount");
       dispatch(resetStatusAndError());
     };
   }, [dispatch]);

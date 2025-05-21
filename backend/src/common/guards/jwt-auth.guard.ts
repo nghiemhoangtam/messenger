@@ -22,7 +22,9 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     const token = this.extractTokenFromHeader(request);
     try {
       if (!token) {
-        throw new UnauthorizedException(MessageCode.TOKEN_NOT_PROVIDED);
+        throw new UnauthorizedException([
+          { code: MessageCode.TOKEN_NOT_PROVIDED },
+        ]);
       }
       const payload: { id: string; email: string } = this.jwtService.verify(
         token,
@@ -32,7 +34,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       );
       const user = await this.userModel.findById(payload.id);
       if (!user) {
-        throw new UnauthorizedException(MessageCode.USER_NOT_FOUND);
+        throw new UnauthorizedException([{ code: MessageCode.USER_NOT_FOUND }]);
       }
       request.user = {
         id: user._id as string,
@@ -40,9 +42,9 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       };
     } catch (error) {
       if (error instanceof TokenExpiredError) {
-        throw new UnauthorizedException(MessageCode.TOKEN_EXPIRED);
+        throw new UnauthorizedException([{ code: MessageCode.TOKEN_EXPIRED }]);
       } else {
-        throw new UnauthorizedException(MessageCode.INVALID_TOKEN);
+        throw new UnauthorizedException([{ code: MessageCode.INVALID_TOKEN }]);
       }
     }
     return true;

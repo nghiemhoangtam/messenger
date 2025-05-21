@@ -11,6 +11,7 @@ export function useShowError(error: ErrorState) {
   const dispatch = useDispatch();
 
   useEffect(() => {
+    console.log(error);
     if (error) {
       if (error.code === BUSINESS_ERROR || error.code === VALIDATION_ERROR) {
         error.messages.forEach((element) => {

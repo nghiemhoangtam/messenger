@@ -69,7 +69,9 @@ export class AuthV1Service extends BaseService {
     return this.handle(async () => {
       const user = await this.userModel.findOne({ email: loginDto.email });
       if (!user || !(await bcrypt.compare(loginDto.password, user.password))) {
-        throw new UnauthorizedException(MessageCode.INVALID_CREDENTIALS);
+        throw new UnauthorizedException([
+          { code: MessageCode.INVALID_CREDENTIALS },
+        ]);
       }
       const token = this.createNewToken(user);
       const newToken = new this.tokenModel({

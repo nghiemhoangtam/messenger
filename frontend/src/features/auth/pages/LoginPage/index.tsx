@@ -8,11 +8,9 @@ import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
-import { useShowError } from "../../../../hooks/useShowError";
 import { AppDispatch, RootState } from "../../../../store";
 import * as translator from "../../../../utils/translator";
 import { loginRequest } from "../../authSlice";
-import { useClearUpError } from "../../hooks/useClearUpError";
 import styles from "../../styles/Auth.module.css";
 
 interface LoginForm {
@@ -26,9 +24,6 @@ export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm<LoginForm>();
   const { t } = useTranslation();
-
-  useShowError(auth.error);
-  useClearUpError();
 
   useEffect(() => {
     if (auth.isAuthenticated) {

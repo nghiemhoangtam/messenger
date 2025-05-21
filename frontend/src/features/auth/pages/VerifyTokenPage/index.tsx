@@ -4,23 +4,17 @@ import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate } from "react-router-dom";
 import CountDown from "../../../../components/molecules/CountDown";
-import { useShowError } from "../../../../hooks/useShowError";
 import { AppDispatch, RootState } from "../../../../store";
 import * as translator from "../../../../utils/translator";
 import {
   resendVerificationRequest
 } from "../../authSlice";
-import { useClearUpError } from "../../hooks/useClearUpError";
 import styles from "../../styles/Auth.module.css";
 
 export const VerifyTokenPage: React.FC = () => {
   const auth = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch<AppDispatch>();
   const { t } = useTranslation();
-
-  useShowError(auth.error);
-
-  useClearUpError();
 
   if (auth.isAuthenticated) {
     return <Navigate to="/" />;

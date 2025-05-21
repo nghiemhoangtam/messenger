@@ -2,20 +2,14 @@ import { Spin } from "antd";
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { useShowError } from "../../../../hooks/useShowError";
 import { RootState } from "../../../../store";
 import { getUserInfoRequest } from "../../authSlice";
-import { useClearUpError } from "../../hooks/useClearUpError";
 import styles from "../../styles/Auth.module.css";
 
 export const RedirectSocialLoginPage: React.FC = () => {
   const auth = useSelector((state: RootState) => state.auth);
   const navigate = useNavigate();
   const dispatch = useDispatch();
-
-  useShowError(auth.error);
-
-  useClearUpError();
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
