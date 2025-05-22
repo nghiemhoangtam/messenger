@@ -47,10 +47,36 @@ export class AllExceptionsFilter implements ExceptionFilter {
           message = errRes.message.map(
             (item: { code: string; field: string }) => {
               let code: string = 'UNDEFINED';
-              let params: string | null = null;
-              if (item.code === 'isNotEmpty') {
-                code = 'REQUIRED';
-                params = item.field;
+              const params: string | null = item.field;
+
+              switch (item.code) {
+                case 'isNotEmpty':
+                  code = 'REQUIRED';
+                  break;
+                case 'isEmail':
+                  code = 'INVALID_EMAIL';
+                  break;
+                case 'isNumber':
+                  code = 'INVALID_NUMBER';
+                  break;
+                case 'isInt':
+                  code = 'INVALID_INTEGER';
+                  break;
+                case 'minLength':
+                  code = 'TOO_SHORT';
+                  break;
+                case 'maxLength':
+                  code = 'TOO_LONG';
+                  break;
+                case 'min':
+                  code = 'TOO_SMALL';
+                  break;
+                case 'max':
+                  code = 'TOO_LARGE';
+                  break;
+                default:
+                  code = 'INVALID';
+                  break;
               }
               return {
                 code,
