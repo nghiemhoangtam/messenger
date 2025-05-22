@@ -14,6 +14,7 @@ import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 import { Model } from 'mongoose';
 import { MessageCode } from 'src/common/messages/message.enum';
+import { MessageService } from 'src/common/messages/message.service';
 import { BaseService } from 'src/common/services/base.service';
 import { plusMinute } from 'src/utils/date.utils';
 import { randomString } from 'src/utils/random.utils';
@@ -34,6 +35,7 @@ export class AuthV1Service extends BaseService {
     @InjectModel(Token.name)
     private tokenModel: Model<Token>,
     private jwtService: JwtService,
+    private messageService: MessageService,
     private configService: ConfigService,
   ) {
     super();
@@ -310,8 +312,15 @@ export class AuthV1Service extends BaseService {
 
   private async sendResetPasswordEmail(email: string, url: string) {
     return this.handle(async () => {
-      const subject = MessageCode.RESET_PASSWORD_SUBJECT;
-      const html = MessageCode.RESET_EMAIL_TEMPLATE + url;
+      const subject = await this.messageService.get(
+        MessageCode.RESET_PASSWORD_SUBJECT,
+      );
+
+      const html = await this.messageService.get(
+        MessageCode.RESET_EMAIL_TEMPLATE,
+        { url },
+      );
+
       await sendSimpleMail(email, subject, html);
     });
   }
@@ -343,8 +352,14 @@ export class AuthV1Service extends BaseService {
 
   private async sendVerificationEmail(email: string, url: string) {
     return this.handle(async () => {
-      const subject = MessageCode.VERIFY_EMAIL_SUBJECT;
-      const html = MessageCode.VERIFY_EMAIL_TEMPLATE + url;
+      const subject = await this.messageService.get(
+        MessageCode.VERIFY_EMAIL_SUBJECT,
+      );
+
+      const html = await this.messageService.get(
+        MessageCode.VERIFY_EMAIL_TEMPLATE,
+        { url },
+      );
       await sendSimpleMail(email, subject, html);
     });
   }
