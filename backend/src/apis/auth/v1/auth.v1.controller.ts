@@ -20,13 +20,11 @@ import {
 } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { IncomingHttpHeaders } from 'http';
-import { I18n, I18nContext } from 'nestjs-i18n';
 import { stringify } from 'querystring';
 import { FacebookAuthGuard } from 'src/common/guards/facebook-auth.guard';
 import { GoogleAuthGuard } from 'src/common/guards/google-auth.guard';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { MessageCode } from 'src/common/messages/message.enum';
-import { MessageService } from 'src/common/messages/message.service';
 import { User } from '../../user/schemas';
 import { LoginDto, RegisterDto, ResetPasswordDto } from '../common/dto';
 import { IJwtRequest, ISocialLogin, IUserRequest } from '../common/interfaces';
@@ -36,10 +34,7 @@ import { AuthV1Service } from './auth.v1.service';
 @ApiTags('auth')
 @Controller({ path: 'auth', version: '1' })
 export class AuthV1Controller {
-  constructor(
-    private readonly authService: AuthV1Service,
-    private readonly messageService: MessageService,
-  ) {}
+  constructor(private readonly authService: AuthV1Service) {}
 
   @Get('welcome')
   @ApiOperation({
@@ -74,10 +69,7 @@ export class AuthV1Controller {
     if (origin) {
       return await this.authService.register(registerDto, origin);
     }
-    const msg: string | undefined = await this.messageService.get(
-      MessageCode.CORS_ORIGIN_MISSING,
-    );
-    throw new ForbiddenException(msg);
+    throw new ForbiddenException(MessageCode.CORS_ORIGIN_MISSING);
   }
 
   @Post('login')
@@ -128,10 +120,7 @@ export class AuthV1Controller {
     if (origin) {
       return this.authService.resendVerification(email, origin);
     }
-    const msg: string = await this.messageService.get(
-      MessageCode.CORS_ORIGIN_MISSING,
-    );
-    throw new ForbiddenException(msg);
+    throw new ForbiddenException(MessageCode.CORS_ORIGIN_MISSING);
   }
 
   @Get('verify-token')
@@ -152,11 +141,8 @@ export class AuthV1Controller {
     type: User,
   })
   @ApiResponse({ status: 400, description: 'Invalid or expired token' })
-  async verifyToken(
-    @Query('token') token: string,
-    @I18n() i18n: I18nContext,
-  ): Promise<User> {
-    return await this.authService.verifyToken(token, i18n);
+  async verifyToken(@Query('token') token: string): Promise<User> {
+    return await this.authService.verifyToken(token);
   }
 
   @Post('forgot-password')
@@ -180,10 +166,7 @@ export class AuthV1Controller {
     if (origin) {
       return await this.authService.forgotPassword(email, origin);
     }
-    const msg: string = await this.messageService.get(
-      MessageCode.CORS_ORIGIN_MISSING,
-    );
-    throw new ForbiddenException(msg);
+    throw new ForbiddenException(MessageCode.CORS_ORIGIN_MISSING);
   }
 
   @Post('reset-password')
@@ -268,8 +251,7 @@ export class AuthV1Controller {
         : 'http://localhost:3000/auth/callback';
       res.redirect(redirect + '?' + querystring);
     } else {
-      const msg: string = await this.messageService.get(MessageCode.FORBIDDEN);
-      throw new ForbiddenException(msg);
+      throw new ForbiddenException(MessageCode.FORBIDDEN);
     }
   }
 
@@ -364,8 +346,7 @@ export class AuthV1Controller {
         : 'http://localhost:3000/auth/callback';
       res.redirect(redirect + '?' + querystring);
     } else {
-      const msg: string = await this.messageService.get(MessageCode.FORBIDDEN);
-      throw new ForbiddenException(msg);
+      throw new ForbiddenException(MessageCode.FORBIDDEN);
     }
   }
 
@@ -386,8 +367,7 @@ export class AuthV1Controller {
     if (req.user) {
       return await this.authService.getCurrentUser(req.user.id);
     } else {
-      const msg = await this.messageService.get(MessageCode.FORBIDDEN);
-      throw new ForbiddenException(msg);
+      throw new ForbiddenException(MessageCode.FORBIDDEN);
     }
   }
 }

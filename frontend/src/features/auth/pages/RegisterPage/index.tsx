@@ -8,7 +8,6 @@ import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
-import { useInternalError } from "../../../../hooks/useInternalError";
 import { AppDispatch, RootState } from "../../../../store";
 import * as translator from "../../../../utils/translator";
 import { registerRequest, resetStatus } from "../../authSlice";
@@ -26,8 +25,6 @@ export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm<RegisterForm>();
   const { t } = useTranslation();
-
-  useInternalError(auth.error);
 
   useEffect(() => {
     if (auth.isAuthenticated) {

@@ -62,7 +62,7 @@ export const Sidebar: React.FC = () => {
     <Sider className={styles.sidebar} width={80}>
       <div className={styles.logo}>
         <Avatar src={user?.avatar} size={40}>
-          {user?.display_name.toUpperCase()}
+          {user?.display_name}
         </Avatar>
       </div>
       <Menu

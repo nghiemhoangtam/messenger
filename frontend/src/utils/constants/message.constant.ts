@@ -1,1 +1,0 @@
-export const INTERNAL_SERVER = "INTERNAL_SERVER";

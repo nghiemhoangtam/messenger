@@ -3,7 +3,6 @@ import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { useInternalError } from "../../../../hooks/useInternalError";
 import { AppDispatch, RootState } from "../../../../store";
 import * as translator from "../../../../utils/translator";
 import { verifyTokenRequest } from "../../authSlice";
@@ -15,8 +14,6 @@ export const ResultVerifyTokenPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { t } = useTranslation();
 
-  useInternalError(auth.error);
-
   useEffect(() => {
     const token = new URLSearchParams(window.location.search).get("token");
     if (!token) {
@@ -25,6 +22,15 @@ export const ResultVerifyTokenPage: React.FC = () => {
       dispatch(verifyTokenRequest(token));
     }
   }, [dispatch, navigate]);
+
+  useEffect(() => {
+    if (auth.status === "succeeded") {
+      const timeout = setTimeout(() => {
+        navigate("/login");
+      }, 3000);
+      return () => clearTimeout(timeout);
+    }
+  }, [auth.status, navigate]);
 
   if (auth.status === "loading") {
     return (
@@ -65,10 +71,6 @@ export const ResultVerifyTokenPage: React.FC = () => {
   }
 
   if (auth.status === "succeeded") {
-    setTimeout(() => {
-      navigate("/login");
-    }, 3000);
-
     return (
       <div className={styles.container}>
         <div className={styles.card}>

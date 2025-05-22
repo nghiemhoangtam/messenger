@@ -20,6 +20,7 @@ import { ChatPage } from "../features/chat/pages/ChatPage";
 import { ContactsPage } from "../features/contacts/pages/ContactsPage";
 import { ProfilePage } from "../features/profile/pages/ProfilePage";
 import { SettingsPage } from "../features/settings/pages/SettingsPage";
+import AuthLayout from "../layouts/AuthLayout";
 import { MainLayout } from "../layouts/MainLayout";
 import { RootState } from "../store";
 // Import other components here
@@ -50,61 +51,25 @@ export const AppRoutes: React.FC = () => {
       <Routes>
         {/* Public Routes */}
         <Route
-          path="/login"
+          path="/"
+
           element={
             <PublicRoute>
-              <LoginPage />
+              <AuthLayout />
             </PublicRoute>
           }
-        />
-        <Route
-          path="/register"
-          element={
-            <PublicRoute>
-              <RegisterPage />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/verify-token"
-          element={
-            <PublicRoute>
-              <VerifyTokenPage />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/result-verify-token"
-          element={
-            <PublicRoute>
-              <ResultVerifyTokenPage />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/forgot-password"
-          element={
-            <PublicRoute>
-              <ForgotPasswordPage />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/reset-password"
-          element={
-            <PublicRoute>
-              <ResetPasswordPage />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/auth/callback"
-          element={
-            <PublicRoute>
-              <RedirectSocialLoginPage />
-            </PublicRoute>
-          }
-        />
+        >
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/verify-token" element={<VerifyTokenPage />} />
+          <Route
+            path="/result-verify-token"
+            element={<ResultVerifyTokenPage />}
+          />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/auth/callback" element={<RedirectSocialLoginPage />} />
+        </Route>
         {/* Private Routes - All wrapped in MainLayout */}
         <Route
           path="/"

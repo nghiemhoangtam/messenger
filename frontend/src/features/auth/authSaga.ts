@@ -1,30 +1,24 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { call, put, takeLatest } from "redux-saga/effects";
 import { authService } from "../../services/authService";
-import { INTERNAL_SERVER } from "../../utils/constants/message.constant";
+import { ErrorState } from "../../types/error";
+import { AppError } from "../../utils/errors";
 import {
-  forgotPasswordFailure,
   forgotPasswordRequest,
   forgotPasswordSuccess,
-  getUserInfoFailure,
   getUserInfoRequest,
   getUserInfoSuccess,
-  loginFailure,
   loginRequest,
   loginSuccess,
-  logoutFailure,
   logoutRequest,
   logoutSuccess,
-  registerFailure,
   registerRequest,
   registerSuccess,
-  resendVerificationFailure,
   resendVerificationRequest,
   resendVerificationSuccess,
-  resetPasswordFailure,
   resetPasswordRequest,
   resetPasswordSuccess,
-  socialAuthFailure,
+  setCommonFailed,
   socialAuthRequest,
   socialAuthSuccess,
   verifyTokenRequest,
@@ -38,18 +32,19 @@ import {
   User,
 } from "./types";
 
+function toErrorState(error: AppError): ErrorState {
+  return {
+    code: error.code,
+    messages: error.messages,
+  };
+}
+
 function* handleLogin(action: PayloadAction<LoginCredentials>) {
   try {
     const user: User = yield call(authService.login, action.payload);
     yield put(loginSuccess(user));
   } catch (error) {
-    yield put(
-      loginFailure(
-        error instanceof Error && error.message
-          ? error.message
-          : INTERNAL_SERVER,
-      ),
-    );
+    yield put(setCommonFailed(toErrorState(error as AppError)));
   }
 }
 
@@ -58,13 +53,7 @@ function* handleRegister(action: PayloadAction<RegisterCredentials>) {
     const user: User = yield call(authService.register, action.payload);
     yield put(registerSuccess(user));
   } catch (error) {
-    yield put(
-      registerFailure(
-        error instanceof Error && error.message
-          ? error.message
-          : INTERNAL_SERVER,
-      ),
-    );
+    yield put(setCommonFailed(toErrorState(error as AppError)));
   }
 }
 
@@ -73,13 +62,7 @@ function* handleResendVerification(action: PayloadAction<string>) {
     yield call(authService.resendVerification, action.payload);
     yield put(resendVerificationSuccess());
   } catch (error) {
-    yield put(
-      resendVerificationFailure(
-        error instanceof Error && error.message
-          ? error.message
-          : INTERNAL_SERVER,
-      ),
-    );
+    yield put(setCommonFailed(toErrorState(error as AppError)));
   }
 }
 
@@ -88,13 +71,7 @@ function* handleVerifyToken(action: PayloadAction<string>) {
     yield call(authService.verifyToken, action.payload);
     yield put(verifyTokenSuccess());
   } catch (error) {
-    yield put(
-      resendVerificationFailure(
-        error instanceof Error && error.message
-          ? error.message
-          : INTERNAL_SERVER,
-      ),
-    );
+    yield put(setCommonFailed(toErrorState(error as AppError)));
   }
 }
 
@@ -103,13 +80,7 @@ function* handleForgotPassword(action: PayloadAction<string>) {
     yield call(authService.forgotPassword, action.payload);
     yield put(forgotPasswordSuccess());
   } catch (error) {
-    yield put(
-      forgotPasswordFailure(
-        error instanceof Error && error.message
-          ? error.message
-          : INTERNAL_SERVER,
-      ),
-    );
+    yield put(setCommonFailed(toErrorState(error as AppError)));
   }
 }
 
@@ -118,13 +89,7 @@ function* handleResetPassword(action: PayloadAction<ResetPassword>) {
     yield call(authService.resetPassword, action.payload);
     yield put(resetPasswordSuccess());
   } catch (error) {
-    yield put(
-      resetPasswordFailure(
-        error instanceof Error && error.message
-          ? error.message
-          : INTERNAL_SERVER,
-      ),
-    );
+    yield put(setCommonFailed(toErrorState(error as AppError)));
   }
 }
 
@@ -133,13 +98,7 @@ function* handleSocialAuth(action: PayloadAction<SocialAuthCredentials>) {
     const user: User = yield call(authService.socialAuth, action.payload);
     yield put(socialAuthSuccess(user));
   } catch (error) {
-    yield put(
-      socialAuthFailure(
-        error instanceof Error && error.message
-          ? error.message
-          : INTERNAL_SERVER,
-      ),
-    );
+    yield put(setCommonFailed(toErrorState(error as AppError)));
   }
 }
 
@@ -148,13 +107,7 @@ function* handleLogout() {
     yield call(authService.logout);
     yield put(logoutSuccess());
   } catch (error) {
-    yield put(
-      logoutFailure(
-        error instanceof Error && error.message
-          ? error.message
-          : INTERNAL_SERVER,
-      ),
-    );
+    yield put(setCommonFailed(toErrorState(error as AppError)));
   }
 }
 
@@ -163,13 +116,7 @@ function* handleGetUserInfo() {
     const user: User = yield call(authService.getUserInfo);
     yield put(getUserInfoSuccess(user));
   } catch (error) {
-    yield put(
-      getUserInfoFailure(
-        error instanceof Error && error.message
-          ? error.message
-          : INTERNAL_SERVER,
-      ),
-    );
+    yield put(setCommonFailed(toErrorState(error as AppError)));
   }
 }
 

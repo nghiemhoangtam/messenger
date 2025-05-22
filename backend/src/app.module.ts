@@ -51,7 +51,7 @@ import { MessageModule } from './common/messages/message.module';
       fallbackLanguage: 'en',
       loaderOptions: {
         path: path.join(process.cwd(), 'i18n'),
-        watch: true,
+        watch: false,
       },
       resolvers: [
         new QueryResolver(['lang', 'l', 'lng']),
