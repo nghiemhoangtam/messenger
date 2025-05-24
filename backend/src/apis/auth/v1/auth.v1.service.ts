@@ -468,4 +468,18 @@ export class AuthV1Service extends BaseService {
       },
     );
   }
+
+  async logout(userId: string, access_token: string) {
+    return this.handle(async () => {
+      const tokenSearched = await this.tokenModel.findOne({
+        user: userId,
+        access_token,
+      });
+      if (!tokenSearched) {
+        throw new UnauthorizedException([{ code: MessageCode.INVALID_TOKEN }]);
+      }
+      tokenSearched.revoked_at = new Date();
+      await tokenSearched.save();
+    });
+  }
 }

@@ -370,4 +370,23 @@ export class AuthV1Controller {
       throw new ForbiddenException(MessageCode.FORBIDDEN);
     }
   }
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Logout user',
+    description: 'Logs out the user by invalidating the access token.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User logged out successfully',
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden access' })
+  async logout(@Req() req: IJwtRequest): Promise<void> {
+    if (req.user && req.token) {
+      return await this.authService.logout(req.user.id, req.token);
+    } else {
+      throw new ForbiddenException(MessageCode.FORBIDDEN);
+    }
+  }
 }

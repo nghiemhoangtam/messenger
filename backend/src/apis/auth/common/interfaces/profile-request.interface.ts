@@ -5,4 +5,5 @@ export interface IJwtRequest extends Request {
     id: string;
     email: string;
   };
+  token?: string;
 }

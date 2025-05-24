@@ -14,6 +14,7 @@ import { AuthV1Module } from './apis/auth/v1/auth.v1.module';
 import { AuthV2Module } from './apis/auth/v2/auth.v2.module';
 import { UsersModule } from './apis/user/users.module';
 import { MessageModule } from './common/messages/message.module';
+import { RedisModule } from './common/redis/redis.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { MessageModule } from './common/messages/message.module';
         AcceptLanguageResolver,
       ],
     }),
+    RedisModule,
     MessageModule,
   ],
   // controllers: [AppController,UsersController],
