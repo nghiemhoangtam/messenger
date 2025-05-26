@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   HttpException,
+  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -11,10 +12,12 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcryptjs';
+import Redis from 'ioredis';
 import * as jwt from 'jsonwebtoken';
 import { Model } from 'mongoose';
 import { MessageCode } from 'src/common/messages/message.enum';
 import { MessageService } from 'src/common/messages/message.service';
+import { authBlacklistKey } from 'src/common/redis/redis.key';
 import { BaseService } from 'src/common/services/base.service';
 import { plusMinute } from 'src/utils/date.utils';
 import { randomString } from 'src/utils/random.utils';
@@ -37,6 +40,7 @@ export class AuthV1Service extends BaseService {
     private jwtService: JwtService,
     private messageService: MessageService,
     private configService: ConfigService,
+    @Inject('REDIS_CLIENT') private readonly redis: Redis,
   ) {
     super();
   }
@@ -478,8 +482,14 @@ export class AuthV1Service extends BaseService {
       if (!tokenSearched) {
         throw new UnauthorizedException([{ code: MessageCode.INVALID_TOKEN }]);
       }
+      this.redis.set(
+        authBlacklistKey(access_token),
+        '1',
+        'EX',
+        this.configService.get<number>('ACCESS_TOKEN_TTL') || 180,
+      );
       tokenSearched.revoked_at = new Date();
-      await tokenSearched.save();
+      tokenSearched.save();
     });
   }
 }
