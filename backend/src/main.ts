@@ -20,6 +20,7 @@ async function bootstrap() {
   const logger = new Logger('bootstrap');
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  app.set('trust proxy', 'loopback');
   app.useStaticAssets(join(__dirname, '..', 'public'));
   app.enableVersioning({ type: VersioningType.URI });
 

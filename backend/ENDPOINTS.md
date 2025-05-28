@@ -2,8 +2,22 @@
 
 This document provides a comprehensive overview of all API endpoints in the application.
 
-Generated automatically on 2025-05-26T16:11:35.552Z.
+Generated automatically on 2025-05-28T16:21:17.028Z.
 
+## /health (Version: v1)
+
+### GET /health
+
+- **Version**: v1
+- **Tags**: App
+- **Summary**: No summary provided
+- **Description**: No description provided
+
+#### Responses
+
+- **200**: 
+
+---
 ## /auth/welcome (Version: v1)
 
 ### GET /auth/welcome
@@ -363,6 +377,7 @@ The following table lists all API endpoints for quick reference:
 
 | Path | Method | Version | Tags | Summary |
 |------|--------|---------|------|---------|
+| /health | GET | v1 | App | No summary provided |
 | /auth/welcome | GET | v1 | auth | Welcome to auth api |
 | /auth/register | POST | v1 | auth | Register a new user |
 | /auth/login | POST | v1 | auth | User login |

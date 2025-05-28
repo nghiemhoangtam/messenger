@@ -1,6 +1,10 @@
+import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 import { MongooseModule } from '@nestjs/mongoose';
+import { ThrottlerModule } from '@nestjs/throttler';
+import Redis from 'ioredis';
 import * as Joi from 'joi';
 import {
   AcceptLanguageResolver,
@@ -13,6 +17,8 @@ import * as path from 'path';
 import { AuthV1Module } from './apis/auth/v1/auth.v1.module';
 import { AuthV2Module } from './apis/auth/v2/auth.v2.module';
 import { UsersModule } from './apis/user/users.module';
+import { AppController } from './app.controller';
+import { ThrottlerBehindProxyGuard } from './common/guards/throttler-behind-proxy.guard';
 import { MessageModule } from './common/messages/message.module';
 import { RedisModule } from './common/redis/redis.module';
 
@@ -35,6 +41,26 @@ import { RedisModule } from './common/redis/redis.module';
         REDIS_PORT: Joi.number().default(6379),
         REDIS_USERNAME: Joi.string().default(''),
         REDIS_PASSWORD: Joi.string().default(''),
+      }),
+    }),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        throttlers: [
+          {
+            ttl: configService.get<number>('THROTTLE_TTL') ?? 60,
+            limit: configService.get<number>('THROTTLE_LIMIT') ?? 100,
+          },
+        ],
+        storage: new ThrottlerStorageRedisService(
+          new Redis({
+            host: configService.get<string>('REDIS_HOST'),
+            port: configService.get<number>('REDIS_PORT'),
+            username: configService.get<string>('REDIS_USERNAME'),
+            password: configService.get<string>('REDIS_PASSWORD'),
+          }),
+        ),
       }),
     }),
     MongooseModule.forRootAsync({
@@ -64,7 +90,12 @@ import { RedisModule } from './common/redis/redis.module';
     RedisModule,
     MessageModule,
   ],
-  // controllers: [AppController,UsersController],
-  // providers: [AppService],
+  controllers: [AppController],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerBehindProxyGuard,
+    },
+  ],
 })
 export class AppModule {}

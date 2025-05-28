@@ -482,14 +482,14 @@ export class AuthV1Service extends BaseService {
       if (!tokenSearched) {
         throw new UnauthorizedException([{ code: MessageCode.INVALID_TOKEN }]);
       }
-      this.redis.set(
+      await this.redis.set(
         authBlacklistKey(access_token),
         '1',
         'EX',
         this.configService.get<number>('ACCESS_TOKEN_TTL') || 180,
       );
       tokenSearched.revoked_at = new Date();
-      tokenSearched.save();
+      await tokenSearched.save();
     });
   }
 }
