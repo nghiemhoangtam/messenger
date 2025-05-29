@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   ForbiddenException,
   HttpException,
   Inject,
@@ -17,7 +16,10 @@ import * as jwt from 'jsonwebtoken';
 import { Model } from 'mongoose';
 import { MessageCode } from 'src/common/messages/message.enum';
 import { MessageService } from 'src/common/messages/message.service';
-import { authBlacklistKey } from 'src/common/redis/redis.key';
+import {
+  authBlacklistKey,
+  resetPasswordBlacklistKey,
+} from 'src/common/redis/redis.key';
 import { BaseService } from 'src/common/services/base.service';
 import { plusMinute } from 'src/utils/date.utils';
 import { randomString } from 'src/utils/random.utils';
@@ -204,13 +206,19 @@ export class AuthV1Service extends BaseService {
 
   async resetPassword(resetPasswordDto: ResetPasswordDto) {
     return this.handle(async () => {
+      const isblacklisted = await this.redis.get(
+        resetPasswordBlacklistKey(resetPasswordDto.token),
+      );
+      if (isblacklisted) {
+        throw new UnauthorizedException([{ code: MessageCode.INVALID_TOKEN }]);
+      }
       const tokenSearch: PasswordResetToken | null =
         await this.passwordResetTokenModel.findOne({
           token: resetPasswordDto.token,
           is_used: false,
         });
       if (!tokenSearch) {
-        throw new BadRequestException({ code: MessageCode.INVALID_TOKEN });
+        throw new UnauthorizedException([{ code: MessageCode.INVALID_TOKEN }]);
       } else {
         if (tokenSearch.expired_at.getTime() < Date.now()) {
           throw new UnauthorizedException([
@@ -224,6 +232,12 @@ export class AuthV1Service extends BaseService {
           await this.passwordResetTokenModel.deleteMany({
             user: tokenSearch._id,
           });
+          await this.redis.set(
+            resetPasswordBlacklistKey(resetPasswordDto.token),
+            '1',
+            'EX',
+            this.configService.get<number>('RESET_PASSWORD_TOKEN_TTL') || 60,
+          );
           await this.userModel.updateOne(
             {
               _id: tokenSearch.user,
