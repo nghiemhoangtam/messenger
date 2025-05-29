@@ -14,5 +14,6 @@
   "FORBIDDEN": "You do not have permission to access this resource.",
   "BAD_REQUEST": "Bad request.",
   "INTERNAL_SERVER": "Internal server error.",
-  "REFRESH_TOKEN_IS_USED": "Refresh token has been used."
+  "REFRESH_TOKEN_IS_USED": "Refresh token has been used.",
+  "USER_NOT_ACTIVE": "User is not active."
 }
