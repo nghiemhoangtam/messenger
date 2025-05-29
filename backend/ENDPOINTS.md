@@ -2,7 +2,7 @@
 
 This document provides a comprehensive overview of all API endpoints in the application.
 
-Generated automatically on 2025-05-29T14:55:58.535Z.
+Generated automatically on 2025-05-29T15:55:23.540Z.
 
 ## /health (Version: v1)
 

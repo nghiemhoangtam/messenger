@@ -19,6 +19,7 @@ import { MessageService } from 'src/common/messages/message.service';
 import {
   authBlacklistKey,
   resetPasswordBlacklistKey,
+  userDataKey,
 } from 'src/common/redis/redis.key';
 import { BaseService } from 'src/common/services/base.service';
 import { plusMinute } from 'src/utils/date.utils';
@@ -75,10 +76,17 @@ export class AuthV1Service extends BaseService {
     user_agent?: string,
   ): Promise<LoginInfoResponse> {
     return this.handle(async () => {
-      const user = await this.userModel.findOne({ email: loginDto.email });
+      const user = await this.userModel
+        .findOne({ email: loginDto.email })
+        .select('-password');
       if (!user || !(await bcrypt.compare(loginDto.password, user.password))) {
         throw new UnauthorizedException([
           { code: MessageCode.INVALID_CREDENTIALS },
+        ]);
+      }
+      if (!user.is_active) {
+        throw new UnauthorizedException([
+          { code: MessageCode.USER_NOT_ACTIVE },
         ]);
       }
       const token = this.createNewToken(user);
@@ -90,6 +98,12 @@ export class AuthV1Service extends BaseService {
         ip_address: ip_address,
       });
       await newToken.save();
+      await this.redis.set(
+        userDataKey((user._id as string).toString()),
+        JSON.stringify(user),
+        'EX',
+        this.configService.get<number>('USER_DATA_TTL') || 60 * 60 * 24,
+      );
       return {
         access_token: token.access_token,
         refresh_token: token.refresh_token,
@@ -138,7 +152,12 @@ export class AuthV1Service extends BaseService {
         ip_address: socialLogin.ip_address,
       });
       await newToken.save();
-
+      await this.redis.set(
+        userDataKey((user._id as string).toString()),
+        JSON.stringify(user),
+        'EX',
+        this.configService.get<number>('USER_DATA_TTL') || 60 * 60 * 24,
+      );
       return {
         access_token: token.access_token,
         refresh_token: token.refresh_token,
@@ -352,7 +371,9 @@ export class AuthV1Service extends BaseService {
             secret: this.configService.get<string>('JWT_SECRET'),
           },
         );
-        const user = await this.userModel.findById(payload.id);
+        const user = await this.userModel
+          .findById(payload.id)
+          .select('-password');
         if (!user) {
           throw new ForbiddenException([{ code: MessageCode.FORBIDDEN }]);
         }
@@ -408,10 +429,29 @@ export class AuthV1Service extends BaseService {
 
   async getCurrentUser(userId: string): Promise<CurrentUserResponse> {
     return this.handle(async () => {
-      const user = await this.userModel.findById(userId);
+      const userCached = await this.redis.get(userDataKey(userId));
+      if (userCached) {
+        const user: User = JSON.parse(userCached) as User;
+        const response: CurrentUserResponse = {
+          id: user._id as string,
+          email: user.email,
+          display_name: user.display_name,
+          avatar: user.avatar,
+          created_at: user.created_at,
+          updated_at: user.updated_at,
+        };
+        return response;
+      }
+      const user = await this.userModel.findById(userId).select('-password');
       if (!user) {
         throw new NotFoundException([{ code: MessageCode.FORBIDDEN }]);
       }
+      await this.redis.set(
+        userDataKey((user._id as string).toString()),
+        JSON.stringify(user),
+        'EX',
+        this.configService.get<number>('USER_DATA_TTL') || 60 * 60 * 24,
+      );
       const response: CurrentUserResponse = {
         id: user._id as string,
         email: user.email,
