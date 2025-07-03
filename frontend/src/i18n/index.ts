@@ -11,11 +11,16 @@ const options = {
   lookupQuerystring: "lng",
 };
 
+function getCurrentLanguage() {
+  return localStorage.getItem("lang") || "en";
+}
+
 i18n
   .use(HttpApi)
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
+    lng: getCurrentLanguage(), // 👈 load from localStorage
     detection: options,
     fallbackLng: "en",
     load: "languageOnly",
@@ -26,7 +31,7 @@ i18n
     backend: {
       loadPath: "/locales/{{lng}}/{{ns}}.json",
     },
-    ns: ["common", "auth"],
+    ns: ["common", "auth", "messages"],
     defaultNS: "common",
   });
 

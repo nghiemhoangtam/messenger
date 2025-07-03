@@ -1,4 +1,9 @@
-import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
+import {
+  BadRequestException,
+  Logger,
+  ValidationPipe,
+  VersioningType,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
@@ -42,9 +47,20 @@ async function bootstrap() {
 
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // chỉ giữ lại các field có trong DTO
-      forbidNonWhitelisted: true, // ❌ báo lỗi nếu có field lạ
-      transform: true, // tự động convert types (VD: string -> number)
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+      exceptionFactory: (errors) => {
+        const messages = errors.flatMap((error) =>
+          Object.entries(error.constraints || {}).map(([code, message]) => ({
+            field: error.property,
+            code,
+            message,
+          })),
+        );
+
+        return new BadRequestException(messages);
+      },
     }),
   );
   app.use(passport.initialize());

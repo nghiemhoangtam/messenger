@@ -22,6 +22,8 @@ accessTokenAxiosClient.interceptors.request.use(
     if (accessToken) {
       config.headers["Authorization"] = `Bearer ${accessToken}`;
     }
+    const language = localStorage.getItem("i18nextLng") || "vi";
+    config.headers["Accept-Language"] = language;
     return config;
   },
   (error) => Promise.reject(error),

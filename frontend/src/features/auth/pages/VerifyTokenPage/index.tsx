@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate } from "react-router-dom";
 import CountDown from "../../../../components/molecules/CountDown";
-import { useInternalError } from "../../../../hooks/useInternalError";
 import { AppDispatch, RootState } from "../../../../store";
 import * as translator from "../../../../utils/translator";
 import {
@@ -16,8 +15,6 @@ export const VerifyTokenPage: React.FC = () => {
   const auth = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch<AppDispatch>();
   const { t } = useTranslation();
-
-  useInternalError(auth.error);
 
   if (auth.isAuthenticated) {
     return <Navigate to="/" />;

@@ -7,11 +7,9 @@ import { Model } from 'mongoose';
 import { IJwtRequest } from 'src/apis/auth/common/interfaces';
 import { User } from 'src/apis/user/schemas';
 import { MessageCode } from '../messages/message.enum';
-import { MessageService } from '../messages/message.service';
 
 export class JwtAuthGuard extends AuthGuard('jwt') {
   constructor(
-    private readonly messageService: MessageService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     @InjectModel(User.name) private userModel: Model<User>,
@@ -24,10 +22,9 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     const token = this.extractTokenFromHeader(request);
     try {
       if (!token) {
-        const msg = await this.messageService.get(
-          MessageCode.TOKEN_NOT_PROVIDED,
-        );
-        throw new UnauthorizedException(msg);
+        throw new UnauthorizedException([
+          { code: MessageCode.TOKEN_NOT_PROVIDED },
+        ]);
       }
       const payload: { id: string; email: string } = this.jwtService.verify(
         token,
@@ -37,8 +34,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       );
       const user = await this.userModel.findById(payload.id);
       if (!user) {
-        const msg = await this.messageService.get(MessageCode.USER_NOT_FOUND);
-        throw new UnauthorizedException(msg);
+        throw new UnauthorizedException([{ code: MessageCode.USER_NOT_FOUND }]);
       }
       request.user = {
         id: user._id as string,
@@ -46,11 +42,9 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       };
     } catch (error) {
       if (error instanceof TokenExpiredError) {
-        const msg = await this.messageService.get(MessageCode.TOKEN_EXPIRED);
-        throw new UnauthorizedException(msg);
+        throw new UnauthorizedException([{ code: MessageCode.TOKEN_EXPIRED }]);
       } else {
-        const msg = await this.messageService.get(MessageCode.INVALID_TOKEN);
-        throw new UnauthorizedException(msg);
+        throw new UnauthorizedException([{ code: MessageCode.INVALID_TOKEN }]);
       }
     }
     return true;
