@@ -15,5 +15,6 @@
   "BAD_REQUEST": "Bad request.",
   "INTERNAL_SERVER": "Internal server error.",
   "REFRESH_TOKEN_IS_USED": "Refresh token has been used.",
-  "USER_NOT_ACTIVE": "User is not active."
+  "USER_NOT_ACTIVE": "User is not active.",
+  "OVER_MAX_ATTEMPT_LOGIN": "You have exceeded the maximum number of login attempts. Please try again later."
 }
