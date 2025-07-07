@@ -14,7 +14,6 @@ import * as bcrypt from 'bcryptjs';
 import Redis from 'ioredis';
 import * as jwt from 'jsonwebtoken';
 import { Model } from 'mongoose';
-import { LogExecutionTime } from 'src/common/decorators/log-execution-time.decorator';
 import { MessageCode } from 'src/common/messages/message.enum';
 import { MessageService } from 'src/common/messages/message.service';
 import {
@@ -50,7 +49,6 @@ export class AuthV1Service extends BaseService {
     super();
   }
 
-  @LogExecutionTime()
   async register(registerDto: RegisterDto, origin: string): Promise<User> {
     return this.handle(async () => {
       const isExistValidUser: boolean = await this.existsUser(
