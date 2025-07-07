@@ -18,8 +18,9 @@ import { MessageCode } from 'src/common/messages/message.enum';
 import { MessageService } from 'src/common/messages/message.service';
 import {
   authBlacklistKey,
+  loginAttemptKey,
   resetPasswordBlacklistKey,
-  userDataKey,
+  userDataKey
 } from 'src/common/redis/redis.key';
 import { BaseService } from 'src/common/services/base.service';
 import { EmailQueueService } from 'src/rabbitmq/email/email-queue.service';
@@ -77,9 +78,29 @@ export class AuthV1Service extends BaseService {
     user_agent?: string,
   ): Promise<LoginInfoResponse> {
     return this.handle(async () => {
+      const attemptKey = loginAttemptKey(loginDto.email);
+      const loginAttempt = ((await this.redis.get(attemptKey)) || 0) as number;
+      const maxLoginAttempt =
+        this.configService.get<number>('LOGIN_ATTEMPT_COUNT') || 0;
+      if(loginAttempt > maxLoginAttempt) {
+        throw new UnauthorizedException([
+          { code: MessageCode.OVER_MAX_ATTEMPT_LOGIN },
+        ]);
+      }
       const user = await this.userModel
         .findOne({ email: loginDto.email });
-      if (!user || !(await bcrypt.compare(loginDto.password, user.password))) {
+      if (!user || !(await bcrypt.compare(loginDto.password, user.password))) {       
+        const isExistAttemptKey = await this.redis.exists(attemptKey);
+        if(isExistAttemptKey) {
+          await this.redis.incr(attemptKey);
+        } else {
+          await this.redis.set(
+            attemptKey,
+            1,
+            'EX',
+            this.configService.get<number>('LOGIN_ATTEMPT_TTL') || 300,
+          );
+        }
         throw new UnauthorizedException([
           { code: MessageCode.INVALID_CREDENTIALS },
         ]);
@@ -108,7 +129,7 @@ export class AuthV1Service extends BaseService {
         access_token: token.access_token,
         refresh_token: token.refresh_token,
       };
-    });
+    }) 
   }
 
   async socialLogin(socialLogin: ISocialLogin): Promise<LoginInfoResponse> {
