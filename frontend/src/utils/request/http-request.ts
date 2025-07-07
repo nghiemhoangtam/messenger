@@ -20,13 +20,13 @@ async function safeRequest<T>(fn: () => Promise<T>) {
 }
 
 export function apiRequest<T>(
-  request: () => Promise<AxiosResponse<T>>,
+  request: () => Promise<AxiosResponse<T>>
 ): Promise<T> {
   return safeRequest(() =>
     request()
-      .then((res) => res.data)
+      .then((res: { data: any }) => res.data.data)
       .catch((err) => {
         throw err;
-      }),
+      })
   );
 }

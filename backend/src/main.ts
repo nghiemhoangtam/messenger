@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import { Transport } from '@nestjs/microservices';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as passport from 'passport';
@@ -23,6 +24,20 @@ async function bootstrap() {
   app.set('trust proxy', 'loopback');
   app.useStaticAssets(join(__dirname, '..', 'public'));
   app.enableVersioning({ type: VersioningType.URI });
+  
+  app.connectMicroservice({
+    transport: Transport.RMQ,
+    options: {
+      urls: ['amqp://localhost:5672'],
+      queue: 'email_verification_queue',
+      queueOptions: {
+        durable: true,
+      },
+    },
+  });
+
+  // Khởi động cả HTTP và Microservice
+  await app.startAllMicroservices();
 
   const configV1 = new DocumentBuilder()
     .setTitle('Messenger API')

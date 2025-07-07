@@ -10,6 +10,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { EventPattern } from '@nestjs/microservices';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -25,6 +26,7 @@ import { FacebookAuthGuard } from 'src/common/guards/facebook-auth.guard';
 import { GoogleAuthGuard } from 'src/common/guards/google-auth.guard';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { MessageCode } from 'src/common/messages/message.enum';
+import { sendSimpleMail } from 'src/utils/sendmail.utils';
 import { User } from '../../user/schemas';
 import { LoginDto, RegisterDto, ResetPasswordDto } from '../common/dto';
 import { IJwtRequest, ISocialLogin, IUserRequest } from '../common/interfaces';
@@ -388,5 +390,10 @@ export class AuthV1Controller {
     } else {
       throw new ForbiddenException(MessageCode.FORBIDDEN);
     }
+  }
+
+  @EventPattern('send_email') // For event-based messages
+  handleEvent(data: any) {
+    sendSimpleMail(data.email, data.subject, data.html);
   }
 }

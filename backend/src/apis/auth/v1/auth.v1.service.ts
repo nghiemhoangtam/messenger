@@ -14,6 +14,7 @@ import * as bcrypt from 'bcryptjs';
 import Redis from 'ioredis';
 import * as jwt from 'jsonwebtoken';
 import { Model } from 'mongoose';
+import { LogExecutionTime } from 'src/common/decorators/log-execution-time.decorator';
 import { MessageCode } from 'src/common/messages/message.enum';
 import { MessageService } from 'src/common/messages/message.service';
 import {
@@ -22,9 +23,9 @@ import {
   userDataKey,
 } from 'src/common/redis/redis.key';
 import { BaseService } from 'src/common/services/base.service';
+import { EmailQueueService } from 'src/rabbitmq/email/email-queue.service';
 import { plusMinute } from 'src/utils/date.utils';
 import { randomString } from 'src/utils/random.utils';
-import { sendSimpleMail } from 'src/utils/sendmail.utils';
 import { User } from '../../user/schemas';
 import { LoginDto, RegisterDto, ResetPasswordDto } from '../common/dto';
 import { ISocialLogin } from '../common/interfaces';
@@ -44,10 +45,12 @@ export class AuthV1Service extends BaseService {
     private messageService: MessageService,
     private configService: ConfigService,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
+    private emailService: EmailQueueService,
   ) {
     super();
   }
 
+  @LogExecutionTime()
   async register(registerDto: RegisterDto, origin: string): Promise<User> {
     return this.handle(async () => {
       const isExistValidUser: boolean = await this.existsUser(
@@ -77,8 +80,7 @@ export class AuthV1Service extends BaseService {
   ): Promise<LoginInfoResponse> {
     return this.handle(async () => {
       const user = await this.userModel
-        .findOne({ email: loginDto.email })
-        .select('-password');
+        .findOne({ email: loginDto.email });
       if (!user || !(await bcrypt.compare(loginDto.password, user.password))) {
         throw new UnauthorizedException([
           { code: MessageCode.INVALID_CREDENTIALS },
@@ -357,8 +359,8 @@ export class AuthV1Service extends BaseService {
         MessageCode.RESET_EMAIL_TEMPLATE,
         { url },
       );
-
-      await sendSimpleMail(email, subject, html);
+      
+      await this.emailService.sendEmail(email, subject, html);
     });
   }
 
@@ -399,7 +401,7 @@ export class AuthV1Service extends BaseService {
         MessageCode.VERIFY_EMAIL_TEMPLATE,
         { url },
       );
-      await sendSimpleMail(email, subject, html);
+      await this.emailService.sendEmail(email, subject, html);
     });
   }
 
