@@ -12,6 +12,7 @@ const INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR';
 const VALIDATION_ERROR = 'VALIDATION_ERROR';
 const BUSINESS_ERROR = 'BUSINESS_ERROR';
 const NOT_FOUND_ERROR = 'NOT_FOUND';
+const TOO_MANY_REQUESTS = 'TOO_MANY_REQUESTS';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -27,22 +28,21 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     if (exception instanceof HttpException) {
       const res = exception.getResponse();
-      const status = exception.getStatus();
+      const status = exception.getStatus() as HttpStatus;
+      const errRes = res as {
+        message: any[];
+        error?: string;
+      };
+      errorType = errRes.error ?? exception.name;
+      stack = exception.stack ?? '';
+      let errorCode: string = '';
+      let message: {
+        code: string;
+        params: any;
+      }[] = [];
 
       if (typeof res === 'object' && res !== null) {
-        const errRes = res as {
-          message: any[];
-          error?: string;
-        };
-        errorType = errRes.error ?? exception.name;
-        stack = exception.stack ?? '';
-        let errorCode: string;
-        let message: {
-          code: string;
-          params: any;
-        }[] = [];
-
-        if ((status as HttpStatus) === HttpStatus.BAD_REQUEST) {
+        if (status === HttpStatus.BAD_REQUEST) {
           errorCode = VALIDATION_ERROR;
           message = errRes.message.map(
             (item: { code: string; field: string }) => {
@@ -84,25 +84,27 @@ export class AllExceptionsFilter implements ExceptionFilter {
               };
             },
           );
-        } else if ((status as HttpStatus) === HttpStatus.NOT_FOUND) {
+        } else if (status === HttpStatus.NOT_FOUND) {
           errorCode = NOT_FOUND_ERROR;
           message = errRes.message as { code: string; params: any }[];
-        } else if (
-          (status as HttpStatus) === HttpStatus.INTERNAL_SERVER_ERROR
-        ) {
+        } else if (status === HttpStatus.INTERNAL_SERVER_ERROR) {
           errorCode = INTERNAL_SERVER_ERROR;
         } else {
           errorCode = BUSINESS_ERROR;
           message = errRes.message as { code: string; params: any }[];
         }
-        response.status(status).json({
-          statusCode: status,
-          code: errorCode,
-          messages: message,
-          timestamp: new Date().toISOString(),
-          path: request.url,
-        });
+      } else {
+        if (status === HttpStatus.TOO_MANY_REQUESTS) {
+          errorCode = TOO_MANY_REQUESTS;
+        }
       }
+      response.status(status).json({
+        statusCode: status,
+        code: errorCode,
+        messages: message,
+        timestamp: new Date().toISOString(),
+        path: request.url,
+      });
     }
 
     const fileInfo = this.extractFileLine(stack);

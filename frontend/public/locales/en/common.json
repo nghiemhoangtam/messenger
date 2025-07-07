@@ -15,5 +15,6 @@
   "validate_field": "{{field}} validation",
   "check_field": "Check {{field}}",
   "account": "account",
-  "internal_server": "Internal server error"
+  "internal_server": "Internal server error",
+  "too_many_requests": "Too many requests, please try again later"
 }

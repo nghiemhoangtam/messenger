@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { PassportModule } from '@nestjs/passport';
 import { RedisModule } from 'src/common/redis/redis.module';
+import { EmailQueueModule } from 'src/rabbitmq/email/email-queue.module';
 import { User, UserSchema } from '../../user/schemas';
 import {
   PasswordResetToken,
@@ -36,9 +37,15 @@ import { AuthV1Service } from './auth.v1.service';
         signOptions: { expiresIn: '1h' },
       }),
     }),
+    EmailQueueModule,
   ],
   controllers: [AuthV1Controller],
-  providers: [JwtStrategy, GoogleStrategy, FacebookStrategy, AuthV1Service],
+  providers: [
+    JwtStrategy,
+    GoogleStrategy,
+    FacebookStrategy,
+    AuthV1Service,
+  ],
   exports: [JwtModule],
 })
 export class AuthV1Module {}

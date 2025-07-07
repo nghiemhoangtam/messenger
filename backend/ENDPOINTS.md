@@ -2,8 +2,22 @@
 
 This document provides a comprehensive overview of all API endpoints in the application.
 
-Generated automatically on 2025-05-22T17:19:31.527Z.
+Generated automatically on 2025-05-29T15:57:07.181Z.
 
+## /health (Version: v1)
+
+### GET /health
+
+- **Version**: v1
+- **Tags**: App
+- **Summary**: No summary provided
+- **Description**: No description provided
+
+#### Responses
+
+- **200**: 
+
+---
 ## /auth/welcome (Version: v1)
 
 ### GET /auth/welcome
@@ -340,6 +354,22 @@ Generated automatically on 2025-05-22T17:19:31.527Z.
 - **403**: Forbidden access
 
 ---
+## /auth/logout (Version: v1)
+
+### POST /auth/logout
+
+- **Version**: v1
+- **Tags**: auth
+- **Authentication**: bearer
+- **Summary**: Logout user
+- **Description**: Logs out the user by invalidating the access token.
+
+#### Responses
+
+- **200**: User logged out successfully
+- **403**: Forbidden access
+
+---
 
 # Endpoint Summary
 
@@ -347,6 +377,7 @@ The following table lists all API endpoints for quick reference:
 
 | Path | Method | Version | Tags | Summary |
 |------|--------|---------|------|---------|
+| /health | GET | v1 | App | No summary provided |
 | /auth/welcome | GET | v1 | auth | Welcome to auth api |
 | /auth/register | POST | v1 | auth | Register a new user |
 | /auth/login | POST | v1 | auth | User login |
@@ -360,3 +391,4 @@ The following table lists all API endpoints for quick reference:
 | /auth/facebook | GET | v1 | auth | Initiate Facebook login |
 | /auth/facebook/callback | GET | v1 | auth | Facebook login callback |
 | /auth/me | GET | v1 | auth | Get current user profile |
+| /auth/logout | POST | v1 | auth | Logout user |

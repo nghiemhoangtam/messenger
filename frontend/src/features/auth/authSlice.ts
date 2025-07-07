@@ -104,7 +104,6 @@ const authSlice = createSlice({
       state.status = "idle";
     },
     resetStatusAndError: (state) => {
-      console.log("resetStatusAndError");
       state.error = null;
       state.status = "idle";
     },

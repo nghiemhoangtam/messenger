@@ -12,6 +12,7 @@ export abstract class BaseService {
     try {
       return await fn();
     } catch (error) {
+      console.error(error);
       if (customErrorHandler) {
         await customErrorHandler(error);
       }

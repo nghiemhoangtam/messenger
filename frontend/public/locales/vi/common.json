@@ -15,5 +15,6 @@
   "validate_field": "Xác thực {{field}}",
   "check_field": "Kiểm tra {{field}}",
   "account": "tài khoản",
-  "internal_server": "Lỗi máy chủ"
+  "internal_server": "Lỗi máy chủ",
+  "too_many_requests": "Quá nhiều yêu cầu, vui lòng thử lại sau"
 }

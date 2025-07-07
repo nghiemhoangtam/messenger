@@ -29,5 +29,8 @@
     "extends": [
       "@commitlint/config-conventional"
     ]
+  },
+  "dependencies": {
+    "@nestjs/throttler": "^6.4.0"
   }
 }

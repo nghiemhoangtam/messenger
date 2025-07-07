@@ -15,7 +15,7 @@ class AuthService {
   async login(credentials: LoginCredentials): Promise<void> {
     return apiRequest<void>(() =>
       axiosClient.post("/auth/login", credentials).then((res) => {
-        window.location.href = `${window.location.origin}/auth/callback?access_token=${res.data.access_token}&refresh_token=${res.data.refresh_token}`;
+        window.location.href = `${window.location.origin}/auth/callback?access_token=${res.data.data.access_token}&refresh_token=${res.data.data.refresh_token}`;
         return res;
       }),
     );
