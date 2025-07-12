@@ -1,6 +1,6 @@
 import { Prop, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { Message } from 'src/apis/chat/schemas/messages.schema';
+import { Message } from 'src/apis/chat/common/schemas/messages.schema';
 import { User } from 'src/apis/user/schemas';
 
 export class File extends Document {

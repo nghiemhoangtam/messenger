@@ -1,6 +1,6 @@
 import { Prop, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { Room } from 'src/apis/chat/schemas/rooms.schema';
+import { Room } from 'src/apis/chat/common/schemas/rooms.schema';
 import { User } from 'src/apis/user/schemas';
 
 export class Call extends Document {
