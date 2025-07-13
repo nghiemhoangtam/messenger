@@ -5,6 +5,7 @@ import { useDispatch } from "react-redux";
 import { ErrorState } from "../types/error";
 import {
   BUSINESS_ERROR,
+  NOT_FOUND_ERROR,
   TOO_MANY_REQUESTS,
   VALIDATION_ERROR,
 } from "../utils/constants/constant";
@@ -28,7 +29,10 @@ export function useShowError(error: ErrorState) {
         });
       } else if (error.code === TOO_MANY_REQUESTS) {
         message.error(translator.common.too_many_requests(t));
-      } else {
+      } else if(error.code === NOT_FOUND_ERROR)  {
+        message.error(translator.common.not_found(t));
+      }
+      else {
         message.error(translator.common.internal_server(t));
       }
     }

@@ -16,5 +16,6 @@
   "check_field": "Check {{field}}",
   "account": "account",
   "internal_server": "Internal server error",
-  "too_many_requests": "Too many requests, please try again later"
+  "too_many_requests": "Too many requests, please try again later",
+  "not_found": "Resource not found"
 }

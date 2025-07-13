@@ -23,6 +23,7 @@ declare module "i18next" {
         account: string;
         internal_server: string;
         too_many_requests: string;
+        not_found: string;
       };
       auth: {
         login: string;

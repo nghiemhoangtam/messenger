@@ -29,9 +29,9 @@ class AuthService {
 
   async resendVerification(email: string): Promise<void> {
     return apiRequest<void>(() =>
-      axiosClient.post("/resend-verification", {
+      axiosClient.post("/auth/resend-verification", {
         email,
-      }),
+      })
     );
   }
 

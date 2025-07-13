@@ -119,3 +119,9 @@ export const too_many_requests = (t: TFunction) =>
     ns,
     defaultValue: `Too many requests, please try again later`,
   });
+
+export const not_found = (t: TFunction) =>
+  t("not_found", {
+    ns,
+    defaultValue: `Resource not found`,
+  });
