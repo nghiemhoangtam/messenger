@@ -193,6 +193,7 @@ export class AuthV1Service extends BaseService {
 
   async resendVerification(email: string, origin: string) {
     return this.handle(async () => {
+      console.log(`Resend verification email to ${email}`);
       const existsValidUser: boolean = await this.existsUser(email);
       if (!existsValidUser) {
         throw new NotFoundException([
@@ -227,6 +228,12 @@ export class AuthV1Service extends BaseService {
             { code: MessageCode.TOKEN_EXPIRED },
           ]);
         }
+        if (error instanceof jwt.JsonWebTokenError) {
+          throw new UnauthorizedException([
+            { code: MessageCode.INVALID_TOKEN },
+          ]);
+        }
+        throw new InternalServerErrorException(MessageCode.INTERNAL_SERVER);
       },
     );
   }
