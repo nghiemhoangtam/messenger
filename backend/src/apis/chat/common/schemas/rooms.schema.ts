@@ -17,6 +17,9 @@ export class Room extends Document {
 
   @Prop({ required: true, default: Date.now })
   created_at: Date;
+
+  @Prop({ required: true })
+  created_by: string;
 }
 
 export const RoomSchema = SchemaFactory.createForClass(Room);
