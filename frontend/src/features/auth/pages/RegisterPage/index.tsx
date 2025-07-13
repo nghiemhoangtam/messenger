@@ -34,8 +34,11 @@ export const RegisterPage: React.FC = () => {
 
   useEffect(() => {
     if (auth.status === "succeeded") {
-      message.success(
-        translator.common.success_message(t, translator.auth.register(t))
+      message.warning(
+        translator.common.success_message(
+          t,
+          translator.auth.send_validate_code(t)
+        )
       );
       dispatch(resetStatus());
       navigate("/verify-token");
