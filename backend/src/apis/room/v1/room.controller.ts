@@ -3,6 +3,7 @@ import {
   Controller,
   ForbiddenException,
   Get,
+  Param,
   Post,
   Req,
   UseGuards,
@@ -52,6 +53,46 @@ export class RoomController {
   ) {
     if (req.user) {
       return this.roomService.createRoom(req.user.id, createRoomDto);
+    } else {
+      throw new ForbiddenException(MessageCode.FORBIDDEN);
+    }
+  }
+
+  @Post('join/:roomId')
+  @ApiOperation({
+    summary: 'Join a room',
+    description: 'Join an existing chat room by its ID',
+  })
+  @ApiResponse({ status: 200, description: 'Joined room successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Room not found' })
+  @ApiResponse({ status: 409, description: 'User already in room' })
+  async joinRoom(
+    @Req() req: IJwtRequest,
+    @Param('roomId') roomId: string,
+  ) {
+    if (req.user) {
+      return this.roomService.joinRoom(req.user.id, roomId);
+    } else {
+      throw new ForbiddenException(MessageCode.FORBIDDEN);
+    }
+  }
+
+  @Post('leave/:roomId')
+  @ApiOperation({
+    summary: 'Leave a room',
+    description: 'Leave an existing chat room by its ID',
+  })
+  @ApiResponse({ status: 200, description: 'Left room successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Room not found' })
+  @ApiResponse({ status: 409, description: 'User not in room' })
+  async leaveRoom(
+    @Req() req: IJwtRequest,
+    @Param('roomId') roomId: string,
+  ) {
+    if (req.user) {
+      return this.roomService.leaveRoom(req.user.id, roomId);
     } else {
       throw new ForbiddenException(MessageCode.FORBIDDEN);
     }

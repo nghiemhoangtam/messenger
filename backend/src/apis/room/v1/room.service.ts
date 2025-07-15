@@ -5,7 +5,6 @@ import { Room } from 'src/apis/chat/common/schemas';
 import { User } from 'src/apis/user/schemas';
 import { MessageCode } from 'src/common/messages/message.enum';
 import { BaseService } from 'src/common/services/base.service';
-import { randomString } from 'src/utils/random.utils';
 import { CreateRoomDto } from '../common/dtos/create-room.dto';
 import { RoomMember } from '../common/schemas/room_members.schema';
 
@@ -38,7 +37,6 @@ export class RoomService extends BaseService {
 
     return this.handle(async () => {
       const newRoom = new this.roomModel({
-        room_code: randomString(10), // Generate a random room code
         name: roomDto.name,
         type: 'group', // Assuming all created rooms are groups
         created_by: userId, // Set the creator of the room
@@ -86,5 +84,55 @@ export class RoomService extends BaseService {
   private cleanRoomMembers (members: string[], adminId: string): string[] {
     const uniqueMembers = [...new Set(members)];
     return uniqueMembers.filter(id => id != adminId);
+  }
+
+  async joinRoom(userId: string, roomId: string): Promise<void> {
+    return this.handle(async () => {
+      if (!isValidObjectId(roomId)) {
+        throw new NotFoundException([{ code: MessageCode.ROOM_NOT_FOUND }]);
+      }
+      const room = await this.roomModel.findById(roomId).exec();
+      if (!room) {
+        throw new NotFoundException([{ code: MessageCode.ROOM_NOT_FOUND }]);
+      }
+      const existingMember = await this.roomMemberModel
+        .findOne({
+          room: new Types.ObjectId(roomId),
+          user: new Types.ObjectId(userId),
+        })
+        .exec();
+      if (existingMember) {
+        throw new NotFoundException([{ code: MessageCode.USER_ALREADY_IN_ROOM }]);
+      }
+      const newRoomMember = new this.roomMemberModel({
+        room: room._id,
+        user: new Types.ObjectId(userId),
+        joined_at: new Date(),
+        role: 'member', // Default role for joining members
+      });
+      await newRoomMember.save();
+    });
+  }   
+
+  async leaveRoom(userId: string, roomId: string): Promise<void> {
+    return this.handle(async () => {
+      if (!isValidObjectId(roomId)) {
+        throw new NotFoundException([{ code: MessageCode.ROOM_NOT_FOUND }]);
+      }
+      const room = await this.roomModel.findById(roomId).exec();
+      if (!room) {
+        throw new NotFoundException([{ code: MessageCode.ROOM_NOT_FOUND }]);
+      }
+      const member = await this.roomMemberModel
+        .findOne({
+          room: new Types.ObjectId(roomId),
+          user: new Types.ObjectId(userId),
+        })
+        .exec();
+      if (!member) {
+        throw new NotFoundException([{ code: MessageCode.USER_NOT_IN_ROOM_MEMBER }]);
+      }
+      await this.roomMemberModel.deleteOne({ _id: member._id }).exec();
+    });
   }
 }
