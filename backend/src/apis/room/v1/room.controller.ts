@@ -39,20 +39,20 @@ export class RoomController {
     }
   }
 
-  @Post()
+  @Post("group")
   @ApiOperation({
-    summary: 'Create a new room',
-    description: 'Create a new chat room with the specified members and name',
+    summary: 'Create a new group room',
+    description: 'Create a new chat group room with the specified members and name',
   })
   @ApiBody({ type: CreateRoomDto })
-  @ApiResponse({ status: 201, description: 'Room created successfully' })
+  @ApiResponse({ status: 201, description: 'Group room created successfully' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
-  async createRoom(
+  async createGroupRoom(
     @Body() createRoomDto: CreateRoomDto,
     @Req() req: IJwtRequest,
   ) {
     if (req.user) {
-      return this.roomService.createRoom(req.user.id, createRoomDto);
+      return this.roomService.createGroupRoom(req.user.id, createRoomDto);
     } else {
       throw new ForbiddenException(MessageCode.FORBIDDEN);
     }
@@ -67,10 +67,7 @@ export class RoomController {
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Room not found' })
   @ApiResponse({ status: 409, description: 'User already in room' })
-  async joinRoom(
-    @Req() req: IJwtRequest,
-    @Param('roomId') roomId: string,
-  ) {
+  async joinRoom(@Req() req: IJwtRequest, @Param('roomId') roomId: string) {
     if (req.user) {
       return this.roomService.joinRoom(req.user.id, roomId);
     } else {
@@ -87,10 +84,7 @@ export class RoomController {
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Room not found' })
   @ApiResponse({ status: 409, description: 'User not in room' })
-  async leaveRoom(
-    @Req() req: IJwtRequest,
-    @Param('roomId') roomId: string,
-  ) {
+  async leaveRoom(@Req() req: IJwtRequest, @Param('roomId') roomId: string) {
     if (req.user) {
       return this.roomService.leaveRoom(req.user.id, roomId);
     } else {

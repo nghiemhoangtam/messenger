@@ -31,7 +31,7 @@ export class RoomService extends BaseService {
     });
   }
 
-  async createRoom(userId: string, roomDto: CreateRoomDto): Promise<void> {
+  async createGroupRoom(userId: string, roomDto: CreateRoomDto): Promise<void> {
     var savedRoom: Room;
     var savedRoomMembers: RoomMember[] = [];
 
