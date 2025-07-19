@@ -1,14 +1,12 @@
 import { Prop, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { Message } from 'src/apis/chat/common/schemas/messages.schema';
-import { User } from 'src/apis/user/schemas';
 
 export class File extends Document {
   @Prop({ type: Types.ObjectId, ref: 'User' })
-  uploader: User;
+  uploader_id: Types.ObjectId;
 
   @Prop({ required: true, default: Date.now })
-  message: Message;
+  message_id: Types.ObjectId;
 
   @Prop({ required: true })
   file_url: string;

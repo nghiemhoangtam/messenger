@@ -1,15 +1,13 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { User } from 'src/apis/user/schemas';
-import { Room } from './rooms.schema';
 
 @Schema({ collection: 'messages' })
 export class Message extends Document {
   @Prop({ type: Types.ObjectId, ref: 'Room', required: true })
-  room: Room;
+  room_id: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'User' })
-  sender: User;
+  sender_id: Types.ObjectId;
 
   @Prop({ required: true })
   type: 'text' | 'image' | 'file' | 'video' | 'voice' | 'sticker' | 'emoji';

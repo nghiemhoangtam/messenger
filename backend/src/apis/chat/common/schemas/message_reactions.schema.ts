@@ -1,14 +1,12 @@
 import { Prop, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { User } from 'src/apis/user/schemas';
-import { Message } from './messages.schema';
 
 export class MessageReaction extends Document {
   @Prop({ type: Types.ObjectId, ref: 'Message', required: true })
-  message: Message;
+  message_id: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  sender: User;
+  sender_id: Types.ObjectId;
 
   @Prop({ required: true })
   emoji: string;

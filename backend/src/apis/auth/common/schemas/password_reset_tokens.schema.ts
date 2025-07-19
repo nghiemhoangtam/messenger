@@ -1,11 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { User } from 'src/apis/user/schemas';
 
-@Schema({ collection: 'password_reset_token' })
+@Schema({ collection: 'password_reset_tokens' })
 export class PasswordResetToken extends Document {
   @Prop({ type: Types.ObjectId, ref: 'User' })
-  user: User;
+  user_id: Types.ObjectId;
 
   @Prop({ required: true })
   token: string;
