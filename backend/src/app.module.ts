@@ -19,6 +19,7 @@ import { AuthV1Module } from './apis/auth/v1/auth.v1.module';
 import { AuthV2Module } from './apis/auth/v2/auth.v2.module';
 import { ChatModule } from './apis/chat/v1/chat.module';
 import { RoomModule } from './apis/room/v1/room.module';
+import { UserRelationshipModule } from './apis/user-relationship/v1/user-relationship.module';
 import { UsersModule } from './apis/user/users.module';
 import { AppController } from './app.controller';
 import { ThrottlerBehindProxyGuard } from './common/guards/throttler-behind-proxy.guard';
@@ -93,7 +94,8 @@ import { RedisModule } from './common/redis/redis.module';
     RedisModule,
     MessageModule,
     ChatModule,
-    RoomModule
+    RoomModule,
+    UserRelationshipModule
   ],
   controllers: [AppController],
   providers: [
