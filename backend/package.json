@@ -18,9 +18,11 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "lint": "eslint 'src/**/*.ts' --fix",
     "format": "prettier --write 'src/**/*.{ts,js,json,md}'",
-    "generate:endpoints": "ts-node -r tsconfig-paths/register scripts/generate-endpoints.ts"
+    "generate:endpoints": "ts-node -r tsconfig-paths/register scripts/generate-endpoints.ts",
+    "seed": "node scripts/seed.js"
   },
   "dependencies": {
+    "@faker-js/faker": "^9.9.0",
     "@nest-lab/throttler-storage-redis": "^1.1.0",
     "@nestjs-modules/ioredis": "^2.0.2",
     "@nestjs/common": "^11.0.1",
