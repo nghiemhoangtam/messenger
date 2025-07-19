@@ -1,23 +1,23 @@
 import {
-  Body,
-  Controller,
-  ForbiddenException,
-  Get,
-  Ip,
-  Post,
-  Query,
-  Req,
-  Res,
-  UseGuards,
+    Body,
+    Controller,
+    ForbiddenException,
+    Get,
+    Ip,
+    Post,
+    Query,
+    Req,
+    Res,
+    UseGuards,
 } from '@nestjs/common';
 import { EventPattern } from '@nestjs/microservices';
 import {
-  ApiBearerAuth,
-  ApiBody,
-  ApiOperation,
-  ApiQuery,
-  ApiResponse,
-  ApiTags,
+    ApiBearerAuth,
+    ApiBody,
+    ApiOperation,
+    ApiQuery,
+    ApiResponse,
+    ApiTags,
 } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { IncomingHttpHeaders } from 'http';

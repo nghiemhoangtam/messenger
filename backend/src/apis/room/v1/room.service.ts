@@ -21,13 +21,17 @@ export class RoomService extends BaseService {
   async findAllByUserId(userId: string): Promise<Room[]> {
     return this.handle(async () => {
       const roomMembers = await this.roomMemberModel
-        .find({ user: userId })
-        .populate('room')
+        .find({ user_id: new Types.ObjectId(userId), is_active: true })
+        .populate('room_id')
         .exec();
       if (!roomMembers || roomMembers.length === 0) {
         return [];
       }
-      return roomMembers.map((member) => member.room);
+      const roomIds = roomMembers.map(member => member.room_id);
+      return this.roomModel
+        .find({ _id: { $in: roomIds }, is_active: true })
+        .populate('created_by_id')
+        .exec();
     });
   }
 
@@ -39,14 +43,14 @@ export class RoomService extends BaseService {
       const newRoom = new this.roomModel({
         name: roomDto.name,
         type: 'group', // Assuming all created rooms are groups
-        created_by: userId, // Set the creator of the room
+        created_by_id: new Types.ObjectId(userId), // Set the creator of the room
         is_active: true, // Assuming the creator is active
         created_at: new Date(),
       });
       savedRoom = await newRoom.save();
       const newRoomMember = new this.roomMemberModel({
-        room: savedRoom._id,
-        user: userId,
+        room_id: savedRoom._id,
+        user_id: userId,
         joined_at: new Date(),
         role: 'admin', // Assuming the creator is an admin
       });
@@ -60,14 +64,14 @@ export class RoomService extends BaseService {
           throw new NotFoundException([{ code: MessageCode.USER_NOT_FOUND }]);
         }
         const user = await this.userModel
-          .findById(new Types.ObjectId(memberId))
+          .findOne({_id: new Types.ObjectId(memberId), is_active: true })
           .exec();
         if (!user) {
           throw new NotFoundException([{ code: MessageCode.USER_NOT_FOUND }]);
         }
         const roomMember = new this.roomMemberModel({
-          room: savedRoom._id,
-          user,
+          room_id: savedRoom._id,
+          user_id: user._id,
           joined_at: new Date(),
           role: 'member', // Default role for other members
         });
@@ -97,16 +101,16 @@ export class RoomService extends BaseService {
       }
       const existingMember = await this.roomMemberModel
         .findOne({
-          room: new Types.ObjectId(roomId),
-          user: new Types.ObjectId(userId),
+          room_id: new Types.ObjectId(roomId),
+          user_id: new Types.ObjectId(userId),
         })
         .exec();
       if (existingMember) {
         throw new NotFoundException([{ code: MessageCode.USER_ALREADY_IN_ROOM }]);
       }
       const newRoomMember = new this.roomMemberModel({
-        room: room._id,
-        user: new Types.ObjectId(userId),
+        room_id: room._id,
+        user_id: new Types.ObjectId(userId),
         joined_at: new Date(),
         role: 'member', // Default role for joining members
       });
@@ -125,8 +129,8 @@ export class RoomService extends BaseService {
       }
       const member = await this.roomMemberModel
         .findOne({
-          room: new Types.ObjectId(roomId),
-          user: new Types.ObjectId(userId),
+          room_id: new Types.ObjectId(roomId),
+          user_id: new Types.ObjectId(userId),
         })
         .exec();
       if (!member) {
@@ -155,36 +159,38 @@ export class RoomService extends BaseService {
       }
 
       // lookup room by type and members by aggregation
-      const existingRoom = await this.roomModel.aggregate([
-        {
-          $match: {
-            type: 'private',
-            is_active: true,
-            $or: [
-              { created_by: new Types.ObjectId(userId) },
-              { created_by: new Types.ObjectId(memberId) },
-            ],
-          },
-        },
-        {
-          $lookup: {
-            from: 'room_members',
-            localField: '_id',
-            foreignField: 'room',
-            as: 'members',
-          },
-        },
-        {
-          $match: {
-            members: {
-              $all: [
-                { $elemMatch: { user: new Types.ObjectId(userId) } },
-                { $elemMatch: { user: new Types.ObjectId(memberId) } },
+      const existingRoom = await this.roomModel
+        .aggregate([
+          {
+            $match: {
+              type: 'private',
+              is_active: true,
+              $or: [
+                { created_by_id: new Types.ObjectId(userId) },
+                { created_by_id: new Types.ObjectId(memberId) },
               ],
             },
           },
-        },
-      ]).exec();
+          {
+            $lookup: {
+              from: 'room_members',
+              localField: '_id',
+              foreignField: 'room_id',
+              as: 'members',
+            },
+          },
+          {
+            $match: {
+              members: {
+                $all: [
+                  { $elemMatch: { user_id: new Types.ObjectId(userId) } },
+                  { $elemMatch: { user_id: new Types.ObjectId(memberId) } },
+                ],
+              },
+            },
+          },
+        ])
+        .exec();
 
       if (existingRoom && existingRoom.length > 0) {
         throw new NotFoundException([{ code: MessageCode.PRIVATE_ROOM_ALREADY_EXISTS }]);
@@ -193,21 +199,21 @@ export class RoomService extends BaseService {
       const newRoom = new this.roomModel({
         name: `ABCXYZ private room`,
         type: 'private',
-        created_by: new Types.ObjectId(userId),
+        created_by_id: new Types.ObjectId(userId),
         is_active: true,
         created_at: new Date(),
       });
       const savedRoom = await newRoom.save();
       const roomMembers = [
         new this.roomMemberModel({
-          room: savedRoom._id,
-          user: new Types.ObjectId(userId),
+          room_id: savedRoom._id,
+          user_id: new Types.ObjectId(userId),
           joined_at: new Date(),
           role: 'admin',
         }),
         new this.roomMemberModel({
-          room: savedRoom._id,
-          user: member._id,
+          room_id: savedRoom._id,
+          user_id: member._id,
           joined_at: new Date(),
           role: 'member',
         }),

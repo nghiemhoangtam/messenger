@@ -10,17 +10,16 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
-import * as bcrypt from 'bcryptjs';
 import Redis from 'ioredis';
 import * as jwt from 'jsonwebtoken';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { MessageCode } from 'src/common/messages/message.enum';
 import { MessageService } from 'src/common/messages/message.service';
 import {
   authBlacklistKey,
   loginAttemptKey,
   resetPasswordBlacklistKey,
-  userDataKey
+  userDataKey,
 } from 'src/common/redis/redis.key';
 import { BaseService } from 'src/common/services/base.service';
 import { EmailQueueService } from 'src/rabbitmq/email/email-queue.service';
@@ -82,16 +81,16 @@ export class AuthV1Service extends BaseService {
       const loginAttempt = ((await this.redis.get(attemptKey)) || 0) as number;
       const maxLoginAttempt =
         this.configService.get<number>('LOGIN_ATTEMPT_COUNT') || 0;
-      if(loginAttempt > maxLoginAttempt) {
+      if (loginAttempt > maxLoginAttempt) {
         throw new UnauthorizedException([
           { code: MessageCode.OVER_MAX_ATTEMPT_LOGIN },
         ]);
       }
-      const user = await this.userModel
-        .findOne({ email: loginDto.email });
-      if (!user || !(await bcrypt.compare(loginDto.password, user.password))) {       
+      const user = await this.userModel.findOne({ email: loginDto.email });
+      // if (!user || !(await bcrypt.compare(loginDto.password, user.password))) {
+      if (!user || loginDto.password !== user.password) {
         const isExistAttemptKey = await this.redis.exists(attemptKey);
-        if(isExistAttemptKey) {
+        if (isExistAttemptKey) {
           await this.redis.incr(attemptKey);
         } else {
           await this.redis.set(
@@ -112,7 +111,7 @@ export class AuthV1Service extends BaseService {
       }
       const token = this.createNewToken(user);
       const newToken = new this.tokenModel({
-        user: user._id,
+        user_id: user._id,
         access_token: token.access_token,
         refresh_token: token.refresh_token,
         user_agent: user_agent,
@@ -129,7 +128,7 @@ export class AuthV1Service extends BaseService {
         access_token: token.access_token,
         refresh_token: token.refresh_token,
       };
-    }) 
+    });
   }
 
   async socialLogin(socialLogin: ISocialLogin): Promise<LoginInfoResponse> {
@@ -156,7 +155,7 @@ export class AuthV1Service extends BaseService {
       });
 
       const socialAccount = new this.socialAccountModel({
-        user: user._id,
+        user_id: user._id,
         provider: socialLogin.provider,
         provider_id: socialLogin.provider_id,
         access_token: socialLogin.access_token,
@@ -166,7 +165,7 @@ export class AuthV1Service extends BaseService {
 
       const token = this.createNewToken(user);
       const newToken = new this.tokenModel({
-        user: user._id,
+        user_id: user._id,
         access_token: token.access_token,
         refresh_token: token.refresh_token,
         user_agent: socialLogin.user_agent,
@@ -271,10 +270,11 @@ export class AuthV1Service extends BaseService {
             { code: MessageCode.TOKEN_EXPIRED },
           ]);
         } else {
-          const hashedPassword = await bcrypt.hash(
-            resetPasswordDto.password,
-            10,
-          );
+          // const hashedPassword = await bcrypt.hash(
+          //   resetPasswordDto.password,
+          //   10,
+          // );
+          const hashedPassword = resetPasswordDto.password;
           await this.passwordResetTokenModel.deleteMany({
             user: tokenSearch._id,
           });
@@ -286,7 +286,7 @@ export class AuthV1Service extends BaseService {
           );
           await this.userModel.updateOne(
             {
-              _id: tokenSearch.user,
+              _id: tokenSearch.user_id,
             },
             {
               $set: {
@@ -304,10 +304,10 @@ export class AuthV1Service extends BaseService {
       const token = randomString(10);
       const url = `${origin}/reset-password?token=${token}`;
       await this.passwordResetTokenModel.deleteMany({
-        user: user._id,
+        user_id: user._id,
       });
       const resetPasswordModel = new this.passwordResetTokenModel({
-        user: user._id,
+        user_id: user._id,
         token,
         expired_at: plusMinute(1),
       });
@@ -364,7 +364,8 @@ export class AuthV1Service extends BaseService {
 
   private async createNewUser(registerDto: RegisterDto): Promise<User> {
     return this.handle(async () => {
-      const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+      // const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+      const hashedPassword = registerDto.password;
       const user = new this.userModel({
         email: registerDto.email,
         display_name: registerDto.display_name,
@@ -384,7 +385,7 @@ export class AuthV1Service extends BaseService {
         MessageCode.RESET_EMAIL_TEMPLATE,
         { url },
       );
-      
+
       await this.emailService.sendEmail(email, subject, html);
     });
   }
@@ -516,12 +517,12 @@ export class AuthV1Service extends BaseService {
             { code: MessageCode.REFRESH_TOKEN_IS_USED },
           ]);
         }
-        const user = await this.userModel.findById(tokenSearched.user);
+        const user = await this.userModel.findById(tokenSearched.user_id);
         if (!user) {
           throw new NotFoundException([
             {
               code: MessageCode.USER_NOT_FOUND,
-              email: tokenSearched.user.email,
+              email: user!.email,
             },
           ]);
         }
@@ -531,7 +532,7 @@ export class AuthV1Service extends BaseService {
 
         const token = this.createNewToken(user);
         const newToken = new this.tokenModel({
-          user: user._id,
+          user_id: user._id,
           access_token: token.access_token,
           refresh_token: token.refresh_token,
           user_agent: user_agent,
@@ -557,7 +558,7 @@ export class AuthV1Service extends BaseService {
   async logout(userId: string, access_token: string) {
     return this.handle(async () => {
       const tokenSearched = await this.tokenModel.findOne({
-        user: userId,
+        user_id: new Types.ObjectId(userId),
         access_token,
       });
       if (!tokenSearched) {
