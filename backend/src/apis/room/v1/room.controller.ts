@@ -39,10 +39,11 @@ export class RoomController {
     }
   }
 
-  @Post("group")
+  @Post('group')
   @ApiOperation({
     summary: 'Create a new group room',
-    description: 'Create a new chat group room with the specified members and name',
+    description:
+      'Create a new chat group room with the specified members and name',
   })
   @ApiBody({ type: CreateRoomDto })
   @ApiResponse({ status: 201, description: 'Group room created successfully' })
@@ -87,6 +88,29 @@ export class RoomController {
   async leaveRoom(@Req() req: IJwtRequest, @Param('roomId') roomId: string) {
     if (req.user) {
       return this.roomService.leaveRoom(req.user.id, roomId);
+    } else {
+      throw new ForbiddenException(MessageCode.FORBIDDEN);
+    }
+  }
+
+  @Post('private/:memberId')
+  @ApiOperation({
+    summary: 'Create a new private room',
+    description:
+      'Create a new chat private room with the specified members and name',
+  })
+  @ApiBody({ type: String })
+  @ApiResponse({
+    status: 201,
+    description: 'Private room created successfully',
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  async createPrivateRoom(
+    @Param('memberId') memberId: string,
+    @Req() req: IJwtRequest,
+  ) {
+    if (req.user) {
+      return this.roomService.createPrivateRoom(req.user.id, memberId);
     } else {
       throw new ForbiddenException(MessageCode.FORBIDDEN);
     }

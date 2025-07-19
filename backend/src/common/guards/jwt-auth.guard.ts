@@ -56,7 +56,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
         throw new UnauthorizedException([{ code: MessageCode.USER_NOT_FOUND }]);
       }
       request.user = {
-        id: user._id as string,
+        id: String(user._id),
         email: user.email,
       };
       request.token = token;

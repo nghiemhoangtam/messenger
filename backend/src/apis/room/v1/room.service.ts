@@ -135,4 +135,84 @@ export class RoomService extends BaseService {
       await this.roomMemberModel.deleteOne({ _id: member._id }).exec();
     });
   }
+
+  async createPrivateRoom(
+    userId: string,
+    memberId: string,
+  ): Promise<void> { 
+    return this.handle(async () => {
+      if (!isValidObjectId(memberId)) {
+        throw new NotFoundException([{ code: MessageCode.USER_NOT_FOUND }]);
+      }
+
+      if (userId === memberId) {
+        throw new NotFoundException([{ code: MessageCode.USER_CANNOT_CREATE_PRIVATE_ROOM_WITH_SELF }]);
+      }
+
+      const member = await this.userModel.findById(memberId).exec();
+      if (!member) {
+        throw new NotFoundException([{ code: MessageCode.USER_NOT_FOUND }]);
+      }
+
+      // lookup room by type and members by aggregation
+      const existingRoom = await this.roomModel.aggregate([
+        {
+          $match: {
+            type: 'private',
+            is_active: true,
+            $or: [
+              { created_by: new Types.ObjectId(userId) },
+              { created_by: new Types.ObjectId(memberId) },
+            ],
+          },
+        },
+        {
+          $lookup: {
+            from: 'room_members',
+            localField: '_id',
+            foreignField: 'room',
+            as: 'members',
+          },
+        },
+        {
+          $match: {
+            members: {
+              $all: [
+                { $elemMatch: { user: new Types.ObjectId(userId) } },
+                { $elemMatch: { user: new Types.ObjectId(memberId) } },
+              ],
+            },
+          },
+        },
+      ]).exec();
+
+      if (existingRoom && existingRoom.length > 0) {
+        throw new NotFoundException([{ code: MessageCode.PRIVATE_ROOM_ALREADY_EXISTS }]);
+      }
+
+      const newRoom = new this.roomModel({
+        name: `ABCXYZ private room`,
+        type: 'private',
+        created_by: new Types.ObjectId(userId),
+        is_active: true,
+        created_at: new Date(),
+      });
+      const savedRoom = await newRoom.save();
+      const roomMembers = [
+        new this.roomMemberModel({
+          room: savedRoom._id,
+          user: new Types.ObjectId(userId),
+          joined_at: new Date(),
+          role: 'admin',
+        }),
+        new this.roomMemberModel({
+          room: savedRoom._id,
+          user: member._id,
+          joined_at: new Date(),
+          role: 'member',
+        }),
+      ];
+      await Promise.all(roomMembers.map(member => member.save()));
+    });
+  }
 }
