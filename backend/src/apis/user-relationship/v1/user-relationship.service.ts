@@ -375,10 +375,18 @@ export class UserRelationshipService extends BaseService {
         .aggregate(pipeline)
         .exec();
 
-      const friends = (result[0].data || []) as MyFriendResponse[];
+      const friends = result[0].data || [];
+      const records: MyFriendResponse[] = friends.map((friend) => ({
+        id: friend._id.toString(),
+        email: friend.email,
+        display_name: friend.display_name,
+        avatar: friend.avatar || null,
+        status: friend.status,
+        last_seen: friend.last_seen || null
+      }));
       const total: number = result[0].totalCount[0]?.count || 0;
 
-      return new PaginationResponse(friends, total, page, limit);
+      return new PaginationResponse(records, total, page, limit);
     });
   }
 

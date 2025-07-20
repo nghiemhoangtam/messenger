@@ -18,6 +18,12 @@ export class User extends Document {
   @Prop({ required: true, default: false })
   is_active: boolean;
 
+  @Prop({ required: true, default: 'offline' })
+  status: 'online' | 'offline' | 'away';
+
+  @Prop({ type: Date, default: null })
+  last_seen: Date;
+
   @Prop({ required: true, default: Date.now })
   created_at: Date;
 

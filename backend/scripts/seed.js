@@ -40,6 +40,8 @@ async function seed() {
       password: faker.internet.password(12),
       avatar: faker.image.avatar(),
       is_active: faker.datatype.boolean(),
+      status: faker.helpers.arrayElement(['online', 'offline', 'away']),
+      last_seen: faker.date.recent({ days: 30 }),
       created_at: faker.date.past({ years: 2 }),
       updated_at: faker.date.recent({ days: 30 }),
     }));

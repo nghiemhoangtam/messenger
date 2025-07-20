@@ -4,6 +4,6 @@ export class MyFriendResponse {
   email: string;
   avatar: string;
   status: string;
-  last_active: Date;
+  last_seen: Date;
   created_at: Date; 
 }
