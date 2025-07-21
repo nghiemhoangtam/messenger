@@ -24,6 +24,48 @@ class ContactService {
       })
     );
   }
+
+  async fetchSentFriends(
+    pageRequest: PaginationRequest
+  ): Promise<PaginationResponse<Contact>> {
+    return apiRequest<PaginationResponse<Contact>>(() =>
+      accessTokenAxiosClient.get("/user-relationship/list-sent-friends", {
+        params: pageRequest.cleanParams(),
+      })
+    );
+  }
+
+  async sendFriendRequest(userId: string) {
+    return apiRequest<void>(() =>
+      accessTokenAxiosClient.post("/user-relationship/send-friend-request", {
+        receiver_id: userId,
+      })
+    );
+  }
+
+  async acceptFriendRequest(userId: string) {
+    return apiRequest<void>(() =>
+      accessTokenAxiosClient.post("/user-relationship/accept-friend-request", {
+        sender_id: userId,
+      })
+    );
+  }
+
+  async rejectFriendRequest(userId: string) {
+    return apiRequest<void>(() =>
+      accessTokenAxiosClient.post("/user-relationship/reject-friend-request", {
+        sender_id: userId,
+      })
+    );
+  }
+
+  async removeFriend(userId: string) {
+    return apiRequest<void>(() =>
+      accessTokenAxiosClient.post("/user-relationship/remove-friend-request", {
+        friend_id: userId,
+      })
+    );
+  }
 }
 
 export const contactService = new ContactService();

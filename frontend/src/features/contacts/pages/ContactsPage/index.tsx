@@ -4,17 +4,20 @@ import {
   UserDeleteOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import { Avatar, Badge, Button, Input, List, message, Modal, Tabs } from "antd";
+import { Avatar, Badge, Button, Input, List, Modal, Tabs } from "antd";
 import React, { startTransition, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import friendService from "../../../../services/friendService";
 import { RootState } from "../../../../store";
 import { PaginationRequest } from "../../../../types/pagination-request";
 import { User } from "../../../auth";
 import {
+  acceptFriendRequest,
   fetchAcceptedFriendsRequest,
   fetchReceiveFriendsRequest,
-  searchFriendsRequest
+  rejectFriendRequest,
+  removeFriendRequest,
+  searchFriendsRequest,
+  sendFriendRequest
 } from "../../contactsSlice";
 import { Contact } from "../../types";
 import styles from "./ContactsPage.module.css";
@@ -33,7 +36,6 @@ export const ContactsPage: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   const dispatch = useDispatch();
-  const currentUser = useSelector((state: RootState) => state.auth.user);
 
   useEffect(() => {
     loadAcceptedFriends();
@@ -75,44 +77,19 @@ export const ContactsPage: React.FC = () => {
   };
 
   const handleAddFriend = async (userId: string) => {
-    try {
-      await friendService.sendFriendRequest(userId);
-      message.success("Đã gửi yêu cầu kết bạn");
-      setModalVisible(false);
-    } catch (error) {
-      message.error("Không thể gửi yêu cầu kết bạn");
-    }
+    dispatch(sendFriendRequest(userId));
   };
 
   const handleAcceptRequest = async (userId: string) => {
-    try {
-      await friendService.acceptFriendRequest(userId);
-      message.success("Đã chấp nhận yêu cầu kết bạn");
-      loadAcceptedFriends();
-      loadReceiveRequestFriends();
-    } catch (error) {
-      message.error("Không thể chấp nhận yêu cầu kết bạn");
-    }
+    dispatch(acceptFriendRequest(userId));
   };
 
   const handleRejectRequest = async (userId: string) => {
-    try {
-      await friendService.rejectFriendRequest(userId);
-      message.success("Đã từ chối yêu cầu kết bạn");
-      loadReceiveRequestFriends();
-    } catch (error) {
-      message.error("Không thể từ chối yêu cầu kết bạn");
-    }
+    dispatch(rejectFriendRequest(userId));
   };
 
   const handleRemoveFriend = async (userId: string) => {
-    try {
-      await friendService.removeFriend(userId);
-      message.success("Đã xóa bạn bè");
-      loadAcceptedFriends();
-    } catch (error) {
-      message.error("Không thể xóa bạn bè");
-    }
+    dispatch(removeFriendRequest(userId));
   };
 
   return (
@@ -235,16 +212,6 @@ export const ContactsPage: React.FC = () => {
         <Input.Search
           placeholder="Nhập tên người dùng..."
           onSearch={(value) => {
-            // Implement user search logic here
-            setSelectedUser({
-              id: "1",
-              email: value,
-              display_name: value,
-              avatar: null,
-              status: "offline",
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            });
           }}
         />
         {selectedUser && (
@@ -259,7 +226,7 @@ export const ContactsPage: React.FC = () => {
               </Button>,
             ]}
           >
-            <List.Item.Meta
+            <List.Item.Meta              
               avatar={<Avatar icon={<UserOutlined />} />}
               title={selectedUser.avatar}
             />

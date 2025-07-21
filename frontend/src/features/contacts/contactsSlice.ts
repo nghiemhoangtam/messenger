@@ -7,6 +7,7 @@ import { Contact, ContactsState } from "./types";
 const initialState: ContactsState = {
   acceptedFriendPagination: new PaginationResponse<Contact>(),
   receivedFriendPagination: new PaginationResponse<Contact>(),
+  sentFriendPagination: new PaginationResponse<Contact>(),
   status: "idle",
   error: null,
 };
@@ -66,7 +67,57 @@ const contactsSlice = createSlice({
       };
       state.status = "succeeded";
     },
-
+    fetchSentFriendsRequest: (state, action: PayloadAction<PaginationRequest>) =>
+      setLoading(state),
+    fetchSentFriendsSuccess: (
+      state,
+      action: PayloadAction<PaginationResponse<Contact>>
+    ) => {
+      state.sentFriendPagination = {
+        ...action.payload,
+        results: action.payload.results,
+      };
+      state.status = "succeeded";
+    },
+    sendFriendRequest: (state, action: PayloadAction<string>) =>
+      setLoading(state),
+    sendFriendRequestSuccess: (state) => {
+      state.status = "succeeded";
+    },    
+    acceptFriendRequest: (state, action: PayloadAction<string>) =>
+      setLoading(state),
+    acceptFriendRequestSuccess: (state, action: PayloadAction<string>) => {
+      const currentContact = state.receivedFriendPagination.results.find(
+        (contact) => contact.id === action.payload
+      );
+      if (currentContact) {
+      state.receivedFriendPagination.results =
+        state.receivedFriendPagination.results.filter(
+          (contact) => contact.id !== action.payload
+        );
+      state.acceptedFriendPagination.results = [
+        ...state.acceptedFriendPagination.results,
+        currentContact,
+      ];
+      }
+      state.status = "succeeded";
+    },
+    rejectFriendRequest: (state, action: PayloadAction<string>) =>
+      setLoading(state),
+    rejectFriendRequestSuccess: (state, action: PayloadAction<string>) => {
+      state.receivedFriendPagination.results = state.receivedFriendPagination.results.filter(
+        (contact) => contact.id !== action.payload
+      );
+      state.status = "succeeded";
+    },
+    removeFriendRequest: (state, action: PayloadAction<string>) =>
+      setLoading(state),
+    removeFriendSuccess: (state, action: PayloadAction<string>) => {
+      state.acceptedFriendPagination.results = state.acceptedFriendPagination.results.filter(
+        (contact) => contact.id !== action.payload
+      );
+      state.status = "succeeded";
+    },
     // Uncomment and implement these if needed
     // fetchSentFriendsRequest: (state) => setLoading(state),
     // fetchSentFriendsSuccess: (state, action: PayloadAction<Contact[]>) => {
@@ -107,8 +158,16 @@ export const {
   fetchReceiveFriendsSuccess,
   searchFriendsRequest,
   searchFriendsSuccess,
-  // fetchSentFriendsRequest,
-  // fetchSentFriendsSuccess,
+  fetchSentFriendsRequest,
+  fetchSentFriendsSuccess,
+  sendFriendRequest,
+  sendFriendRequestSuccess,
+  acceptFriendRequest,
+  acceptFriendRequestSuccess,
+  rejectFriendRequest,
+  rejectFriendRequestSuccess,
+  removeFriendRequest,
+  removeFriendSuccess,
   // fetchBlockedFriendsRequest,
   // fetchBlockedFriendsSuccess,
   setCommonFailed,

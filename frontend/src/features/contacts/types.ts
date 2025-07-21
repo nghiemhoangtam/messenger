@@ -5,6 +5,7 @@ import { RequestStatus } from "../../types/request";
 export interface ContactsState {
   acceptedFriendPagination: PaginationResponse<Contact>;
   receivedFriendPagination: PaginationResponse<Contact>;
+  sentFriendPagination: PaginationResponse<Contact>;
   status: RequestStatus;
   error: ErrorState;
 }
