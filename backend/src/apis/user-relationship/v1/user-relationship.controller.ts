@@ -129,10 +129,10 @@ export class UserRelationshipController {
   @ApiResponse({ status: 403, description: 'Forbidden' })
   async removeFriend(
     @Req() req: IJwtRequest,
-    @Body('sender_id') sender_id: string,
+    @Body('friend_id') friend_id: string,
   ): Promise<void> {
     if (req.user) {
-      return this.userRelationshipService.removeFriend(sender_id, req.user.id);
+      return this.userRelationshipService.removeFriend(friend_id, req.user.id);
     } else {
       throw new ForbiddenException(MessageCode.FORBIDDEN);
     }
@@ -256,7 +256,10 @@ export class UserRelationshipController {
     @Query() query: PaginationRequest,
   ): Promise<PaginationResponse<MyFriendResponse>> {
     if (req.user) {
-      const response = this.userRelationshipService.listSentFriends(req.user.id, query);
+      const response = this.userRelationshipService.listSentFriends(
+        req.user.id,
+        query,
+      );
       return response;
     }
     throw new ForbiddenException(MessageCode.FORBIDDEN);
