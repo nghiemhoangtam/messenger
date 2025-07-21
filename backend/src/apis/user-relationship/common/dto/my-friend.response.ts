@@ -1,9 +1,8 @@
 export class MyFriendResponse {
   id: string;
-  name: string;
   email: string;
+  display_name: string;
   avatar: string;
   status: string;
   last_seen: Date;
-  created_at: Date; 
 }

@@ -257,12 +257,12 @@ export class UserRelationshipService extends BaseService {
   }
 
   async listIncomingFriends(userId: string, query: PaginationRequest) {
-    const extraMatch = { receiver: new Types.ObjectId(userId) };
+    const extraMatch = { receiver_id: new Types.ObjectId(userId) };
     return this.paginateFriends(userId, ['pending'], extraMatch, query);
   }
 
   async listSentFriends(userId: string, query: PaginationRequest) {
-    const extraMatch = { sender: new Types.ObjectId(userId) };
+    const extraMatch = { sender_id: new Types.ObjectId(userId) };
     return this.paginateFriends(userId, ['pending'], extraMatch, query);
   }
 
@@ -335,7 +335,7 @@ export class UserRelationshipService extends BaseService {
         ? [
             {
               $match: {
-                'friend.display_name': { $regex: search, $options: 'i' },
+                'display_name': { $regex: search, $options: 'i' },
               },
             },
           ]
@@ -347,10 +347,10 @@ export class UserRelationshipService extends BaseService {
           for (const key of sortBy.split(',')) {
             const field = key.replace(/^-/, '');
             const direction = key.startsWith('-') ? -1 : 1;
-            sortObj[`friend.${field}`] = direction;
+            sortObj[`${field}`] = direction;
           }
         } else {
-          sortObj['friend.display_name'] = 1;
+          sortObj['display_name'] = 1;
         }
         return [{ $sort: sortObj }];
       })();
