@@ -5,20 +5,30 @@ import {
   UserOutlined,
 } from "@ant-design/icons";
 import { Avatar, Badge, Button, Input, List, message, Modal, Tabs } from "antd";
-import React, { useEffect, useState } from "react";
+import React, { startTransition, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import friendService from "../../../../services/friendService";
 import { RootState } from "../../../../store";
+import { PaginationRequest } from "../../../../types/pagination-request";
 import { User } from "../../../auth";
+import {
+  fetchAcceptedFriendsRequest,
+  fetchReceiveFriendsRequest,
+  searchFriendsRequest
+} from "../../contactsSlice";
+import { Contact } from "../../types";
 import styles from "./ContactsPage.module.css";
 
 const { TabPane } = Tabs;
 
 export const ContactsPage: React.FC = () => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [friends, setFriends] = useState<User[]>([]);
-  const [pendingRequests, setPendingRequests] = useState<User[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const contactState = useSelector((state: RootState) => state.contact);
+
+  const friends: Contact[] = contactState.acceptedFriendPagination.results;
+  const pendingRequests: Contact[] =
+    contactState.receivedFriendPagination.results;
+
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
@@ -26,33 +36,42 @@ export const ContactsPage: React.FC = () => {
   const currentUser = useSelector((state: RootState) => state.auth.user);
 
   useEffect(() => {
-    loadFriends();
-    loadPendingRequests();
+    loadAcceptedFriends();
+    loadReceiveRequestFriends();
   }, []);
 
-  const loadFriends = async () => {
-    try {
-      setLoading(true);
-      const response = await friendService.getFriends();
-      setFriends(response.data);
-    } catch (error) {
-      message.error("Không thể tải danh sách bạn bè");
-    } finally {
-      setLoading(false);
-    }
+  useEffect(() => {
+    dispatch(searchFriendsRequest(new PaginationRequest({
+      page: 1,
+      search: searchQuery
+    })));
+  }, [searchQuery]);
+
+  const loadAcceptedFriends = async () => {
+    dispatch(
+      fetchAcceptedFriendsRequest(
+        new PaginationRequest({
+          page: contactState.acceptedFriendPagination.meta.page + 1,
+          search: searchQuery
+        })
+      )
+    );
   };
 
-  const loadPendingRequests = async () => {
-    try {
-      const response = await friendService.getPendingRequests();
-      setPendingRequests(response.data);
-    } catch (error) {
-      message.error("Không thể tải yêu cầu kết bạn");
-    }
+  const loadReceiveRequestFriends = async () => {
+    dispatch(
+      fetchReceiveFriendsRequest(
+        new PaginationRequest({
+          page: contactState.receivedFriendPagination.meta.page + 1,
+        })
+      )
+    );
   };
 
   const handleSearch = (value: string) => {
-    setSearchQuery(value);
+    startTransition(() => {
+      setSearchQuery(value);
+    });
   };
 
   const handleAddFriend = async (userId: string) => {
@@ -69,8 +88,8 @@ export const ContactsPage: React.FC = () => {
     try {
       await friendService.acceptFriendRequest(userId);
       message.success("Đã chấp nhận yêu cầu kết bạn");
-      loadFriends();
-      loadPendingRequests();
+      loadAcceptedFriends();
+      loadReceiveRequestFriends();
     } catch (error) {
       message.error("Không thể chấp nhận yêu cầu kết bạn");
     }
@@ -80,7 +99,7 @@ export const ContactsPage: React.FC = () => {
     try {
       await friendService.rejectFriendRequest(userId);
       message.success("Đã từ chối yêu cầu kết bạn");
-      loadPendingRequests();
+      loadReceiveRequestFriends();
     } catch (error) {
       message.error("Không thể từ chối yêu cầu kết bạn");
     }
@@ -90,15 +109,11 @@ export const ContactsPage: React.FC = () => {
     try {
       await friendService.removeFriend(userId);
       message.success("Đã xóa bạn bè");
-      loadFriends();
+      loadAcceptedFriends();
     } catch (error) {
       message.error("Không thể xóa bạn bè");
     }
   };
-
-  const filteredFriends = friends.filter((friend) =>
-    friend.username.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   return (
     <div className={styles.container}>
@@ -123,8 +138,8 @@ export const ContactsPage: React.FC = () => {
       <Tabs defaultActiveKey="1">
         <TabPane tab="Bạn bè" key="1">
           <List
-            loading={loading}
-            dataSource={filteredFriends}
+            loading={contactState.status === "loading"}
+            dataSource={friends}
             renderItem={(friend) => (
               <List.Item
                 actions={[
@@ -143,7 +158,7 @@ export const ContactsPage: React.FC = () => {
                   avatar={
                     <Avatar src={friend.avatar} icon={<UserOutlined />} />
                   }
-                  title={friend.username}
+                  title={friend.display_name}
                   description={
                     friend.status === "online"
                       ? "Đang trực tuyến"
@@ -153,14 +168,21 @@ export const ContactsPage: React.FC = () => {
               </List.Item>
             )}
           />
+          {friends.length !==
+            contactState.acceptedFriendPagination.meta.total && (
+            <Button type="primary" onClick={() => loadAcceptedFriends()}>
+              Load more friends
+            </Button>
+          )}
         </TabPane>
-
         <TabPane
           tab={
             <span>
               Yêu cầu kết bạn{" "}
-              {pendingRequests.length > 0 && (
-                <Badge count={pendingRequests.length} />
+              {contactState.receivedFriendPagination.meta.total > 0 && (
+                <Badge
+                  count={contactState.receivedFriendPagination.meta.total}
+                />
               )}
             </span>
           }
@@ -189,12 +211,18 @@ export const ContactsPage: React.FC = () => {
               >
                 <List.Item.Meta
                   avatar={<Avatar src={user.avatar} icon={<UserOutlined />} />}
-                  title={user.username}
+                  title={user.display_name}
                   description="Muốn kết bạn với bạn"
                 />
               </List.Item>
             )}
           />
+          {pendingRequests.length !==
+            contactState.receivedFriendPagination.meta.total && (
+            <Button type="primary" onClick={() => loadReceiveRequestFriends()}>
+              Load more requests
+            </Button>
+          )}
         </TabPane>
       </Tabs>
 
@@ -210,12 +238,12 @@ export const ContactsPage: React.FC = () => {
             // Implement user search logic here
             setSelectedUser({
               id: "1",
-              username: value,
-              email: "example@email.com",
+              email: value,
+              display_name: value,
               avatar: null,
               status: "offline",
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
             });
           }}
         />
@@ -233,7 +261,7 @@ export const ContactsPage: React.FC = () => {
           >
             <List.Item.Meta
               avatar={<Avatar icon={<UserOutlined />} />}
-              title={selectedUser.username}
+              title={selectedUser.avatar}
             />
           </List.Item>
         )}
