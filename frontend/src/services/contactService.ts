@@ -35,6 +35,16 @@ class ContactService {
     );
   }
 
+  async searchAnotherUser(
+    pageRequest: PaginationRequest
+  ): Promise<PaginationResponse<Contact>> {
+    return apiRequest<PaginationResponse<Contact>>(() =>
+      accessTokenAxiosClient.get("/user-relationship/search-another-user", {
+        params: pageRequest.cleanParams(),
+      })
+    );
+  }
+
   async sendFriendRequest(userId: string) {
     return apiRequest<void>(() =>
       accessTokenAxiosClient.post("/user-relationship/send-friend-request", {

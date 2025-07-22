@@ -8,6 +8,7 @@ const initialState: ContactsState = {
   acceptedFriendPagination: new PaginationResponse<Contact>(),
   receivedFriendPagination: new PaginationResponse<Contact>(),
   sentFriendPagination: new PaginationResponse<Contact>(),
+  searchAnotherUserPagination: new PaginationResponse<Contact>(),
   status: "idle",
   error: null,
 };
@@ -79,11 +80,31 @@ const contactsSlice = createSlice({
       };
       state.status = "succeeded";
     },
+    searchAnotherUserRequest: (state, action: PayloadAction<PaginationRequest>) =>
+      setLoading(state),
+    searchAnotherUserSuccess: (
+      state,
+      action: PayloadAction<PaginationResponse<Contact>>
+    ) => {
+      state.searchAnotherUserPagination.results = [
+        ...state.searchAnotherUserPagination.results,
+        ...action.payload.results,
+      ];
+      state.status = "succeeded";
+    },
     sendFriendRequest: (state, action: PayloadAction<string>) =>
       setLoading(state),
-    sendFriendRequestSuccess: (state) => {
+    sendFriendRequestSuccess: (state, action: PayloadAction<string>) => {
+      const currentContact = state.searchAnotherUserPagination.results.find(
+        (contact) => contact.id === action.payload
+      );
+      if (currentContact) {
+        state.searchAnotherUserPagination.results = state.searchAnotherUserPagination.results.filter(
+          (contact) => contact.id !== action.payload
+        );
+      }
       state.status = "succeeded";
-    },    
+    },
     acceptFriendRequest: (state, action: PayloadAction<string>) =>
       setLoading(state),
     acceptFriendRequestSuccess: (state, action: PayloadAction<string>) => {
@@ -160,6 +181,8 @@ export const {
   searchFriendsSuccess,
   fetchSentFriendsRequest,
   fetchSentFriendsSuccess,
+  searchAnotherUserRequest,
+  searchAnotherUserSuccess,
   sendFriendRequest,
   sendFriendRequestSuccess,
   acceptFriendRequest,

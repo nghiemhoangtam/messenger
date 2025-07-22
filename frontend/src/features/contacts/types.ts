@@ -6,6 +6,7 @@ export interface ContactsState {
   acceptedFriendPagination: PaginationResponse<Contact>;
   receivedFriendPagination: PaginationResponse<Contact>;
   sentFriendPagination: PaginationResponse<Contact>;
+  searchAnotherUserPagination: PaginationResponse<Contact>;
   status: RequestStatus;
   error: ErrorState;
 }

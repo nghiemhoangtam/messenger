@@ -9,13 +9,13 @@ import React, { startTransition, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../../../store";
 import { PaginationRequest } from "../../../../types/pagination-request";
-import { User } from "../../../auth";
 import {
   acceptFriendRequest,
   fetchAcceptedFriendsRequest,
   fetchReceiveFriendsRequest,
   rejectFriendRequest,
   removeFriendRequest,
+  searchAnotherUserRequest,
   searchFriendsRequest,
   sendFriendRequest
 } from "../../contactsSlice";
@@ -26,14 +26,16 @@ const { TabPane } = Tabs;
 
 export const ContactsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchAnotherUserQuery, setSearchAnotherUserQuery] = useState('');
   const contactState = useSelector((state: RootState) => state.contact);
 
   const friends: Contact[] = contactState.acceptedFriendPagination.results;
   const pendingRequests: Contact[] =
     contactState.receivedFriendPagination.results;
+  const searchAnotherUsers: Contact[] =
+    contactState.searchAnotherUserPagination.results;
 
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   const dispatch = useDispatch();
 
@@ -48,6 +50,17 @@ export const ContactsPage: React.FC = () => {
       search: searchQuery
     })));
   }, [searchQuery]);
+
+  useEffect(() => {
+    dispatch(
+      searchAnotherUserRequest(
+        new PaginationRequest({
+          page: 1,
+          search: searchAnotherUserQuery,
+        })
+      )
+    );
+  }, [searchAnotherUserQuery]);
 
   const loadAcceptedFriends = async () => {
     dispatch(
@@ -70,9 +83,26 @@ export const ContactsPage: React.FC = () => {
     );
   };
 
+  const loadSearchAnotherUser = async () => {
+    dispatch(
+      searchAnotherUserRequest(
+        new PaginationRequest({
+          page: contactState.searchAnotherUserPagination.meta.page + 1,
+          search: searchAnotherUserQuery
+        })
+      )
+    );
+  };
+
   const handleSearch = (value: string) => {
     startTransition(() => {
       setSearchQuery(value);
+    });
+  };
+
+  const handleSearchAnotherUser = (value: string) => {
+    startTransition(() => {
+      setSearchAnotherUserQuery(value);
     });
   };
 
@@ -212,25 +242,33 @@ export const ContactsPage: React.FC = () => {
         <Input.Search
           placeholder="Nhập tên người dùng..."
           onSearch={(value) => {
+            handleSearchAnotherUser(value);
           }}
         />
-        {selectedUser && (
-          <List.Item
-            actions={[
-              <Button
-                key="add"
-                type="primary"
-                onClick={() => handleAddFriend(selectedUser.id)}
-              >
-                Gửi yêu cầu
-              </Button>,
-            ]}
-          >
-            <List.Item.Meta              
-              avatar={<Avatar icon={<UserOutlined />} />}
-              title={selectedUser.avatar}
-            />
-          </List.Item>
+        <List
+          style={{ maxHeight: "40vh", overflowY: "auto" }}
+          loading={contactState.status === "loading"}
+          dataSource={searchAnotherUsers}
+          renderItem={(user) => (
+            <List.Item
+              actions={[
+                <Button type="primary" onClick={() => handleAddFriend(user.id)}>
+                  Thêm bạn
+                </Button>,
+              ]}
+            >
+              <List.Item.Meta
+                avatar={<Avatar src={user.avatar} icon={<UserOutlined />} />}
+                title={user.display_name}
+              />
+            </List.Item>
+          )}
+        />
+        {searchAnotherUsers.length !==
+          contactState.searchAnotherUserPagination.meta.total && (
+          <Button type="primary" onClick={() => loadSearchAnotherUser()}>
+            Load more requests
+          </Button>
         )}
       </Modal>
     </div>

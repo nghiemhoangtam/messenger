@@ -18,6 +18,8 @@ import {
   rejectFriendRequestSuccess,
   removeFriendRequest,
   removeFriendSuccess,
+  searchAnotherUserRequest,
+  searchAnotherUserSuccess,
   searchFriendsRequest,
   searchFriendsSuccess,
   sendFriendRequest,
@@ -69,6 +71,18 @@ function* handleSearchFriends(action: PayloadAction<PaginationRequest>) {
   }
 }
 
+function* handleSearchAnotherUser(action: PayloadAction<PaginationRequest>) {
+  try {
+    const contactPage: PaginationResponse<Contact> = yield call(
+      contactService.searchAnotherUser,
+      action.payload
+    );
+    yield put(searchAnotherUserSuccess(contactPage));
+  } catch (error) {
+    yield put(setCommonFailed(toErrorState(error as AppError)));
+  }
+}
+
 function* handleFetchSentFriends(action: PayloadAction<PaginationRequest>) {
   try {
     const contactPage: PaginationResponse<Contact> = yield call(
@@ -84,7 +98,7 @@ function* handleFetchSentFriends(action: PayloadAction<PaginationRequest>) {
 function* handleSendFriendRequest(action: PayloadAction<string>) {
   try {
     yield call(contactService.sendFriendRequest, action.payload);
-    yield put(sendFriendRequestSuccess());
+    yield put(sendFriendRequestSuccess(action.payload));
   } catch (error) {
     yield put(setCommonFailed(toErrorState(error as AppError)));
   }
@@ -121,6 +135,7 @@ export function* contactsSaga() {
   yield takeLatest(fetchAcceptedFriendsRequest.type, handleGetAcceptedFriends);
   yield takeLatest(fetchReceiveFriendsRequest.type, handleGetReceiveFriends);
   yield takeLatest(searchFriendsRequest.type, handleSearchFriends);
+  yield takeLatest(searchAnotherUserRequest.type, handleSearchAnotherUser);
   yield takeLatest(fetchSentFriendsRequest.type, handleFetchSentFriends);
   yield takeLatest(sendFriendRequest.type, handleSendFriendRequest);
   yield takeLatest(acceptFriendRequest.type, handleAcceptFriendRequest);
