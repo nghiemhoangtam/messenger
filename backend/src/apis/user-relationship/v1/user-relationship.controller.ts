@@ -85,6 +85,27 @@ export class UserRelationshipController {
     }
   }
 
+  @Get('search-another-user')
+  @ApiOperation({
+    summary: 'Search another user',
+    description: 'Allows a user to search another user',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User searched successfully',
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  async searchAnotherUser(
+    @Req() req: IJwtRequest,
+    @Query() query: PaginationRequest,
+  ): Promise<PaginationResponse<MyFriendResponse>> {
+    if (req.user) {
+      return this.userRelationshipService.searchAnotherUser(req.user.id, query);
+    } else {
+      throw new ForbiddenException(MessageCode.FORBIDDEN);
+    }
+  }
+
   @Post('reject-friend-request')
   @ApiOperation({
     summary: 'Reject a friend request',

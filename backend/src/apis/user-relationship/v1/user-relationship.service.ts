@@ -266,6 +266,123 @@ export class UserRelationshipService extends BaseService {
     return this.paginateFriends(userId, ['pending'], extraMatch, query);
   }
 
+  async searchAnotherUser(userId: string, query: PaginationRequest) {
+    // TODO: find user without friendship with current user
+    return this.handle(async () => {
+      if (!isValidObjectId(userId)) {
+        throw new NotFoundException([{ code: MessageCode.USER_NOT_FOUND }]);
+      }
+      const { page = 1, limit = 10, search, sortBy } = query;
+      const skip = (page - 1) * limit;
+
+      const user = await this.userModel.findOne({
+        _id: new Types.ObjectId(userId),
+        is_active: true,
+      });
+
+      if (!user) {
+        throw new NotFoundException([{ code: MessageCode.USER_NOT_FOUND }]);
+      }
+
+      const relationships = await this.userRelationshipModel.find({
+        $or: [
+          { sender_id: user._id },
+          { receiver_id: user._id },
+        ],
+      }).select('receiver_id');
+
+      const friendIds = relationships.map((friend) => friend.receiver_id);
+
+      const matchStage: any = {
+        $match: {
+          $and: [
+            {
+              _id: { $nin: friendIds },
+            },
+          ],
+        },
+      };
+
+      const addFriendInfoStage = [
+        {
+          $lookup: {
+            from: 'users',
+            localField: '_id',
+            foreignField: '_id',
+            as: 'friendInfo',
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            friend: {
+              $arrayElemAt: ['$friendInfo', 0],
+            },
+          },
+        },
+        {
+          $replaceRoot: { newRoot: '$friend' },
+        },
+        { $unset: 'friend.password' },
+      ];
+
+      const searchStage = search
+        ? [
+            {
+              $match: {
+                'display_name': { $regex: search, $options: 'i' },
+              },
+            },
+          ]
+        : [];
+
+      const sortStage = (() => {
+        const sortObj: any = {};
+        if (sortBy) {
+          for (const key of sortBy.split(',')) {
+            const field = key.replace(/^-/, '');
+            const direction = key.startsWith('-') ? -1 : 1;
+            sortObj[`${field}`] = direction;
+          }
+        } else {
+          sortObj['display_name'] = 1;
+        }
+        return [{ $sort: sortObj }];
+      })();
+
+      const facetStage = [
+        {
+          $facet: {
+            data: [...sortStage, { $skip: skip }, { $limit: limit }],
+            totalCount: [{ $count: 'count' }],
+          },
+        },
+      ];
+
+      const pipeline = [
+        matchStage,
+        ...addFriendInfoStage,
+        ...searchStage,
+        ...facetStage,
+      ];
+
+      const result = await this.userModel.aggregate(pipeline).exec();
+
+      const friends = result[0].data || [];
+      const records: MyFriendResponse[] = friends.map((friend) => ({
+        id: friend._id.toString(),
+        email: friend.email,
+        display_name: friend.display_name,
+        avatar: friend.avatar || null,
+        status: friend.status,
+        last_seen: friend.last_seen || null
+      }));
+      const total: number = result[0].totalCount[0]?.count || 0;
+
+      return new PaginationResponse(records, total, page, limit);
+    });
+  }
+
   private async paginateFriends(
     userId: string,
     status: ('accepted' | 'pending' | 'rejected' | 'removed')[],
