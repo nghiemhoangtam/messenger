@@ -157,11 +157,6 @@ export class UserRelationshipService extends BaseService {
               { code: MessageCode.FRIEND_REQUEST_NOT_FOUND },
             ]);
           }
-          if (currentStatus !== 'accepted') {
-            throw new ConflictException([
-              { code: MessageCode.DUPLICATE_FRIEND_REQUEST },
-            ]);
-          }
         },
       };
 
@@ -173,8 +168,12 @@ export class UserRelationshipService extends BaseService {
         ]);
       }
 
-      relationship.status = newStatus;
-      await relationship.save();
+      if(newStatus === 'removed') {
+        await this.userRelationshipModel.deleteOne({ _id: relationship._id });
+      } else {
+        relationship.status = newStatus;
+        await relationship.save();        
+      }
     });
   }
 

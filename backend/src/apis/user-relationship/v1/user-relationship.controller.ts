@@ -153,7 +153,7 @@ export class UserRelationshipController {
     @Body('friend_id') friend_id: string,
   ): Promise<void> {
     if (req.user) {
-      return this.userRelationshipService.removeFriend(friend_id, req.user.id);
+      return this.userRelationshipService.removeFriend(req.user.id, friend_id);
     } else {
       throw new ForbiddenException(MessageCode.FORBIDDEN);
     }
