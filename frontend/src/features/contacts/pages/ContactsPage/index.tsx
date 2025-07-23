@@ -13,6 +13,7 @@ import {
   acceptFriendRequest,
   fetchAcceptedFriendsRequest,
   fetchReceiveFriendsRequest,
+  fetchSentFriendsRequest,
   rejectFriendRequest,
   removeFriendRequest,
   searchAnotherUserRequest,
@@ -34,6 +35,7 @@ export const ContactsPage: React.FC = () => {
     contactState.receivedFriendPagination.results;
   const searchAnotherUsers: Contact[] =
     contactState.searchAnotherUserPagination.results;
+  const sentRequests: Contact[] = contactState.sentFriendPagination.results;
 
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -42,6 +44,7 @@ export const ContactsPage: React.FC = () => {
   useEffect(() => {
     loadAcceptedFriends();
     loadReceiveRequestFriends();
+    loadSentRequestFriends();
   }, []);
 
   useEffect(() => {
@@ -89,6 +92,16 @@ export const ContactsPage: React.FC = () => {
         new PaginationRequest({
           page: contactState.searchAnotherUserPagination.meta.page + 1,
           search: searchAnotherUserQuery
+        })
+      )
+    );
+  };
+
+  const loadSentRequestFriends = async () => {
+    dispatch(
+      fetchSentFriendsRequest(
+        new PaginationRequest({
+          page: contactState.sentFriendPagination.meta.page + 1,
         })
       )
     );
@@ -227,6 +240,45 @@ export const ContactsPage: React.FC = () => {
           {pendingRequests.length !==
             contactState.receivedFriendPagination.meta.total && (
             <Button type="primary" onClick={() => loadReceiveRequestFriends()}>
+              Load more requests
+            </Button>
+          )}
+        </TabPane>
+        <TabPane
+          tab={
+            <span>
+              Yêu cầu kết bạn đã gửi{" "}
+              {contactState.sentFriendPagination.meta.total > 0 && (
+                <Badge count={contactState.sentFriendPagination.meta.total} />
+              )}
+            </span>
+          }
+          key="3"
+        >
+          <List
+            dataSource={sentRequests}
+            renderItem={(user) => (
+              <List.Item
+                actions={[
+                  <Button
+                    key="remove"
+                    danger
+                    onClick={() => handleRemoveFriend(user.id)}
+                  >
+                    Hủy yêu cầu
+                  </Button>,
+                ]}
+              >
+                <List.Item.Meta
+                  avatar={<Avatar src={user.avatar} icon={<UserOutlined />} />}
+                  title={user.display_name}
+                />
+              </List.Item>
+            )}
+          />
+          {sentRequests.length !==
+            contactState.sentFriendPagination.meta.total && (
+            <Button type="primary" onClick={() => loadSentRequestFriends()}>
               Load more requests
             </Button>
           )}

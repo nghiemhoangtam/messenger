@@ -102,6 +102,12 @@ const contactsSlice = createSlice({
         state.searchAnotherUserPagination.results = state.searchAnotherUserPagination.results.filter(
           (contact) => contact.id !== action.payload
         );
+        state.sentFriendPagination.results = [
+          ...state.sentFriendPagination.results,
+          currentContact,
+        ];
+        state.sentFriendPagination.meta.total += 1;
+        state.searchAnotherUserPagination.meta.total -= 1;
       }
       state.status = "succeeded";
     },
@@ -120,6 +126,7 @@ const contactsSlice = createSlice({
         ...state.acceptedFriendPagination.results,
         currentContact,
       ];
+      state.acceptedFriendPagination.meta.total += 1;
       }
       state.status = "succeeded";
     },
@@ -129,14 +136,17 @@ const contactsSlice = createSlice({
       state.receivedFriendPagination.results = state.receivedFriendPagination.results.filter(
         (contact) => contact.id !== action.payload
       );
+      state.receivedFriendPagination.meta.total -= 1;
       state.status = "succeeded";
     },
     removeFriendRequest: (state, action: PayloadAction<string>) =>
       setLoading(state),
     removeFriendSuccess: (state, action: PayloadAction<string>) => {
-      state.acceptedFriendPagination.results = state.acceptedFriendPagination.results.filter(
-        (contact) => contact.id !== action.payload
-      );
+      state.sentFriendPagination.results =
+        state.sentFriendPagination.results.filter(
+          (contact) => contact.id !== action.payload
+        );
+      state.sentFriendPagination.meta.total -= 1;
       state.status = "succeeded";
     },
     // Uncomment and implement these if needed

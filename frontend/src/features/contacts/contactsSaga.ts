@@ -24,7 +24,7 @@ import {
   searchFriendsSuccess,
   sendFriendRequest,
   sendFriendRequestSuccess,
-  setCommonFailed,
+  setCommonFailed
 } from "./contactsSlice";
 import { Contact } from "./types";
 
