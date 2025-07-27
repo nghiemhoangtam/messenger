@@ -9,7 +9,7 @@ export class Room extends Document {
   @Prop({ required: true })
   type: 'private' | 'group';
 
-  @Prop({ required: true })
+  @Prop({ required: false })
   avatar: string;
 
   @Prop({ required: true, default: false })

@@ -137,7 +137,6 @@ export class RoomService extends BaseService {
           name: roomData.name,
           avatar: roomData.avatar,
           created_at: roomData.created_at,
-          updated_at: roomData.updated_at,
         };
 
         let lastMessage: MessageResponse | undefined;
@@ -187,7 +186,7 @@ export class RoomService extends BaseService {
     });
   }
 
-  async createGroupRoom(userId: string, roomDto: CreateRoomDto): Promise<void> {
+  async createGroupRoom(userId: string, roomDto: CreateRoomDto): Promise<ConversationResponse> {
     var savedRoom: Room;
     var savedRoomMembers: RoomMember[] = [];
 
@@ -198,6 +197,7 @@ export class RoomService extends BaseService {
           type: 'group', // Assuming all created rooms are groups
           created_by_id: new Types.ObjectId(userId), // Set the creator of the room
           is_active: true, // Assuming the creator is active
+          avatar: 'TEMP',
           created_at: new Date(),
         });
         savedRoom = await newRoom.save();
@@ -230,6 +230,12 @@ export class RoomService extends BaseService {
           });
           savedRoomMembers.push(await roomMember.save());
         }
+
+        const result = new ConversationResponse();
+        result.room = new RoomResponse(savedRoom);
+        result.unread_count = 0;
+        
+        return result;
       },
       async (error) => {
         console.error('Rollback data');
@@ -241,7 +247,7 @@ export class RoomService extends BaseService {
         );
         throw error;
       },
-    );
+    );    
   }
 
   private cleanRoomMembers(members: string[], adminId: string): string[] {
