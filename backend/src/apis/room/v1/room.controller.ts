@@ -5,14 +5,16 @@ import {
   Get,
   Param,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { IJwtRequest } from 'src/apis/auth/common/interfaces';
+import { PaginationRequest } from 'src/common/dto/request/pagination.request';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { MessageCode } from 'src/common/messages/message.enum';
-import { CreateRoomDto } from '../common/dtos/create-room.dto';
+import { CreateRoomDto } from '../common/dtos/request/create-room.request';
 import { RoomService } from './room.service';
 
 @ApiTags('room')
@@ -21,19 +23,19 @@ import { RoomService } from './room.service';
 export class RoomController {
   constructor(private readonly roomService: RoomService) {}
 
-  @Get()
+  @Get('conversation')
   @ApiOperation({
-    summary: 'Get all rooms for a user',
-    description: 'Retrieve all chat rooms that the user is a member of',
+    summary: 'Get all conversations for a user',
+    description: 'Retrieve all chat conversations that the user is a member of',
   })
   @ApiResponse({
     status: 200,
-    description: 'List of rooms retrieved successfully',
+    description: 'List of conversations retrieved successfully',
   })
   @ApiResponse({ status: 403, description: 'Forbidden' })
-  async getAllRooms(@Req() req: IJwtRequest) {
+  async getConversations(@Req() req: IJwtRequest, @Query() pageRequest: PaginationRequest) {
     if (req.user) {
-      return this.roomService.findAllByUserId(req.user.id);
+      return this.roomService.findAllByUserId(req.user.id, pageRequest);
     } else {
       throw new ForbiddenException(MessageCode.FORBIDDEN);
     }

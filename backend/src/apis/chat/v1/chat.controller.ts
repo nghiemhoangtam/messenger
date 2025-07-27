@@ -10,7 +10,7 @@ import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { IJwtRequest } from 'src/apis/auth/common/interfaces';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { MessageCode } from 'src/common/messages/message.enum';
-import { CreateMessageDto } from '../common/dto/create-message.dto';
+import { CreateMessageDto } from '../common/dto/request/create-message.dto';
 import { ChatService } from './chat.service';
 
 @ApiTags('chat')

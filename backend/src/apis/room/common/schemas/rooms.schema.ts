@@ -9,6 +9,9 @@ export class Room extends Document {
   @Prop({ required: true })
   type: 'private' | 'group';
 
+  @Prop({ required: true })
+  avatar: string;
+
   @Prop({ required: true, default: false })
   is_active: boolean;
 
@@ -16,7 +19,7 @@ export class Room extends Document {
   created_at: Date;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  created_by_id: Types.ObjectId;
+  created_by_id: Types.ObjectId;  
 }
 
 export const RoomSchema = SchemaFactory.createForClass(Room);

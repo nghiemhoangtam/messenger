@@ -14,7 +14,7 @@ import { PaginationRequest } from 'src/common/dto/request/pagination.request';
 import { PaginationResponse } from 'src/common/dto/response/pagination.response';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { MessageCode } from 'src/common/messages/message.enum';
-import { MyFriendResponse } from '../common/dto/my-friend.response';
+import { ContactResponse } from '../common/dto/contact.response';
 import { UserRelationshipService } from './user-relationship.service';
 
 @ApiTags('user-relationship')
@@ -98,7 +98,7 @@ export class UserRelationshipController {
   async searchAnotherUser(
     @Req() req: IJwtRequest,
     @Query() query: PaginationRequest,
-  ): Promise<PaginationResponse<MyFriendResponse>> {
+  ): Promise<PaginationResponse<ContactResponse>> {
     if (req.user) {
       return this.userRelationshipService.searchAnotherUser(req.user.id, query);
     } else {
@@ -225,7 +225,7 @@ export class UserRelationshipController {
   async listAcceptedFriends(
     @Req() req: IJwtRequest,
     @Query() query: PaginationRequest,
-  ): Promise<PaginationResponse<MyFriendResponse>> {
+  ): Promise<PaginationResponse<ContactResponse>> {
     if (req.user) {
       const response = await this.userRelationshipService.listAcceptedFriends(
         req.user.id,
@@ -251,7 +251,7 @@ export class UserRelationshipController {
   async listReceivedFriends(
     @Req() req: IJwtRequest,
     @Query() query: PaginationRequest,
-  ): Promise<PaginationResponse<MyFriendResponse>> {
+  ): Promise<PaginationResponse<ContactResponse>> {
     if (req.user) {
       return this.userRelationshipService.listIncomingFriends(
         req.user.id,
@@ -275,7 +275,7 @@ export class UserRelationshipController {
   async listSentFriends(
     @Req() req: IJwtRequest,
     @Query() query: PaginationRequest,
-  ): Promise<PaginationResponse<MyFriendResponse>> {
+  ): Promise<PaginationResponse<ContactResponse>> {
     if (req.user) {
       const response = this.userRelationshipService.listSentFriends(
         req.user.id,
@@ -284,5 +284,18 @@ export class UserRelationshipController {
       return response;
     }
     throw new ForbiddenException(MessageCode.FORBIDDEN);
+  }
+
+  @Get('search-active-user')
+  @ApiOperation({
+    summary: 'Search all active users',
+    description: 'Get all active users with pagination and search',
+  })
+  @ApiResponse({ status: 200, description: 'Active users fetched successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  async searchActiveUser(
+    @Query() query: PaginationRequest,
+  ): Promise<PaginationResponse<ContactResponse>> {
+    return this.userRelationshipService.searchActiveUser(query);
   }
 }

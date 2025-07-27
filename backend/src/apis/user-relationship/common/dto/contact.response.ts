@@ -1,4 +1,4 @@
-export class MyFriendResponse {
+export class ContactResponse {
   id: string;
   email: string;
   display_name: string;

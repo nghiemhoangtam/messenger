@@ -4,7 +4,7 @@ import { Model } from 'mongoose';
 import { User } from 'src/apis/user/schemas';
 import { MessageCode } from 'src/common/messages/message.enum';
 import { BaseService } from 'src/common/services/base.service';
-import { CreateMessageDto } from '../common/dto/create-message.dto';
+import { CreateMessageDto } from '../common/dto/request/create-message.dto';
 import { Message, Room } from '../common/schemas';
 
 @Injectable()

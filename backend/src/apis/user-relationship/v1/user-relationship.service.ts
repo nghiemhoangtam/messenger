@@ -10,7 +10,7 @@ import { PaginationRequest } from 'src/common/dto/request/pagination.request';
 import { PaginationResponse } from 'src/common/dto/response/pagination.response';
 import { MessageCode } from 'src/common/messages/message.enum';
 import { BaseService } from 'src/common/services/base.service';
-import { MyFriendResponse } from '../common/dto/my-friend.response';
+import { ContactResponse } from '../common/dto/contact.response';
 import { BlockList } from '../common/schemas/block_lists';
 import { UserRelationship } from '../common/schemas/user_relationships';
 
@@ -368,7 +368,7 @@ export class UserRelationshipService extends BaseService {
       const result = await this.userModel.aggregate(pipeline).exec();
 
       const friends = result[0].data || [];
-      const records: MyFriendResponse[] = friends.map((friend) => ({
+      const records: ContactResponse[] = friends.map((friend) => ({
         id: friend._id.toString(),
         email: friend.email,
         display_name: friend.display_name,
@@ -382,12 +382,47 @@ export class UserRelationshipService extends BaseService {
     });
   }
 
+  async searchActiveUser(query: PaginationRequest): Promise<PaginationResponse<ContactResponse>> {
+    const { page = 1, limit = 10, search, sortBy } = query;
+    const skip = (page - 1) * limit;
+    const filter: any = { is_active: true };
+    if (search) {
+      filter.$or = [
+        { display_name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+      ];
+    }
+    const sort: any = {};
+    if (sortBy) {
+      for (const key of sortBy.split(',')) {
+        const field = key.replace(/^-/, '');
+        const direction = key.startsWith('-') ? -1 : 1;
+        sort[field] = direction;
+      }
+    } else {
+      sort['display_name'] = 1;
+    }
+    const [users, total] = await Promise.all([
+      this.userModel.find(filter).sort(sort).skip(skip).limit(limit),
+      this.userModel.countDocuments(filter),
+    ]);
+    const records: ContactResponse[] = users.map((user) => ({
+      id: String(user._id),
+      email: user.email,
+      display_name: user.display_name,
+      avatar: user.avatar ? String(user.avatar) : '',
+      status: user.status,
+      last_seen: user.last_seen || null,
+    }));
+    return new PaginationResponse(records, total, page, limit);
+  }
+
   private async paginateFriends(
     userId: string,
     status: ('accepted' | 'pending' | 'rejected' | 'removed')[],
     extraMatch: any,
     query: PaginationRequest,
-  ): Promise<PaginationResponse<MyFriendResponse>> {
+  ): Promise<PaginationResponse<ContactResponse>> {
     return this.handle(async () => {
       if (!isValidObjectId(userId)) {
         throw new NotFoundException([{ code: MessageCode.USER_NOT_FOUND }]);
@@ -492,7 +527,7 @@ export class UserRelationshipService extends BaseService {
         .exec();
 
       const friends = result[0].data || [];
-      const records: MyFriendResponse[] = friends.map((friend) => ({
+      const records: ContactResponse[] = friends.map((friend) => ({
         id: friend._id.toString(),
         email: friend.email,
         display_name: friend.display_name,
