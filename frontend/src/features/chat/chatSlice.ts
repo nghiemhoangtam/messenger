@@ -1,19 +1,38 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { PaginationRequest } from "../../types/pagination-request";
+import { PaginationResponse } from "../../types/pagination-response";
+import { Contact } from "../contacts/types";
 import { Conversation, Message } from "./types";
 
 interface ChatState {
-  conversations: Conversation[];
+  roomPage: {
+    data: PaginationResponse<Conversation>;
+    loading: boolean;
+    error: string | null;
+  };
   currentConversation: Conversation | null;
   messages: Record<string, Message[]>;
-  loading: boolean;
+  newSearchGroupUser: {
+    data: PaginationResponse<Contact>;
+    loading: boolean;
+    error: string | null;
+  };  
   error: string | null;
 }
 
 const initialState: ChatState = {
-  conversations: [],
+  roomPage: {
+    data: new PaginationResponse<Conversation>(),
+    loading: false,
+    error: null,
+  },
   currentConversation: null,
+  newSearchGroupUser: {
+    data: new PaginationResponse<Contact>(),
+    loading: false,
+    error: null,
+  },
   messages: {},
-  loading: false,
   error: null,
 };
 
@@ -21,83 +40,84 @@ const chatSlice = createSlice({
   name: "chat",
   initialState,
   reducers: {
-    fetchConversationsRequest: (state) => {
-      state.loading = true;
+    fetchConversationsRequest: (state, action: PayloadAction<PaginationRequest>) => {
+      state.roomPage.loading = true;
       state.error = null;
     },
     fetchConversationsSuccess: (
       state,
-      action: PayloadAction<Conversation[]>,
+      action: PayloadAction<PaginationResponse<Conversation>>,
     ) => {
-      state.loading = false;
-      state.conversations = action.payload;
+      state.roomPage.data.results = [...state.roomPage.data.results, ...action.payload.results];
+      state.roomPage.data.meta = action.payload.meta;
+      state.roomPage.loading = false;
     },
     fetchConversationsFailure: (state, action: PayloadAction<string>) => {
-      state.loading = false;
+      state.roomPage.loading = false;
       state.error = action.payload;
     },
     setCurrentConversation: (state, action: PayloadAction<Conversation>) => {
       state.currentConversation = action.payload;
     },
     fetchMessagesRequest: (state, action: PayloadAction<string>) => {
-      state.loading = true;
+      state.roomPage.loading = true;
       state.error = null;
     },
     fetchMessagesSuccess: (
       state,
       action: PayloadAction<{ conversationId: string; messages: Message[] }>,
     ) => {
-      state.loading = false;
+      state.roomPage.loading = false;
       state.messages[action.payload.conversationId] = action.payload.messages;
     },
     fetchMessagesFailure: (state, action: PayloadAction<string>) => {
-      state.loading = false;
+      state.roomPage.loading = false;
       state.error = action.payload;
     },
     sendMessageRequest: (
       state,
       action: PayloadAction<{ conversationId: string; content: string }>,
     ) => {
-      state.loading = true;
+      state.roomPage.loading = true;
       state.error = null;
     },
     sendMessageSuccess: (state, action: PayloadAction<Message>) => {
-      state.loading = false;
-      const conversationId = action.payload.conversationId;
+      state.roomPage.loading = false;
+      const conversationId = action.payload.room_id;
       if (!state.messages[conversationId]) {
         state.messages[conversationId] = [];
       }
       state.messages[conversationId].push(action.payload);
     },
     sendMessageFailure: (state, action: PayloadAction<string>) => {
-      state.loading = false;
+      state.roomPage.loading = false;
       state.error = action.payload;
     },
     receiveMessage: (state, action: PayloadAction<Message>) => {
-      const conversationId = action.payload.conversationId;
+      const conversationId = action.payload.room_id;
       if (!state.messages[conversationId]) {
         state.messages[conversationId] = [];
       }
       state.messages[conversationId].push(action.payload);
 
       // Update conversation last message and unread count
-      const conversation = state.conversations.find(
-        (c) => c.id === conversationId,
+      const conversation = state.roomPage.data.results.find(
+        (c) => c.room.id === conversationId,
       );
       if (conversation) {
         conversation.lastMessage = action.payload;
-        if (conversationId !== state.currentConversation?.id) {
-          conversation.unreadCount += 1;
+        if (conversationId !== state.currentConversation?.room.id) {
+          conversation.unread_count += 1;
         }
       }
     },
     markMessagesAsRead: (state, action: PayloadAction<string>) => {
       const conversationId = action.payload;
-      const conversation = state.conversations.find(
-        (c) => c.id === conversationId,
+      const conversation = state.roomPage.data.results.find(
+        (c) => c.room.id === conversationId,
       );
       if (conversation) {
-        conversation.unreadCount = 0;
+        conversation.unread_count = 0;
       }
 
       const messages = state.messages[conversationId];
@@ -108,6 +128,24 @@ const chatSlice = createSlice({
           }
         });
       }
+    },
+    searchGroupUserRequest: (state, action: PayloadAction<PaginationRequest>) => {
+      state.newSearchGroupUser.loading = true;
+      state.newSearchGroupUser.error = null;
+    },
+    searchGroupUserSuccess: (state, action: PayloadAction<PaginationResponse<Contact>>) => {
+      state.newSearchGroupUser.data.results = [...state.newSearchGroupUser.data.results, ...action.payload.results];
+      state.newSearchGroupUser.data.meta = action.payload.meta;
+      state.newSearchGroupUser.loading = false;
+    },
+    searchGroupUserFailure: (state, action: PayloadAction<string>) => {
+      state.newSearchGroupUser.loading = false;
+      state.newSearchGroupUser.error = action.payload;
+    },
+    resetSearchGroupUser: (state) => {
+      state.newSearchGroupUser.data = new PaginationResponse<Contact>();
+      state.newSearchGroupUser.loading = false;
+      state.newSearchGroupUser.error = null;
     },
   },
 });
@@ -125,6 +163,10 @@ export const {
   sendMessageFailure,
   receiveMessage,
   markMessagesAsRead,
+  searchGroupUserRequest,
+  searchGroupUserSuccess,
+  searchGroupUserFailure,
+  resetSearchGroupUser,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;

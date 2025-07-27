@@ -1,85 +1,358 @@
-import { Avatar, Badge, List } from "antd";
+import { LoginOutlined, UserAddOutlined, UsergroupAddOutlined } from "@ant-design/icons";
+import { Avatar, Badge, Button, Form, Input, List, Modal, Select, message } from "antd";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { roomService } from "../../../../services/roomService";
 import { RootState } from "../../../../store";
+import { PaginationRequest } from "../../../../types/pagination-request";
 import { User } from "../../../auth/types";
+import { Contact } from "../../../contacts/types";
 import {
   fetchConversationsRequest,
-  setCurrentConversation,
+  resetSearchGroupUser,
+  searchGroupUserRequest
 } from "../../chatSlice";
+import { Conversation } from "../../types";
 import styles from "./ConversationList.module.css";
+
+const { Option } = Select;
 
 export const ConversationList: React.FC = () => {
   const dispatch = useDispatch();
   const [searchQuery, setSearchQuery] = useState("");
-  const { conversations, currentConversation } = useSelector(
+  const [searchGroupUserQuery, setSearchGroupUserQuery] = useState('');
+  const { roomPage, currentConversation } = useSelector(
     (state: RootState) => state.chat
   );
   const { user } = useSelector((state: RootState) => state.auth);
 
+  // Modal state
+  const [modalVisible, setModalVisible] = useState(false);
+  const [privateModalVisible, setPrivateModalVisible] = useState(false);
+  const [form] = Form.useForm();
+  const [privateForm] = Form.useForm();
+  const [creating, setCreating] = useState(false);
+  const [creatingPrivate, setCreatingPrivate] = useState(false);
+  const [members, setMembers] = useState<User[]>([]); // List of all users for selection
+  const [allUsers, setAllUsers] = useState<User[]>([]); // Dummy all users for private chat
+  const [joinModalVisible, setJoinModalVisible] = useState(false);
+  const [joinForm] = Form.useForm();
+  const [joining, setJoining] = useState(false);
+
+  // Redux user list state
+  const newSearchGroupUser = useSelector((state: RootState) => state.chat.newSearchGroupUser);
+
   useEffect(() => {
-    dispatch(fetchConversationsRequest());
+    dispatch(fetchConversationsRequest(new PaginationRequest({ page: 1, limit: 20 })));
   }, [dispatch]);
 
+  // Khi mở modal tạo nhóm, reset và fetch user page 1
+  useEffect(() => {
+    if (modalVisible) {
+      dispatch(resetSearchGroupUser());
+      dispatch(searchGroupUserRequest(new PaginationRequest({ page: 1, search: "" })));
+    }
+  }, [modalVisible, dispatch]);
+
+  // TODO: Replace with real API to fetch all users
+  useEffect(() => {
+    // Dummy: only self for now
+    setMembers(user ? [user] : []);
+    // Dummy: giả lập danh sách user khác để chọn private chat
+    setAllUsers(user ? [
+      user,
+      { ...user, id: "2", display_name: "Người dùng 2" },
+      { ...user, id: "3", display_name: "Người dùng 3" },
+    ] : []);
+  }, [user]);
+
+  useEffect(() => {
+    if (modalVisible) {
+      // fetchUserList(1, ""); // This line is removed
+    }
+  }, [modalVisible]);
+
   const handleConversationClick = (conversationId: string) => {
-    const conversation = conversations.find((c) => c.id === conversationId);
+    const conversation = roomPage.data.results.find((c) => c.room.id === conversationId);
     if (conversation) {
-      dispatch(setCurrentConversation(conversation));
+      console.log("conversation", conversation);
+      // dispatch(setCurrentConversation(conversation));
     }
   };
 
-  const filteredConversations = conversations.filter((conversation) => {
-    const otherParticipant = conversation.participants.find(
-      (participant: User) => participant.id !== user?.id
-    );
-    return otherParticipant?.username
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-  });
+  const showCreateGroupModal = () => {
+    setModalVisible(true);
+    form.resetFields();
+  };
+
+  const handleCreateGroup = async (values: any) => {
+    setCreating(true);
+    try {
+      await roomService.createGroupRoom(values.name, values.members);
+      message.success("Tạo nhóm chat thành công");
+      setModalVisible(false);
+      dispatch(fetchConversationsRequest(new PaginationRequest({ page: 1, limit: 10 })));
+    } catch (err) {
+      message.error("Tạo nhóm chat thất bại");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const showCreatePrivateModal = () => {
+    setPrivateModalVisible(true);
+    privateForm.resetFields();
+  };
+
+  const handleCreatePrivate = async (values: any) => {
+    setCreatingPrivate(true);
+    try {
+      await roomService.createPrivateRoom(values.memberId);
+      message.success("Tạo chat riêng tư thành công");
+      setPrivateModalVisible(false);
+      dispatch(fetchConversationsRequest(new PaginationRequest({ page: 1, limit: 10 })));
+    } catch (err) {
+      message.error("Tạo chat riêng tư thất bại");
+    } finally {
+      setCreatingPrivate(false);
+    }
+  };
+
+  const showJoinModal = () => {
+    setJoinModalVisible(true);
+    joinForm.resetFields();
+  };
+
+  const handleJoinRoom = async (values: any) => {
+    setJoining(true);
+    try {
+      await roomService.joinRoom(values.roomId);
+      message.success("Tham gia phòng thành công");
+      setJoinModalVisible(false);
+      dispatch(fetchConversationsRequest(new PaginationRequest({ page: 1, limit: 10 })));
+    } catch (err) {
+      message.error("Tham gia phòng thất bại");
+    } finally {
+      setJoining(false);
+    }
+  };
+
+  // Khi search user
+  const handleSearchGroupUser = (value: string) => {
+    setSearchGroupUserQuery(value);
+    dispatch(searchGroupUserRequest(new PaginationRequest({ page: 1, search: value })));
+  };
+
+  // Khi scroll tới cuối danh sách user
+  const handleSearchGroupUserScroll = (e: any) => {
+    const target = e.target;
+    if (
+      !newSearchGroupUser.loading &&
+      newSearchGroupUser.data.results.length < newSearchGroupUser.data.meta.total &&
+      target.scrollTop + target.offsetHeight >= target.scrollHeight - 32
+    ) {
+      dispatch(
+        searchGroupUserRequest(
+          new PaginationRequest({ page: newSearchGroupUser.data.meta.page + 1, search: searchGroupUserQuery })
+        )
+      );
+    }
+  };
+
+  const listRef = React.useRef<HTMLDivElement>(null);
+
+  const handleConversationListScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    if (
+      target.scrollTop + target.offsetHeight >= target.scrollHeight - 32
+      && !roomPage.loading // nếu có biến loading
+      && roomPage.data.results.length < roomPage.data.meta.total // nếu có phân trang
+    ) {
+      dispatch(fetchConversationsRequest(new PaginationRequest({ page: roomPage.data.meta.page + 1, limit: 20 })));
+    }
+  };
 
   return (
     <div className={styles.conversationList}>
-      <List
-        dataSource={filteredConversations}
-        renderItem={(conversation) => {
-          const isActive = currentConversation?.id === conversation.id;
-          const otherParticipant = conversation.participants.find(
-            (participant: User) => participant.id !== user?.id
-          );
-
-          return (
-            <List.Item
-              className={`${styles.conversationItem} ${
-                isActive ? styles.active : ""
-              }`}
-              onClick={() => handleConversationClick(conversation.id)}
-            >
-              <List.Item.Meta
-                avatar={
-                  <Badge count={conversation.unreadCount}>
-                    <Avatar src={otherParticipant?.avatar}>
-                      {otherParticipant?.username?.[0].toUpperCase()}
-                    </Avatar>
-                  </Badge>
-                }
-                title={otherParticipant?.username || "Nhóm chat"}
-                description={
-                  <div className={styles.lastMessage}>
-                    {conversation.lastMessage?.content}
+      <div className={styles.actionBar}>
+        <Button
+          className={styles.actionButton}
+          icon={<UsergroupAddOutlined />}
+          onClick={showCreateGroupModal}
+        >
+          Nhóm
+        </Button>
+        <Button
+          className={styles.actionButton}
+          icon={<UserAddOutlined />}
+          onClick={showCreatePrivateModal}
+        >
+          Riêng tư
+        </Button>
+        <Button
+          className={styles.actionButton}
+          icon={<LoginOutlined />}
+          onClick={showJoinModal}
+        >
+          Tham gia
+        </Button>
+      </div>
+      <div
+        ref={listRef}
+        className={styles.listWrapper}
+        onScroll={handleConversationListScroll}
+      >
+        <List          
+          dataSource={roomPage.data.results}
+          renderItem={(conversation: Conversation) => {
+            const isActive = currentConversation?.room.id === conversation.room.id;
+            return (
+              <List.Item
+                style={{
+                  padding: "10px",
+                }}
+                className={`${styles.conversationItem} ${
+                  isActive ? styles.active : ""
+                }`}
+                onClick={() => handleConversationClick(conversation.room.id)}
+              >
+                <List.Item.Meta
+                  avatar={
+                    <Badge count={conversation.unread_count}>
+                      <Avatar src={conversation.room.avatar}>
+                        {conversation.room.name?.[0].toUpperCase()}
+                      </Avatar>
+                    </Badge>
+                  }
+                  title={conversation.room.name || "Nhóm chat"}
+                  description={
+                    <div className={styles.lastMessage}>
+                      {conversation.lastMessage?.content}
+                    </div>
+                  }
+                />
+                {conversation.lastMessage && (
+                  <div className={styles.messageTime}>
+                    {new Date(
+                      conversation.lastMessage.created_at
+                    ).toLocaleTimeString()}
                   </div>
-                }
-              />
-              {conversation.lastMessage && (
-                <div className={styles.messageTime}>
-                  {new Date(
-                    conversation.lastMessage.createdAt
-                  ).toLocaleTimeString()}
-                </div>
-              )}
-            </List.Item>
-          );
-        }}
-      />
+                )}
+              </List.Item>
+            );
+          }}
+        />
+      </div>
+      {/* Modal tạo nhóm chat */}
+      <Modal
+        title="Tạo nhóm chat mới"
+        visible={modalVisible}
+        onCancel={() => setModalVisible(false)}
+        onOk={() => form.submit()}
+        confirmLoading={creating}
+        okText="Tạo nhóm"
+        cancelText="Hủy"
+      >
+        <Form form={form} layout="vertical" onFinish={handleCreateGroup}>
+          <Form.Item
+            name="name"
+            label="Tên nhóm"
+            rules={[{ required: true, message: "Nhập tên nhóm" }]}
+          >
+            <Input placeholder="Nhập tên nhóm" />
+          </Form.Item>
+          <Form.Item
+            name="members"
+            label="Thành viên"
+            rules={[{ required: true, message: "Chọn thành viên" }]}
+          >
+            <Select
+              mode="multiple"
+              placeholder="Chọn thành viên"
+              optionFilterProp="children"
+              showSearch
+              filterOption={false}
+              onSearch={handleSearchGroupUser}
+              onPopupScroll={handleSearchGroupUserScroll}
+              loading={newSearchGroupUser.loading}
+              notFoundContent={
+                newSearchGroupUser.loading
+                  ? "Đang tải..."
+                  : "Không tìm thấy người dùng"
+              }
+            >
+              {newSearchGroupUser.data.results
+                .filter((m: Contact) => m.id !== user?.id)
+                .map((m: Contact) => (
+                  <Option key={m.id} value={m.id}>
+                    {m.display_name} ({m.email})
+                  </Option>
+                ))}
+            </Select>
+          </Form.Item>
+        </Form>
+      </Modal>
+      {/* Modal tạo chat riêng tư */}
+      <Modal
+        title="Tạo chat riêng tư"
+        visible={privateModalVisible}
+        onCancel={() => setPrivateModalVisible(false)}
+        onOk={() => privateForm.submit()}
+        confirmLoading={creatingPrivate}
+        okText="Tạo chat"
+        cancelText="Hủy"
+      >
+        <Form
+          form={privateForm}
+          layout="vertical"
+          onFinish={handleCreatePrivate}
+        >
+          <Form.Item
+            name="memberId"
+            label="Chọn người dùng"
+            rules={[{ required: true, message: "Chọn người dùng" }]}
+          >
+            <Select
+              placeholder="Chọn người dùng"
+              optionFilterProp="children"
+              showSearch
+              filterOption={(input, option) =>
+                String(option?.children)
+                  .toLowerCase()
+                  .includes(input.toLowerCase())
+              }
+            >
+              {allUsers
+                .filter((u) => u.id !== user?.id)
+                .map((u) => (
+                  <Option key={u.id} value={u.id}>
+                    {u.display_name}
+                  </Option>
+                ))}
+            </Select>
+          </Form.Item>
+        </Form>
+      </Modal>
+      {/* Modal tham gia phòng */}
+      <Modal
+        title="Tham gia phòng bằng Room ID"
+        visible={joinModalVisible}
+        onCancel={() => setJoinModalVisible(false)}
+        onOk={() => joinForm.submit()}
+        confirmLoading={joining}
+        okText="Tham gia"
+        cancelText="Hủy"
+      >
+        <Form form={joinForm} layout="vertical" onFinish={handleJoinRoom}>
+          <Form.Item
+            name="roomId"
+            label="Room ID"
+            rules={[{ required: true, message: "Nhập Room ID" }]}
+          >
+            <Input placeholder="Nhập Room ID" />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 };

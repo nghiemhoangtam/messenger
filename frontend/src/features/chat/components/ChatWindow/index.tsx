@@ -1,7 +1,10 @@
+import { Button, message, Popconfirm } from "antd";
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { startCallRequest } from "../../../../features/calls/callsSlice";
+import { roomService } from "../../../../services/roomService";
 import { RootState } from "../../../../store";
+import { User } from "../../../auth";
 import {
   fetchMessagesRequest,
   markMessagesAsRead,
@@ -110,6 +113,18 @@ export const ChatWindow: React.FC = () => {
     setIsCallModalVisible(false);
   };
 
+  const handleLeaveRoom = async () => {
+    if (!currentConversation) return;
+    try {
+      await roomService.leaveRoom(currentConversation.id);
+      message.success("Đã rời khỏi phòng");
+      // Reload lại danh sách conversation
+      dispatch({ type: "chat/fetchConversationsRequest" });
+    } catch (err) {
+      message.error("Rời phòng thất bại");
+    }
+  };
+
   if (!currentConversation) {
     return (
       <div className={styles.emptyState}>
@@ -125,12 +140,22 @@ export const ChatWindow: React.FC = () => {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h3>{otherParticipant?.username || "Nhóm chat"}</h3>
-        <CallControls
-          onAudioCall={handleAudioCall}
-          onVideoCall={handleVideoCall}
-          disabled={!currentConversation}
-        />
+        <h3>{otherParticipant?.display_name || "Nhóm chat"}</h3>
+        <div style={{ display: "flex", gap: 8 }}>
+          <CallControls
+            onAudioCall={handleAudioCall}
+            onVideoCall={handleVideoCall}
+            disabled={!currentConversation}
+          />
+          <Popconfirm
+            title="Bạn chắc chắn muốn rời phòng này?"
+            onConfirm={handleLeaveRoom}
+            okText="Rời phòng"
+            cancelText="Hủy"
+          >
+            <Button danger size="small">Rời phòng</Button>
+          </Popconfirm>
+        </div>
       </div>
 
       <div className={styles.messageList}>
@@ -155,7 +180,7 @@ export const ChatWindow: React.FC = () => {
               timestamp={new Date(msg.createdAt).toLocaleTimeString()}
               status={msg.status}
               senderAvatar={sender?.avatar}
-              senderName={sender?.username}
+              senderName={sender?.display_name}
             />
           );
         })}
@@ -172,8 +197,7 @@ export const ChatWindow: React.FC = () => {
         visible={isCallModalVisible}
         type={callType}
         caller={
-          currentConversation?.participants.find((p) => p.id !== user?.id) ||
-          currentConversation?.participants[0]
+          user as User
         }
         onAnswer={handleAnswerCall}
         onReject={handleRejectCall}

@@ -49,4 +49,59 @@
   color: #8c8c8c;
   min-width: 60px;
   text-align: right;
+}
+
+.actionBar {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 8px 0;
+}
+.actionButton {
+  flex: 1;
+  min-width: 0;
+  background: #f5f7fa;
+  border: 1px solid #e6e6e6;
+  border-radius: 8px;
+  color: #1890ff;
+  font-weight: 500;
+  transition: background 0.2s, color 0.2s, border 0.2s;
+  box-shadow: none;
+  margin: 0 1px;
+  padding: 8px 0;
+  white-space: normal;
+  word-break: break-word;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.actionButton:hover, .actionButton:focus {
+  background: #e6f7ff;
+  color: #096dd9;
+  border: 1px solid #91d5ff;
+}
+@media (max-width: 400px) {
+  .actionBar {
+    flex-direction: column;
+    gap: 6px;
+  }
+  .actionButton {
+    width: 100%;
+    margin: 0;
+  }
+}
+
+.conversationList {
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* hoặc 100vh nếu muốn full màn hình */
+}
+
+.listWrapper {
+  flex: 1 1 0%;
+  overflow-y: auto;
 } 

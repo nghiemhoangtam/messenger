@@ -1,16 +1,13 @@
 import { PhoneOutlined } from "@ant-design/icons";
 import { Avatar, Button, Modal, Space } from "antd";
 import React from "react";
+import { User } from "../../../auth";
 import styles from "./CallModal.module.css";
 
 interface CallModalProps {
   visible: boolean;
   type: "audio" | "video";
-  caller: {
-    id: string;
-    username: string;
-    avatar?: string | null;
-  };
+  caller: User;
   onAnswer: () => void;
   onReject: () => void;
   onEnd: () => void;
@@ -38,10 +35,10 @@ export const CallModal: React.FC<CallModalProps> = ({
       <div className={styles.content}>
         <div className={styles.avatar}>
           <Avatar size={100} src={caller.avatar}>
-            {caller.username[0]}
+            {caller.display_name[0]}
           </Avatar>
         </div>
-        <div className={styles.name}>{caller.username}</div>
+        <div className={styles.name}>{caller.display_name}</div>
         <div className={styles.status}>
           {isIncoming ? "Đang gọi đến..." : "Đang gọi..."}
         </div>

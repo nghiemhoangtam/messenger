@@ -1,19 +1,25 @@
-import { User } from "../auth/types";
+import { Contact } from "../contacts/types";
+
+export interface Room {
+  id: string;
+  name: string;
+  type: string;
+  avatar: string;
+  created_at: Date;
+  updated_at: Date;
+}
 
 export interface Message {
   id: string;
-  conversationId: string;
-  sender: User;
+  room_id: string;
+  sender: Contact;
   content: string;
-  createdAt: Date;
+  created_at: Date;
   status: "sent" | "delivered" | "read";
 }
 
 export interface Conversation {
-  id: string;
-  participants: User[];
+  room: Room;
   lastMessage?: Message;
-  unreadCount: number;
-  createdAt: Date;
-  updatedAt: Date;
+  unread_count: number;
 }
