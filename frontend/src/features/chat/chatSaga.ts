@@ -6,6 +6,9 @@ import { PaginationRequest } from "../../types/pagination-request";
 import { PaginationResponse } from "../../types/pagination-response";
 import { Contact } from "../contacts/types";
 import {
+  createGroupRoomFailure,
+  createGroupRoomRequest,
+  createGroupRoomSuccess,
   fetchConversationsFailure,
   fetchConversationsRequest,
   fetchConversationsSuccess,
@@ -19,7 +22,7 @@ import {
   sendMessageRequest,
   sendMessageSuccess,
 } from "./chatSlice";
-import { Conversation } from "./types";
+import { Conversation, CreateGroupRoomRequest } from "./types";
 
 function* handleFetchConversations(action: PayloadAction<PaginationRequest>) {
   try {
@@ -95,10 +98,26 @@ function* handleSearchGroupUser(
   }
 }
 
+function* handleCreateGroupRoom(action: PayloadAction<CreateGroupRoomRequest>) {
+  try {
+    const groupRoom: Conversation = yield call(
+      roomService.createGroupRoom,
+      action.payload
+    );
+    yield put(createGroupRoomSuccess(groupRoom));
+  } catch (error) {
+    yield put(
+      createGroupRoomFailure(
+        error instanceof Error ? error.message : "Failed to create group room"
+      )
+    );
+  }
+}
 
 export function* chatSaga() {
   yield takeLatest(fetchConversationsRequest.type, handleFetchConversations);
   yield takeLatest(fetchMessagesRequest.type, handleFetchMessages);
   yield takeLatest(sendMessageRequest.type, handleSendMessage);
   yield takeLatest(searchGroupUserRequest.type, handleSearchGroupUser);
+  yield takeLatest(createGroupRoomRequest.type, handleCreateGroupRoom);
 }

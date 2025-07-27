@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { PaginationRequest } from "../../types/pagination-request";
 import { PaginationResponse } from "../../types/pagination-response";
 import { Contact } from "../contacts/types";
-import { Conversation, Message } from "./types";
+import { Conversation, CreateGroupRoomRequest, Message } from "./types";
 
 interface ChatState {
   roomPage: {
@@ -16,7 +16,12 @@ interface ChatState {
     data: PaginationResponse<Contact>;
     loading: boolean;
     error: string | null;
-  };  
+  };
+  createGroupRoom: {
+    data: null;
+    loading: boolean;
+    error: string | null;
+  };
   error: string | null;
 }
 
@@ -33,6 +38,11 @@ const initialState: ChatState = {
     error: null,
   },
   messages: {},
+  createGroupRoom: {
+    data: null,
+    loading: false,
+    error: null,
+  },
   error: null,
 };
 
@@ -73,6 +83,11 @@ const chatSlice = createSlice({
     fetchMessagesFailure: (state, action: PayloadAction<string>) => {
       state.roomPage.loading = false;
       state.error = action.payload;
+    },
+    resetCreateGroupRoom: (state) => {
+      state.createGroupRoom.data = null;
+      state.createGroupRoom.loading = false;
+      state.createGroupRoom.error = null;
     },
     sendMessageRequest: (
       state,
@@ -147,6 +162,18 @@ const chatSlice = createSlice({
       state.newSearchGroupUser.loading = false;
       state.newSearchGroupUser.error = null;
     },
+    createGroupRoomRequest: (state, action: PayloadAction<CreateGroupRoomRequest>) => {
+      state.createGroupRoom.loading = true;
+      state.createGroupRoom.error = null;
+    },
+    createGroupRoomSuccess: (state, action: PayloadAction<Conversation>) => {
+      state.roomPage.data.results.push(action.payload);
+      state.createGroupRoom.loading = false;
+    },
+    createGroupRoomFailure: (state, action: PayloadAction<string>) => {
+      state.createGroupRoom.loading = false;
+      state.createGroupRoom.error = action.payload;
+    },
   },
 });
 
@@ -167,6 +194,10 @@ export const {
   searchGroupUserSuccess,
   searchGroupUserFailure,
   resetSearchGroupUser,
+  createGroupRoomRequest,
+  createGroupRoomSuccess,
+  createGroupRoomFailure,
+  resetCreateGroupRoom,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;

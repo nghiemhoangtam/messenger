@@ -1,4 +1,4 @@
-import { Conversation } from "../features/chat/types";
+import { Conversation, CreateGroupRoomRequest } from "../features/chat/types";
 import { PaginationRequest } from "../types/pagination-request";
 import { PaginationResponse } from "../types/pagination-response";
 import { accessTokenAxiosClient } from "../utils/request/axiosClient";
@@ -13,9 +13,10 @@ export const roomService = {
     );
   },
 
-  async createGroupRoom(name: string, members: string[]): Promise<void> {
-    return apiRequest<void>(() =>
-      accessTokenAxiosClient.post(`${API_PREFIX}/group`, { name, members })
+  async createGroupRoom(request: CreateGroupRoomRequest): Promise<Conversation> {
+    console.log(request);
+    return apiRequest<Conversation>(() =>
+      accessTokenAxiosClient.post(`${API_PREFIX}/group`, request)
     );
   },
 

@@ -23,3 +23,8 @@ export interface Conversation {
   lastMessage?: Message;
   unread_count: number;
 }
+
+export interface CreateGroupRoomRequest {
+  name: string;
+  members: string[];
+}

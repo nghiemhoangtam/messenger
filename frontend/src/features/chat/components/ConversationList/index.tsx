@@ -8,30 +8,39 @@ import { PaginationRequest } from "../../../../types/pagination-request";
 import { User } from "../../../auth/types";
 import { Contact } from "../../../contacts/types";
 import {
+  createGroupRoomRequest,
   fetchConversationsRequest,
+  resetCreateGroupRoom,
   resetSearchGroupUser,
   searchGroupUserRequest
 } from "../../chatSlice";
 import { Conversation } from "../../types";
 import styles from "./ConversationList.module.css";
 
+// usePrevious hook must be outside the component and not inside any function
+function usePrevious<T>(value: T): T | undefined {
+  const ref = React.useRef<T | undefined>(undefined);
+  useEffect(() => {
+    ref.current = value;
+  }, [value]);
+  return ref.current;
+}
+
 const { Option } = Select;
 
 export const ConversationList: React.FC = () => {
   const dispatch = useDispatch();
-  const [searchQuery, setSearchQuery] = useState("");
   const [searchGroupUserQuery, setSearchGroupUserQuery] = useState('');
-  const { roomPage, currentConversation } = useSelector(
+  const { roomPage, currentConversation, createGroupRoom } = useSelector(
     (state: RootState) => state.chat
   );
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { user } = useSelector((state: RootState) => state.auth);  
 
   // Modal state
   const [modalVisible, setModalVisible] = useState(false);
   const [privateModalVisible, setPrivateModalVisible] = useState(false);
   const [form] = Form.useForm();
   const [privateForm] = Form.useForm();
-  const [creating, setCreating] = useState(false);
   const [creatingPrivate, setCreatingPrivate] = useState(false);
   const [members, setMembers] = useState<User[]>([]); // List of all users for selection
   const [allUsers, setAllUsers] = useState<User[]>([]); // Dummy all users for private chat
@@ -41,6 +50,7 @@ export const ConversationList: React.FC = () => {
 
   // Redux user list state
   const newSearchGroupUser = useSelector((state: RootState) => state.chat.newSearchGroupUser);
+  const prevLoading = usePrevious(createGroupRoom.loading);
 
   useEffect(() => {
     dispatch(fetchConversationsRequest(new PaginationRequest({ page: 1, limit: 20 })));
@@ -67,15 +77,26 @@ export const ConversationList: React.FC = () => {
   }, [user]);
 
   useEffect(() => {
-    if (modalVisible) {
-      // fetchUserList(1, ""); // This line is removed
+    if (
+      prevLoading && // was loading
+      !createGroupRoom.loading && // now not loading
+      modalVisible
+    ) {
+      setModalVisible(false);
+      form.resetFields();
     }
-  }, [modalVisible]);
+  }, [createGroupRoom.loading, modalVisible, form, prevLoading]);
+
+  useEffect(() => {
+    if(createGroupRoom.error) {
+      message.error('Tạo nhóm thất bại');
+      dispatch(resetCreateGroupRoom());
+    }
+  }, [createGroupRoom.error, dispatch]);
 
   const handleConversationClick = (conversationId: string) => {
     const conversation = roomPage.data.results.find((c) => c.room.id === conversationId);
     if (conversation) {
-      console.log("conversation", conversation);
       // dispatch(setCurrentConversation(conversation));
     }
   };
@@ -86,17 +107,11 @@ export const ConversationList: React.FC = () => {
   };
 
   const handleCreateGroup = async (values: any) => {
-    setCreating(true);
-    try {
-      await roomService.createGroupRoom(values.name, values.members);
-      message.success("Tạo nhóm chat thành công");
-      setModalVisible(false);
-      dispatch(fetchConversationsRequest(new PaginationRequest({ page: 1, limit: 10 })));
-    } catch (err) {
-      message.error("Tạo nhóm chat thất bại");
-    } finally {
-      setCreating(false);
-    }
+    dispatch(createGroupRoomRequest({
+      name: values.name,
+      members: values.members
+    }));
+    // setModalVisible(false); // This line is removed
   };
 
   const showCreatePrivateModal = () => {
@@ -249,7 +264,7 @@ export const ConversationList: React.FC = () => {
         visible={modalVisible}
         onCancel={() => setModalVisible(false)}
         onOk={() => form.submit()}
-        confirmLoading={creating}
+        confirmLoading={createGroupRoom.loading}
         okText="Tạo nhóm"
         cancelText="Hủy"
       >
