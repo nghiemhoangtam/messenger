@@ -29,6 +29,6 @@ import { UserRelationshipService } from './user-relationship.service';
     }),
   ],
   controllers: [UserRelationshipController],
-  providers: [UserRelationshipService],
+  providers: [UserRelationshipService]
 })
 export class UserRelationshipModule {}

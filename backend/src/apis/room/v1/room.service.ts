@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { isValidObjectId, Model, PipelineStage, Types } from 'mongoose';
 import { MessageResponse } from 'src/apis/chat/common/dto/response/message.response';
@@ -35,6 +35,8 @@ export class RoomService extends BaseService {
       const { page = 1, limit = 10 } = pageRequest;
       const skip = (page - 1) * limit;
 
+      // if room is private, then get the other member's display name
+      // if room is group, then get the group name
       const pipeline: PipelineStage[] = [
         { $match: { user_id: new Types.ObjectId(userId) } },
         {
@@ -43,6 +45,24 @@ export class RoomService extends BaseService {
             localField: 'room_id',
             foreignField: '_id',
             as: 'room',
+          },
+        },
+        // Lấy thông tin thành viên phòng
+        {
+          $lookup: {
+            from: 'room_members',
+            localField: 'room_id',
+            foreignField: 'room_id',
+            as: 'members',
+          },
+        },
+        // Lấy thông tin user cho từng member
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'members.user_id',
+            foreignField: '_id',
+            as: 'memberUsers',
           },
         },
         {
@@ -58,7 +78,7 @@ export class RoomService extends BaseService {
                   foreignField: '_id',
                   as: 'sender',
                 },
-              },              
+              },
               { $sort: { created_at: -1 } },
               { $limit: 1 },
             ],
@@ -95,9 +115,56 @@ export class RoomService extends BaseService {
         {
           $addFields: {
             unread_count: {
-              $subtract: [
-                { $size: '$allMessages' },
-                { $size: '$reads' },
+              $subtract: [{ $size: '$allMessages' }, { $size: '$reads' }],
+            },
+            // Nếu room là private, lấy display_name của thành viên còn lại, nếu group thì lấy name
+            displayName: {
+              $cond: [
+                { $eq: [{ $arrayElemAt: ['$room.type', 0] }, 'private'] },
+                {
+                  $arrayElemAt: [
+                    {
+                      $map: {
+                        input: {
+                          $filter: {
+                            input: '$memberUsers',
+                            as: 'member',
+                            cond: { $ne: ['$$member._id', new Types.ObjectId(userId)] },
+                          },
+                        },
+                        as: 'other',
+                        in: '$$other.display_name',
+                      },
+                    },
+                    0,
+                  ],
+                },
+                { $arrayElemAt: ['$room.name', 0] },
+              ],
+            },
+            // Nếu room là private, lấy avatar của thành viên còn lại, nếu group thì lấy avatar của room
+            displayAvatar: {
+              $cond: [
+                { $eq: [{ $arrayElemAt: ['$room.type', 0] }, 'private'] },
+                {
+                  $arrayElemAt: [
+                    {
+                      $map: {
+                        input: {
+                          $filter: {
+                            input: '$memberUsers',
+                            as: 'member',
+                            cond: { $ne: ['$$member._id', new Types.ObjectId(userId)] },
+                          },
+                        },
+                        as: 'other',
+                        in: '$$other.avatar',
+                      },
+                    },
+                    0,
+                  ],
+                },
+                { $arrayElemAt: ['$room.avatar', 0] },
               ],
             },
           },
@@ -123,70 +190,82 @@ export class RoomService extends BaseService {
       const total = result[0].totalCount[0]?.count || 0;
 
       // Map to ConversationResponse
-      const records: ConversationResponse[] = data.map((item) => {
+      const records: ConversationResponse[] = data
+        .map((item) => {
+          // Check if room exists and is not empty array
+          if (
+            !item.room ||
+            !Array.isArray(item.room) ||
+            item.room.length === 0
+          ) {
+            console.warn('Room not found for room member:', item);
+            return null; // Skip this item
+          }
 
-        // Check if room exists and is not empty array
-        if (!item.room || !Array.isArray(item.room) || item.room.length === 0) {
-          console.warn('Room not found for room member:', item);
-          return null; // Skip this item
-        } 
-        
-        const roomData = item.room[0]; // Get the first (and should be only) room
-        const room: RoomResponse = {
-          id: roomData._id.toString(),
-          name: roomData.name,
-          avatar: roomData.avatar,
-          created_at: roomData.created_at,
-        };
+          const roomData = item.room[0]; // Get the first (and should be only) room
+          const room: RoomResponse = {
+            id: roomData._id.toString(),
+            name: item.displayName,
+            avatar: item.displayAvatar,
+            created_at: roomData.created_at,
+          };
 
-        let lastMessage: MessageResponse | undefined;
-        if (item.lastMessage && Array.isArray(item.lastMessage) && item.lastMessage.length > 0) {
-          const lastMessageData = item.lastMessage[0]; // Get the first (and should be only) message
-          let sender: ContactResponse | undefined;
-          if(lastMessageData.sender && lastMessageData.sender.length > 0) {
-            const senderData = lastMessageData.sender[0];
-            sender = {
-            id: senderData._id.toString(),
-            email: senderData.email,
-            display_name: senderData.display_name,
-            avatar: senderData.avatar,
-            status: senderData.status,
-            last_seen: senderData.last_seen,
-            };
-          } else {
+          let lastMessage: MessageResponse | undefined;
+          if (
+            item.lastMessage &&
+            Array.isArray(item.lastMessage) &&
+            item.lastMessage.length > 0
+          ) {
+            const lastMessageData = item.lastMessage[0]; // Get the first (and should be only) message
+            let sender: ContactResponse | undefined;
+            if (lastMessageData.sender && lastMessageData.sender.length > 0) {
+              const senderData = lastMessageData.sender[0];
               sender = {
-              id: '',
-              email: '',
-              display_name: '',
-              avatar: '',
-              status: '',
-              last_seen: new Date(),
+                id: senderData._id.toString(),
+                email: senderData.email,
+                display_name: senderData.display_name,
+                avatar: senderData.avatar,
+                status: senderData.status,
+                last_seen: senderData.last_seen,
+              };
+            } else {
+              sender = {
+                id: '',
+                email: '',
+                display_name: '',
+                avatar: '',
+                status: '',
+                last_seen: new Date(),
+              };
+            }
+
+            lastMessage = {
+              id: lastMessageData._id.toString(),
+              room_id: lastMessageData.room_id.toString(),
+              sender: sender as ContactResponse,
+              content: lastMessageData.content,
+              created_at: lastMessageData.created_at,
+              status: lastMessageData.status,
             };
           }
 
-          lastMessage = {
-            id: lastMessageData._id.toString(),
-            room_id: lastMessageData.room_id.toString(),
-            sender: sender as ContactResponse,
-            content: lastMessageData.content,
-            created_at: lastMessageData.created_at,
-            status: lastMessageData.status,
+          const conversation: ConversationResponse = {
+            room,
+            lastMessage,
+            unread_count: item.unread_count ?? 0,
           };
-        }
-
-        const conversation: ConversationResponse = {
-          room,
-          lastMessage,
-          unread_count: item.unread_count ?? 0,
-        };
-        return conversation;
-      }).filter(record => record !== null); // Filter out null records
+          return conversation;
+        })
+        .filter((record) => record !== null); // Filter out null records
 
       return new PaginationResponse(records, total, page, limit);
     });
   }
 
-  async createGroupRoom(userId: string, roomDto: CreateRoomDto): Promise<ConversationResponse> {
+  async createGroupRoom(
+    userId: string,
+    roomDto: CreateRoomDto,
+  ): Promise<ConversationResponse> {
     var savedRoom: Room;
     var savedRoomMembers: RoomMember[] = [];
 
@@ -234,7 +313,7 @@ export class RoomService extends BaseService {
         const result = new ConversationResponse();
         result.room = new RoomResponse(savedRoom);
         result.unread_count = 0;
-        
+
         return result;
       },
       async (error) => {
@@ -247,7 +326,7 @@ export class RoomService extends BaseService {
         );
         throw error;
       },
-    );    
+    );
   }
 
   private cleanRoomMembers(members: string[], adminId: string): string[] {
@@ -255,7 +334,10 @@ export class RoomService extends BaseService {
     return uniqueMembers.filter((id) => id != adminId);
   }
 
-  async joinRoom(userId: string, roomId: string): Promise<void> {
+  async joinRoom(
+    userId: string,
+    roomId: string,
+  ): Promise<ConversationResponse> {
     return this.handle(async () => {
       if (!isValidObjectId(roomId)) {
         throw new NotFoundException([{ code: MessageCode.ROOM_NOT_FOUND }]);
@@ -282,6 +364,12 @@ export class RoomService extends BaseService {
         role: 'member', // Default role for joining members
       });
       await newRoomMember.save();
+
+      const result = new ConversationResponse();
+      result.room = new RoomResponse(room);
+      result.unread_count = 0;
+
+      return result;
     });
   }
 
@@ -309,7 +397,10 @@ export class RoomService extends BaseService {
     });
   }
 
-  async createPrivateRoom(userId: string, memberId: string): Promise<void> {
+  async createPrivateRoom(
+    userId: string,
+    memberId: string,
+  ): Promise<ConversationResponse> {
     return this.handle(async () => {
       if (!isValidObjectId(memberId)) {
         throw new NotFoundException([{ code: MessageCode.USER_NOT_FOUND }]);
@@ -361,7 +452,7 @@ export class RoomService extends BaseService {
         .exec();
 
       if (existingRoom && existingRoom.length > 0) {
-        throw new NotFoundException([
+        throw new BadRequestException([
           { code: MessageCode.PRIVATE_ROOM_ALREADY_EXISTS },
         ]);
       }
@@ -389,6 +480,14 @@ export class RoomService extends BaseService {
         }),
       ];
       await Promise.all(roomMembers.map((member) => member.save()));
+
+      const result = new ConversationResponse()
+      savedRoom.name = `${member.display_name}`;
+      savedRoom.avatar = member.avatar || 'TEMP';
+      result.room = new RoomResponse(savedRoom);
+      result.unread_count = 0;
+
+      return result;
     });
   }
 }

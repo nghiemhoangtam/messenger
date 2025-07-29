@@ -18,9 +18,8 @@ import { UserRelationship } from '../common/schemas/user_relationships';
 export class UserRelationshipService extends BaseService {
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
-    @InjectModel(UserRelationship.name)
-    private userRelationshipModel: Model<UserRelationship>,
-    @InjectModel(BlockList.name) private blockListModel: Model<BlockList>,
+    @InjectModel(UserRelationship.name) private userRelationshipModel: Model<UserRelationship>,
+    @InjectModel(BlockList.name) private blockListModel: Model<BlockList>
   ) {
     super();
   }
@@ -255,6 +254,133 @@ export class UserRelationshipService extends BaseService {
     return this.paginateFriends(userId, ['accepted'], null, query);
   }
 
+  async listAcceptedFriendsWithoutRoom(userId: string, query: PaginationRequest): Promise<PaginationResponse<ContactResponse>> {
+    const page = query.page || 1;
+    const limit = query.limit || 10;
+    const userIdObj = new Types.ObjectId(userId);
+
+    const pipeline: any[] = [
+      {
+        $match: {
+          status: 'accepted',
+          $or: [
+            { sender_id: userIdObj },
+            { receiver_id: userIdObj }
+          ]
+        }
+      },
+      {
+        $addFields: {
+          friendId: {
+            $cond: [
+              { $eq: ['$sender_id', userIdObj] },
+              '$receiver_id',
+              '$sender_id'
+            ]
+          }
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'friendId',
+          foreignField: '_id',
+          as: 'friend'
+        }
+      },
+      { $unwind: '$friend' },
+      {
+        $lookup: {
+          from: 'room_members',
+          let: { friendId: '$friendId' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $eq: ['$user_id', userIdObj] },
+                    { $eq: ['$user_id', '$$friendId'] }
+                  ]
+                }
+              }
+            }
+          ],
+          as: 'memberships'
+        }
+      },
+      {
+        $addFields: {
+          roomIds: '$memberships.room_id'
+        }
+      },
+      {
+        $unwind: {
+          path: '$roomIds',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $group: {
+          _id: {
+            friendId: '$friendId',
+            friend: '$friend'
+          },
+          roomIds: { $addToSet: '$roomIds' }
+        }
+      },
+      {
+        $lookup: {
+          from: 'rooms',
+          let: { roomIds: '$roomIds' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $in: ['$_id', '$$roomIds'] },
+                    { $eq: ['$type', 'private'] },
+                    { $eq: ['$is_active', true] }
+                  ]
+                }
+              }
+            }
+          ],
+          as: 'privateRooms'
+        }
+      },
+      {
+        $match: {
+          'privateRooms': { $size: 0 }
+        }
+      },
+      { $skip: (page - 1) * limit },
+      { $limit: limit },
+      {
+        $project: {
+          _id: 0,
+          friend: '$_id.friend'
+        }
+      }
+    ];
+
+    const results = await this.userRelationshipModel.aggregate(pipeline);
+
+    // Đếm tổng số bạn bè chưa có room (cho meta.total)
+    const countPipeline = pipeline.filter(stage => !('$skip' in stage) && !('$limit' in stage)).concat({ $count: 'total' });
+    const countResult = await this.userRelationshipModel.aggregate(countPipeline);
+    const total = countResult[0]?.total || 0;
+
+    // Map về ContactResponse
+    const friendsWithoutRoom: ContactResponse[] = results.map(r => r.friend);
+
+    return new PaginationResponse(
+      friendsWithoutRoom,
+      total,
+      page,
+      limit
+    );
+  }
+
   async listIncomingFriends(userId: string, query: PaginationRequest) {
     const extraMatch = { receiver_id: new Types.ObjectId(userId) };
     return this.paginateFriends(userId, ['pending'], extraMatch, query);
@@ -383,6 +509,7 @@ export class UserRelationshipService extends BaseService {
   }
 
   async searchActiveUser(query: PaginationRequest): Promise<PaginationResponse<ContactResponse>> {
+    return this.handle(async () => {
     const { page = 1, limit = 10, search, sortBy } = query;
     const skip = (page - 1) * limit;
     const filter: any = { is_active: true };
@@ -415,6 +542,7 @@ export class UserRelationshipService extends BaseService {
       last_seen: user.last_seen || null,
     }));
     return new PaginationResponse(records, total, page, limit);
+    });
   }
 
   private async paginateFriends(

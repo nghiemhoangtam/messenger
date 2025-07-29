@@ -294,8 +294,28 @@ export class UserRelationshipController {
   @ApiResponse({ status: 200, description: 'Active users fetched successfully' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   async searchActiveUser(
+    @Req() req: IJwtRequest,
     @Query() query: PaginationRequest,
   ): Promise<PaginationResponse<ContactResponse>> {
-    return this.userRelationshipService.searchActiveUser(query);
+    if (req.user) {
+      return this.userRelationshipService.searchActiveUser(query);
+    }
+    throw new ForbiddenException(MessageCode.FORBIDDEN);
+  }
+
+  @Get('available-friends')
+  @ApiOperation({ summary: 'List accepted friends without private room' })
+  @ApiResponse({ status: 200, description: 'Available friends fetched successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'No available friends found' })
+  async getAvailableFriends(
+    @Req() req: IJwtRequest,
+    @Query() query: PaginationRequest,
+  ): Promise<PaginationResponse<ContactResponse>> {
+    if (req.user) {
+      return this.userRelationshipService.listAcceptedFriendsWithoutRoom(req.user.id, query);
+    } else {
+      throw new ForbiddenException(MessageCode.FORBIDDEN);
+    }
   }
 }
