@@ -5,12 +5,14 @@ import { useDispatch, useSelector } from "react-redux";
 import { roomService } from "../../../../services/roomService";
 import { RootState } from "../../../../store";
 import { PaginationRequest } from "../../../../types/pagination-request";
-import { User } from "../../../auth/types";
 import { Contact } from "../../../contacts/types";
 import {
   createGroupRoomRequest,
+  createPrivateRoomRequest,
   fetchConversationsRequest,
+  getAvailableFriendsRequest,
   resetCreateGroupRoom,
+  resetCreatePrivateRoom,
   resetSearchGroupUser,
   searchGroupUserRequest
 } from "../../chatSlice";
@@ -31,7 +33,7 @@ const { Option } = Select;
 export const ConversationList: React.FC = () => {
   const dispatch = useDispatch();
   const [searchGroupUserQuery, setSearchGroupUserQuery] = useState('');
-  const { roomPage, currentConversation, createGroupRoom } = useSelector(
+  const { roomPage, currentConversation, createGroupRoom, createPrivateRoom, newSearchGroupUser, availableFriends } = useSelector(
     (state: RootState) => state.chat
   );
   const { user } = useSelector((state: RootState) => state.auth);  
@@ -41,19 +43,14 @@ export const ConversationList: React.FC = () => {
   const [privateModalVisible, setPrivateModalVisible] = useState(false);
   const [form] = Form.useForm();
   const [privateForm] = Form.useForm();
-  const [creatingPrivate, setCreatingPrivate] = useState(false);
-  const [members, setMembers] = useState<User[]>([]); // List of all users for selection
-  const [allUsers, setAllUsers] = useState<User[]>([]); // Dummy all users for private chat
   const [joinModalVisible, setJoinModalVisible] = useState(false);
   const [joinForm] = Form.useForm();
   const [joining, setJoining] = useState(false);
-
-  // Redux user list state
-  const newSearchGroupUser = useSelector((state: RootState) => state.chat.newSearchGroupUser);
   const prevLoading = usePrevious(createGroupRoom.loading);
 
   useEffect(() => {
     dispatch(fetchConversationsRequest(new PaginationRequest({ page: 1, limit: 20 })));
+    dispatch(getAvailableFriendsRequest(new PaginationRequest({ page: 1, limit: 10 })));
   }, [dispatch]);
 
   // Khi mở modal tạo nhóm, reset và fetch user page 1
@@ -63,18 +60,6 @@ export const ConversationList: React.FC = () => {
       dispatch(searchGroupUserRequest(new PaginationRequest({ page: 1, search: "" })));
     }
   }, [modalVisible, dispatch]);
-
-  // TODO: Replace with real API to fetch all users
-  useEffect(() => {
-    // Dummy: only self for now
-    setMembers(user ? [user] : []);
-    // Dummy: giả lập danh sách user khác để chọn private chat
-    setAllUsers(user ? [
-      user,
-      { ...user, id: "2", display_name: "Người dùng 2" },
-      { ...user, id: "3", display_name: "Người dùng 3" },
-    ] : []);
-  }, [user]);
 
   useEffect(() => {
     if (
@@ -88,11 +73,29 @@ export const ConversationList: React.FC = () => {
   }, [createGroupRoom.loading, modalVisible, form, prevLoading]);
 
   useEffect(() => {
+    if (
+      prevLoading && // was loading
+      !createPrivateRoom.loading && // now not loading
+      privateModalVisible
+    ) {
+      setPrivateModalVisible(false);
+      privateForm.resetFields();
+    }
+  }, [createPrivateRoom.loading, privateModalVisible, privateForm, prevLoading]);
+
+  useEffect(() => {
     if(createGroupRoom.error) {
-      message.error('Tạo nhóm thất bại');
+      message.error(createGroupRoom.error);
       dispatch(resetCreateGroupRoom());
     }
   }, [createGroupRoom.error, dispatch]);
+
+  useEffect(() => {
+    if (createPrivateRoom.error) {
+      message.error(createPrivateRoom.error);
+      dispatch(resetCreatePrivateRoom());
+    }
+  }, [createPrivateRoom.error, dispatch]);
 
   const handleConversationClick = (conversationId: string) => {
     const conversation = roomPage.data.results.find((c) => c.room.id === conversationId);
@@ -120,17 +123,8 @@ export const ConversationList: React.FC = () => {
   };
 
   const handleCreatePrivate = async (values: any) => {
-    setCreatingPrivate(true);
-    try {
-      await roomService.createPrivateRoom(values.memberId);
-      message.success("Tạo chat riêng tư thành công");
-      setPrivateModalVisible(false);
-      dispatch(fetchConversationsRequest(new PaginationRequest({ page: 1, limit: 10 })));
-    } catch (err) {
-      message.error("Tạo chat riêng tư thất bại");
-    } finally {
-      setCreatingPrivate(false);
-    }
+    dispatch(createPrivateRoomRequest(values.memberId));
+    setPrivateModalVisible(false);
   };
 
   const showJoinModal = () => {
@@ -187,7 +181,22 @@ export const ConversationList: React.FC = () => {
     }
   };
 
-  return (
+  const handleSearchFriendScroll = (e: any) => {
+    const target = e.target;
+    if (
+      !availableFriends.loading &&
+      availableFriends.data.results.length < availableFriends.data.meta.total &&
+      target.scrollTop + target.offsetHeight >= target.scrollHeight - 32
+    ) {
+      dispatch(
+        getAvailableFriendsRequest(
+          new PaginationRequest({ page: availableFriends.data.meta.page + 1, limit: 10 })
+        )
+      );
+    }
+  };
+
+      return (
     <div className={styles.conversationList}>
       <div className={styles.actionBar}>
         <Button
@@ -313,7 +322,7 @@ export const ConversationList: React.FC = () => {
         visible={privateModalVisible}
         onCancel={() => setPrivateModalVisible(false)}
         onOk={() => privateForm.submit()}
-        confirmLoading={creatingPrivate}
+        confirmLoading={createPrivateRoom.loading}
         okText="Tạo chat"
         cancelText="Hủy"
       >
@@ -330,6 +339,13 @@ export const ConversationList: React.FC = () => {
             <Select
               placeholder="Chọn người dùng"
               optionFilterProp="children"
+              onPopupScroll={handleSearchFriendScroll}
+              loading={availableFriends.loading}
+              notFoundContent={
+                availableFriends.loading
+                  ? "Đang tải..."
+                  : "Không tìm thấy người dùng"
+              }
               showSearch
               filterOption={(input, option) =>
                 String(option?.children)
@@ -337,11 +353,11 @@ export const ConversationList: React.FC = () => {
                   .includes(input.toLowerCase())
               }
             >
-              {allUsers
-                .filter((u) => u.id !== user?.id)
-                .map((u) => (
+              {availableFriends.data.results
+                .filter((u: Contact) => u.id !== user?.id)
+                .map((u: Contact) => (
                   <Option key={u.id} value={u.id}>
-                    {u.display_name}
+                    {u.display_name} ({u.email})
                   </Option>
                 ))}
             </Select>

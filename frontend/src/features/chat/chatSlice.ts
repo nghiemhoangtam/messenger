@@ -22,6 +22,16 @@ interface ChatState {
     loading: boolean;
     error: string | null;
   };
+  availableFriends: {
+    data: PaginationResponse<Contact>;
+    loading: boolean;
+    error: string | null;
+  };
+  createPrivateRoom: {
+    data: null;
+    loading: boolean;
+    error: string | null;
+  };
   error: string | null;
 }
 
@@ -39,6 +49,16 @@ const initialState: ChatState = {
   },
   messages: {},
   createGroupRoom: {
+    data: null,
+    loading: false,
+    error: null,
+  },
+  availableFriends: {
+    data: new PaginationResponse<Contact>(),
+    loading: false,
+    error: null,
+  },
+  createPrivateRoom: {
     data: null,
     loading: false,
     error: null,
@@ -174,6 +194,44 @@ const chatSlice = createSlice({
       state.createGroupRoom.loading = false;
       state.createGroupRoom.error = action.payload;
     },
+    getAvailableFriendsRequest: (state, action: PayloadAction<PaginationRequest>) => {
+      state.availableFriends.loading = true;
+      state.availableFriends.error = null;
+    },
+    getAvailableFriendsSuccess: (state, action: PayloadAction<PaginationResponse<Contact>>) => {
+      state.availableFriends.data.results = [...state.availableFriends.data.results, ...action.payload.results];
+      state.availableFriends.data.meta = action.payload.meta;
+      state.availableFriends.loading = false;
+    },
+    getAvailableFriendsFailure: (state, action: PayloadAction<string>) => {
+      state.availableFriends.loading = false;
+      state.availableFriends.error = action.payload;
+    },
+    resetAvailableFriends: (state) => {
+      state.availableFriends.data = new PaginationResponse<Contact>();
+      state.availableFriends.loading = false;
+      state.availableFriends.error = null;
+    },
+    createPrivateRoomRequest: (state, action: PayloadAction<string>) => {
+      state.createPrivateRoom.loading = true;
+      state.createPrivateRoom.error = null;
+    },
+    createPrivateRoomSuccess: (state, action: PayloadAction<Conversation>) => {
+      state.roomPage.data.results.push(action.payload);            
+      state.createPrivateRoom.loading = false;
+    },
+    removeAvailableFriend: (state, action: PayloadAction<string>) => {
+      state.availableFriends.data.results = state.availableFriends.data.results.filter(friend => friend.id !== action.payload);
+    },
+    createPrivateRoomFailure: (state, action: PayloadAction<string>) => {
+      state.createPrivateRoom.loading = false;
+      state.createPrivateRoom.error = action.payload;
+    },
+    resetCreatePrivateRoom: (state) => {
+      state.createPrivateRoom.data = null;
+      state.createPrivateRoom.loading = false;
+      state.createPrivateRoom.error = null;
+    },
   },
 });
 
@@ -198,6 +256,15 @@ export const {
   createGroupRoomSuccess,
   createGroupRoomFailure,
   resetCreateGroupRoom,
+  getAvailableFriendsRequest,
+  getAvailableFriendsSuccess,
+  getAvailableFriendsFailure,
+  resetAvailableFriends,
+  createPrivateRoomRequest,
+  createPrivateRoomSuccess,
+  createPrivateRoomFailure,
+  resetCreatePrivateRoom,
+  removeAvailableFriend,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;

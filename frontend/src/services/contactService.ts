@@ -76,6 +76,14 @@ class ContactService {
       })
     );
   }
+
+  async getAvailableFriends(pageRequest: PaginationRequest): Promise<PaginationResponse<Contact>> {
+    return apiRequest<PaginationResponse<Contact>>(() =>
+      accessTokenAxiosClient.get("/user-relationship/available-friends", {
+        params: pageRequest.cleanParams(),
+      })
+    );
+  }
 }
 
 export const contactService = new ContactService();

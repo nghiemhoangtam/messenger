@@ -1,5 +1,6 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { call, put, takeLatest } from "redux-saga/effects";
+import { contactService } from "../../services/contactService";
 import { roomService } from "../../services/roomService";
 import { userService } from "../../services/userService";
 import { PaginationRequest } from "../../types/pagination-request";
@@ -9,12 +10,19 @@ import {
   createGroupRoomFailure,
   createGroupRoomRequest,
   createGroupRoomSuccess,
+  createPrivateRoomFailure,
+  createPrivateRoomRequest,
+  createPrivateRoomSuccess,
   fetchConversationsFailure,
   fetchConversationsRequest,
   fetchConversationsSuccess,
   fetchMessagesFailure,
   fetchMessagesRequest,
   fetchMessagesSuccess,
+  getAvailableFriendsFailure,
+  getAvailableFriendsRequest,
+  getAvailableFriendsSuccess,
+  removeAvailableFriend,
   searchGroupUserFailure,
   searchGroupUserRequest,
   searchGroupUserSuccess,
@@ -114,10 +122,46 @@ function* handleCreateGroupRoom(action: PayloadAction<CreateGroupRoomRequest>) {
   }
 }
 
+function* handleGetAvailableFriends(action: PayloadAction<PaginationRequest>) {
+  try {
+    const friendPage: PaginationResponse<Contact> = yield call(
+      contactService.getAvailableFriends,
+      action.payload
+    );
+    yield put(getAvailableFriendsSuccess(friendPage));
+  } catch (error) {
+    yield put(
+      getAvailableFriendsFailure(
+        error instanceof Error ? error.message : "Failed to get available friends"
+      )
+    );
+  }
+}
+
+function* handleCreatePrivateRoom(action: PayloadAction<string>) {
+
+  try {
+    const privateRoom: Conversation = yield call(
+      roomService.createPrivateRoom,
+      action.payload
+    );
+    yield put(createPrivateRoomSuccess(privateRoom));
+    yield put(removeAvailableFriend(action.payload));
+  } catch (error) {
+    yield put(
+      createPrivateRoomFailure(
+        error instanceof Error ? error.message : "Failed to create private room"
+      )
+    );
+  }
+}
+
 export function* chatSaga() {
   yield takeLatest(fetchConversationsRequest.type, handleFetchConversations);
   yield takeLatest(fetchMessagesRequest.type, handleFetchMessages);
   yield takeLatest(sendMessageRequest.type, handleSendMessage);
   yield takeLatest(searchGroupUserRequest.type, handleSearchGroupUser);
   yield takeLatest(createGroupRoomRequest.type, handleCreateGroupRoom);
+  yield takeLatest(getAvailableFriendsRequest.type, handleGetAvailableFriends);
+  yield takeLatest(createPrivateRoomRequest.type, handleCreatePrivateRoom);
 }
