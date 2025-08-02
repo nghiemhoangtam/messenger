@@ -44,6 +44,9 @@ export class RoomService extends BaseService {
             from: 'rooms',
             localField: 'room_id',
             foreignField: '_id',
+            pipeline: [
+              { $match: { is_active: true } }
+            ],
             as: 'room',
           },
         },
@@ -273,6 +276,12 @@ export class RoomService extends BaseService {
 
     return this.handle(
       async () => {
+        // Check if user exists and is active
+        const creator = await this.userModel.findOne({ _id: new Types.ObjectId(userId), is_active: true }).exec();
+        if (!creator) {
+          throw new NotFoundException([{ code: MessageCode.USER_NOT_FOUND }]);
+        }
+        
         const newRoom = new this.roomModel({
           name: roomDto.name,
           type: 'group', // Assuming all created rooms are groups
@@ -284,7 +293,7 @@ export class RoomService extends BaseService {
         savedRoom = await newRoom.save();
         const newRoomMember = new this.roomMemberModel({
           room_id: savedRoom._id,
-          user_id: userId,
+          user_id: new Types.ObjectId(userId),
           joined_at: new Date(),
           role: 'admin', // Assuming the creator is an admin
         });
@@ -344,8 +353,18 @@ export class RoomService extends BaseService {
       if (!isValidObjectId(roomId)) {
         throw new NotFoundException([{ code: MessageCode.ROOM_NOT_FOUND }]);
       }
+      
+      // Check if user exists and is active
+      const user = await this.userModel.findOne({ _id: new Types.ObjectId(userId), is_active: true }).exec();
+      if (!user) {
+        throw new NotFoundException([{ code: MessageCode.USER_NOT_FOUND }]);
+      }
+      
       const room = await this.roomModel.findById(roomId).exec();
       if (!room) {
+        throw new NotFoundException([{ code: MessageCode.ROOM_NOT_FOUND }]);
+      }
+      if (!room.is_active) {
         throw new NotFoundException([{ code: MessageCode.ROOM_NOT_FOUND }]);
       }
       const existingMember = await this.roomMemberModel
@@ -380,8 +399,18 @@ export class RoomService extends BaseService {
       if (!isValidObjectId(roomId)) {
         throw new NotFoundException([{ code: MessageCode.ROOM_NOT_FOUND }]);
       }
+      
+      // Check if user exists and is active
+      const user = await this.userModel.findOne({ _id: new Types.ObjectId(userId), is_active: true }).exec();
+      if (!user) {
+        throw new NotFoundException([{ code: MessageCode.USER_NOT_FOUND }]);
+      }
+      
       const room = await this.roomModel.findById(roomId).exec();
       if (!room) {
+        throw new NotFoundException([{ code: MessageCode.ROOM_NOT_FOUND }]);
+      }
+      if (!room.is_active) {
         throw new NotFoundException([{ code: MessageCode.ROOM_NOT_FOUND }]);
       }
       const member = await this.roomMemberModel
@@ -414,7 +443,16 @@ export class RoomService extends BaseService {
         ]);
       }
 
-      const member = await this.userModel.findById(new Types.ObjectId(memberId)).exec();
+      // Check if both users exist and are active
+      const [creator, member] = await Promise.all([
+        this.userModel.findOne({ _id: new Types.ObjectId(userId), is_active: true }).exec(),
+        this.userModel.findOne({ _id: new Types.ObjectId(memberId), is_active: true }).exec(),
+      ]);
+      
+      if (!creator) {
+        throw new NotFoundException([{ code: MessageCode.USER_NOT_FOUND }]);
+      }
+      
       if (!member) {
         throw new NotFoundException([{ code: MessageCode.USER_NOT_FOUND }]);
       }
@@ -460,10 +498,11 @@ export class RoomService extends BaseService {
       }
 
       const newRoom = new this.roomModel({
-        name: `ABCXYZ private room`,
+        name: `${member.display_name}`,
         type: 'private',
         created_by_id: new Types.ObjectId(userId),
         is_active: true,
+        avatar: member.avatar || 'TEMP',
         created_at: new Date(),
       });
       const savedRoom = await newRoom.save();
@@ -484,12 +523,27 @@ export class RoomService extends BaseService {
       await Promise.all(roomMembers.map((member) => member.save()));
 
       const result = new ConversationResponse()
-      savedRoom.name = `${member.display_name}`;
-      savedRoom.avatar = member.avatar || 'TEMP';
       result.room = new RoomResponse(savedRoom);
       result.unread_count = 0;
 
       return result;
+    });
+  }
+
+  async isUserMemberOfRoom(userId: string, roomId: string): Promise<boolean> {
+    return this.handle(async () => {
+      if (!isValidObjectId(userId) || !isValidObjectId(roomId)) {
+        return false;
+      }
+
+      const member = await this.roomMemberModel
+        .findOne({
+          room_id: new Types.ObjectId(roomId),
+          user_id: new Types.ObjectId(userId),
+        })
+        .exec();
+
+      return !!member;
     });
   }
 }

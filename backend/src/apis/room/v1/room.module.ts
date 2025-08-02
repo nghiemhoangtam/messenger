@@ -31,5 +31,6 @@ import { RoomService } from './room.service';
   
   controllers: [RoomController],
   providers: [RoomService],
+  exports: [RoomService], // Export RoomService để có thể sử dụng trong ChatModule
 })
 export class RoomModule {}

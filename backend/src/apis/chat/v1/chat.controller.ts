@@ -14,22 +14,33 @@ import { IJwtRequest } from 'src/apis/auth/common/interfaces';
 import { PaginationRequest } from 'src/common/dto/request/pagination.request';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { MessageCode } from 'src/common/messages/message.enum';
+import { ChatGateway } from '../chat.gateway';
 import { CreateMessageDto } from '../common/dto/request/create-message.dto';
+import { MessageResponse } from '../common/dto/response/message.response';
 import { ChatService } from './chat.service';
 
 @ApiTags('chat')
 @Controller({ path: 'chat', version: '1' })
 @UseGuards(JwtAuthGuard)
 export class ChatController {
-  constructor(private readonly chatService: ChatService) {}
+  constructor(
+    private readonly chatService: ChatService,
+    private readonly chatGateway: ChatGateway,
+  ) {}
+  
   @Post()
   @ApiOperation({ summary: 'Send a message', description: 'Send a message to a chat room' })
   @ApiBody({ type: CreateMessageDto })
-  @ApiResponse({ status: 201, description: 'Message sent successfully' })
+  @ApiResponse({ status: 201, description: 'Message sent successfully', type: MessageResponse })
   @ApiResponse({ status: 403, description: 'Forbidden' })
-  async sendMessage(@Body() dto: CreateMessageDto, @Req() req: IJwtRequest) {
+  async sendMessage(@Body() dto: CreateMessageDto, @Req() req: IJwtRequest): Promise<MessageResponse> {
     if (req.user) {
-      await this.chatService.createMessage(req.user.id, dto);
+      const message = await this.chatService.createMessage(req.user.id, dto);
+      
+      // Emit real-time event to all users in the room
+      this.chatGateway.emitMessageToRoom(dto.room_id, message);
+      
+      return message;
     } else {
       throw new ForbiddenException(MessageCode.FORBIDDEN);
     }

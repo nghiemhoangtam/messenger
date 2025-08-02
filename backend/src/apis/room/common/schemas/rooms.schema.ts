@@ -19,7 +19,22 @@ export class Room extends Document {
   created_at: Date;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  created_by_id: Types.ObjectId;  
+  created_by_id: Types.ObjectId;
+
+  @Prop()
+  description: string;
+
+  @Prop({ default: 100 })
+  max_members: number;
+
+  @Prop({ default: false })
+  is_encrypted: boolean;
+
+  @Prop()
+  last_message_at: Date;
+
+  @Prop({ type: Types.ObjectId, ref: 'Message' })
+  pinned_message_id: Types.ObjectId;
 }
 
 export const RoomSchema = SchemaFactory.createForClass(Room);

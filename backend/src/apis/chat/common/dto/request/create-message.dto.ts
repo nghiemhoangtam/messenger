@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty } from 'class-validator';
+import { IsIn, IsNotEmpty, IsOptional } from 'class-validator';
 
 export class CreateMessageDto {
   @ApiProperty({ default: '001' })
@@ -9,4 +9,9 @@ export class CreateMessageDto {
   @ApiProperty({ default: 'Hi you, friend' })
   @IsNotEmpty({ message: 'Content is required' })
   content: string;
+
+  @ApiProperty({ default: 'text', enum: ['text', 'image', 'file', 'audio', 'video', 'sticker', 'emoji'] })
+  @IsOptional()
+  @IsIn(['text', 'image', 'file', 'audio', 'video', 'sticker', 'emoji'], { message: 'Invalid message type' })
+  type?: string = 'text';
 }

@@ -28,7 +28,19 @@ export class Message extends Document {
   is_deleted: boolean;
 
   @Prop({ required: true, default: 'sent' })
-  status: 'sent' | 'delivered' | 'read';
+  status: 'sent' | 'delivered' | 'read' | 'failed';
+
+  @Prop({ type: Types.ObjectId, ref: 'Message' })
+  reply_to_id: Types.ObjectId;
+
+  @Prop()
+  edited_at: Date;
+
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  edited_by: Types.ObjectId;
+
+  @Prop()
+  encryption_key: string;
 }
 
 export const MessageSchema = SchemaFactory.createForClass(Message);

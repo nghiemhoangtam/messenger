@@ -21,8 +21,8 @@ export class ChatService extends BaseService {
     super();
   }
 
-  async createMessage(senderId: string, dto: CreateMessageDto): Promise<void> {
-    this.handle(async () => {
+  async createMessage(senderId: string, dto: CreateMessageDto): Promise<MessageResponse> {
+    return await this.handle(async () => {
       // check exist roomId
       const room = await this.roomModel.findOne({
         _id: new Types.ObjectId(dto.room_id),
@@ -36,19 +36,42 @@ export class ChatService extends BaseService {
       if (!sender) {
         throw new NotFoundException([{ code: MessageCode.USER_NOT_FOUND }]);
       }
-      new this.messageModel({
-        room,
-        sender,
+      
+      // Tạo message mới
+      const newMessage = new this.messageModel({
+        room_id: new Types.ObjectId(dto.room_id),
+        sender_id: new Types.ObjectId(senderId),
         content: dto.content,
-        type: 'text',
-      }).save();
+        type: dto.type || 'text', // Sử dụng type từ dto
+        created_at: new Date(),
+        updated_at: new Date(),
+        is_deleted: false,
+        status: 'sent',
+      });
+      
+      const savedMessage = await newMessage.save();
+      
+      // Trả về MessageResponse
+      const messageReads = await this.messageReadModel.find({ message_id: savedMessage._id }).exec();
+      return new MessageResponse(savedMessage, messageReads, sender);
     });
   }
 
   async getMessages(roomId: string, pageRequest: PaginationRequest): Promise<PaginationResponse<MessageResponse>> {
     return await this.handle(async () => {
-      const messages = await this.messageModel.find({ room_id: new Types.ObjectId(roomId) }).sort({ created_at: -1 }).skip((pageRequest.page || 1) * (pageRequest.limit || 10)).limit(pageRequest.limit || 10).exec();
+      const page = pageRequest.page || 1;
+      const limit = pageRequest.limit || 10;
+      const skip = (page - 1) * limit;
+      
+      const messages = await this.messageModel
+        .find({ room_id: new Types.ObjectId(roomId) })
+        .sort({ created_at: -1 })
+        .skip(skip)
+        .limit(limit)
+        .exec();
+      
       const total = await this.messageModel.countDocuments({ room_id: new Types.ObjectId(roomId) });
+      
       return {
         results: await Promise.all(messages.map(async (message) => {
           const messageReads = await this.messageReadModel.find({ message_id: message._id }).exec();
@@ -60,11 +83,41 @@ export class ChatService extends BaseService {
         })),
         meta: {
           total,
-          page: pageRequest.page || 1,
-          limit: pageRequest.limit || 10,
-          totalPages: Math.ceil(total / (pageRequest.limit || 10)),
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
         },
       };
     });
-  } 
+  }
+
+  async markMessagesAsRead(userId: string, roomId: string, messageIds: string[]): Promise<void> {
+    return await this.handle(async () => {
+      const user = await this.userModel.findById(new Types.ObjectId(userId)).exec();
+      if (!user) {
+        throw new NotFoundException([{ code: MessageCode.USER_NOT_FOUND }]);
+      }
+
+      // Create read records for each message
+      const readPromises = messageIds.map(messageId => {
+        return this.messageReadModel.findOneAndUpdate(
+          {
+            message_id: new Types.ObjectId(messageId),
+            reader_id: new Types.ObjectId(userId),
+          },
+          {
+            message_id: new Types.ObjectId(messageId),
+            reader_id: new Types.ObjectId(userId),
+            read_at: new Date(),
+          },
+          {
+            upsert: true,
+            new: true,
+          }
+        ).exec();
+      });
+
+      await Promise.all(readPromises);
+    });
+  }
 }

@@ -14,6 +14,18 @@ export class RoomMember extends Document {
 
   @Prop({ required: true, default: 'member' })
   role: 'admin' | 'member';
+
+  @Prop()
+  nickname: string;
+
+  @Prop({ default: false })
+  is_muted: boolean;
+
+  @Prop()
+  last_read_at: Date;
+
+  @Prop()
+  typing_until: Date;
 }
 
 export const RoomMemberSchema = SchemaFactory.createForClass(RoomMember);
