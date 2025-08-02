@@ -62,7 +62,7 @@ export const MessageList: React.FC<MessageListProps> = ({
       <div key={message.id} className={`${styles.message} ${messageClass}`}>
         <div className={styles.messageContent}>{renderContent()}</div>
         <div className={styles.messageTime}>
-          {new Date(message.createdAt).toLocaleTimeString()}
+          {new Date(message.created_at).toLocaleString()}
         </div>
       </div>
     );

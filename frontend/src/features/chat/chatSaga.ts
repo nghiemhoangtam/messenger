@@ -1,5 +1,6 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { call, put, takeLatest } from "redux-saga/effects";
+import { chatService } from "../../services/chatService";
 import { contactService } from "../../services/contactService";
 import { roomService } from "../../services/roomService";
 import { userService } from "../../services/userService";
@@ -22,6 +23,9 @@ import {
   getAvailableFriendsFailure,
   getAvailableFriendsRequest,
   getAvailableFriendsSuccess,
+  markMessagesAsReadFailure,
+  markMessagesAsReadRequest,
+  markMessagesAsReadSuccess,
   removeAvailableFriend,
   searchGroupUserFailure,
   searchGroupUserRequest,
@@ -30,7 +34,7 @@ import {
   sendMessageRequest,
   sendMessageSuccess,
 } from "./chatSlice";
-import { Conversation, CreateGroupRoomRequest } from "./types";
+import { Conversation, CreateGroupRoomRequest, Message } from "./types";
 
 function* handleFetchConversations(action: PayloadAction<PaginationRequest>) {
   try {
@@ -43,24 +47,6 @@ function* handleFetchConversations(action: PayloadAction<PaginationRequest>) {
     yield put(
       fetchConversationsFailure(
         error instanceof Error ? error.message : "Failed to fetch conversations"
-      )
-    );
-  }
-}
-
-function* handleFetchMessages(action: PayloadAction<string>) {
-  try {
-    // TODO: Gọi API lấy messages theo roomId nếu cần
-    yield put(
-      fetchMessagesSuccess({
-        conversationId: action.payload,
-        messages: [],
-      })
-    );
-  } catch (error) {
-    yield put(
-      fetchMessagesFailure(
-        error instanceof Error ? error.message : "Failed to fetch messages"
       )
     );
   }
@@ -156,12 +142,40 @@ function* handleCreatePrivateRoom(action: PayloadAction<string>) {
   }
 }
 
+function* handleMarkMessagesAsRead(action: PayloadAction<string>) {
+  try {
+    yield call(roomService.markMessagesAsRead, action.payload);
+    yield put(markMessagesAsReadSuccess(action.payload));
+  } catch (error) {
+    yield put(
+      markMessagesAsReadFailure(
+        error instanceof Error
+          ? error.message
+          : "Failed to mark messages as read"
+      )
+    );
+  }
+}
+
+function* handleGetMessages(action: PayloadAction<{ roomId: string; pageRequest: PaginationRequest }>) {
+  try {
+    const messages: PaginationResponse<Message> = yield call(chatService.getMessages, action.payload.roomId, action.payload.pageRequest);
+    yield put(fetchMessagesSuccess({
+      roomId: action.payload.roomId,
+      messages,
+    }));
+  } catch (error) {
+    yield put(fetchMessagesFailure(error instanceof Error ? error.message : "Failed to fetch messages"));
+  }
+}
+
 export function* chatSaga() {
   yield takeLatest(fetchConversationsRequest.type, handleFetchConversations);
-  yield takeLatest(fetchMessagesRequest.type, handleFetchMessages);
   yield takeLatest(sendMessageRequest.type, handleSendMessage);
   yield takeLatest(searchGroupUserRequest.type, handleSearchGroupUser);
   yield takeLatest(createGroupRoomRequest.type, handleCreateGroupRoom);
   yield takeLatest(getAvailableFriendsRequest.type, handleGetAvailableFriends);
   yield takeLatest(createPrivateRoomRequest.type, handleCreatePrivateRoom);
+  yield takeLatest(markMessagesAsReadRequest.type, handleMarkMessagesAsRead);
+  yield takeLatest(fetchMessagesRequest.type, handleGetMessages);
 }

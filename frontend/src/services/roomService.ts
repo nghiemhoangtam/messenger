@@ -1,4 +1,4 @@
-import { Conversation, CreateGroupRoomRequest } from "../features/chat/types";
+import { Conversation, CreateGroupRoomRequest, Message } from "../features/chat/types";
 import { PaginationRequest } from "../types/pagination-request";
 import { PaginationResponse } from "../types/pagination-response";
 import { accessTokenAxiosClient } from "../utils/request/axiosClient";
@@ -9,7 +9,7 @@ const API_PREFIX = "/room";
 export const roomService = {
   async getConversations(pageRequest: PaginationRequest): Promise<PaginationResponse<Conversation>> {
     return apiRequest<PaginationResponse<Conversation>>(() =>
-      accessTokenAxiosClient.get(`${API_PREFIX}/conversation`, { params: pageRequest })
+      accessTokenAxiosClient.get(`${API_PREFIX}/conversation`, { params: pageRequest.cleanParams() })
     );
   },
 
@@ -35,6 +35,18 @@ export const roomService = {
   async leaveRoom(roomId: string): Promise<void> {
     return apiRequest<void>(() =>
       accessTokenAxiosClient.post(`${API_PREFIX}/leave/${roomId}`)
+    );
+  },
+
+  async markMessagesAsRead(roomId: string): Promise<void> {
+    return apiRequest<void>(() =>
+      accessTokenAxiosClient.post(`${API_PREFIX}/mark-as-read/${roomId}`)
+    );
+  },
+  
+  async getMessages(roomId: string, pageRequest: PaginationRequest): Promise<PaginationResponse<Message>> {
+    return apiRequest<PaginationResponse<Message>>(() =>
+      accessTokenAxiosClient.get(`${API_PREFIX}/messages/${roomId}`, { params: pageRequest.cleanParams() })
     );
   },
 }; 

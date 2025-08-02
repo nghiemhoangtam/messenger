@@ -2,19 +2,21 @@ import { LoginOutlined, UserAddOutlined, UsergroupAddOutlined } from "@ant-desig
 import { Avatar, Badge, Button, Form, Input, List, Modal, Select, message } from "antd";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import Loading from "../../../../components/atoms/Loading/Loading";
 import { roomService } from "../../../../services/roomService";
 import { RootState } from "../../../../store";
 import { PaginationRequest } from "../../../../types/pagination-request";
 import { Contact } from "../../../contacts/types";
 import {
-  createGroupRoomRequest,
-  createPrivateRoomRequest,
-  fetchConversationsRequest,
-  getAvailableFriendsRequest,
-  resetCreateGroupRoom,
-  resetCreatePrivateRoom,
-  resetSearchGroupUser,
-  searchGroupUserRequest
+    createGroupRoomRequest,
+    createPrivateRoomRequest,
+    fetchConversationsRequest,
+    getAvailableFriendsRequest,
+    resetCreateGroupRoom,
+    resetCreatePrivateRoom,
+    resetSearchGroupUser,
+    searchGroupUserRequest,
+    setCurrentConversation
 } from "../../chatSlice";
 import { Conversation } from "../../types";
 import styles from "./ConversationList.module.css";
@@ -33,9 +35,15 @@ const { Option } = Select;
 export const ConversationList: React.FC = () => {
   const dispatch = useDispatch();
   const [searchGroupUserQuery, setSearchGroupUserQuery] = useState('');
-  const { roomPage, currentConversation, createGroupRoom, createPrivateRoom, newSearchGroupUser, availableFriends } = useSelector(
-    (state: RootState) => state.chat
-  );
+  const [loadingConversations, setLoadingConversations] = useState(false);
+  const {
+    roomPage,
+    currentConversation,
+    createGroupRoom,
+    createPrivateRoom,
+    newSearchGroupUser,
+    availableFriends,
+  } = useSelector((state: RootState) => state.chat);
   const { user } = useSelector((state: RootState) => state.auth);  
 
   // Modal state
@@ -49,9 +57,15 @@ export const ConversationList: React.FC = () => {
   const prevLoading = usePrevious(createGroupRoom.loading);
 
   useEffect(() => {
+    setLoadingConversations(true);
     dispatch(fetchConversationsRequest(new PaginationRequest({ page: 1, limit: 20 })));
     dispatch(getAvailableFriendsRequest(new PaginationRequest({ page: 1, limit: 10 })));
   }, [dispatch]);
+
+  // Sync local loading state with Redux loading state
+  useEffect(() => {
+    setLoadingConversations(roomPage.loading);
+  }, [roomPage.loading]);
 
   // Khi mở modal tạo nhóm, reset và fetch user page 1
   useEffect(() => {
@@ -100,7 +114,7 @@ export const ConversationList: React.FC = () => {
   const handleConversationClick = (conversationId: string) => {
     const conversation = roomPage.data.results.find((c) => c.room.id === conversationId);
     if (conversation) {
-      // dispatch(setCurrentConversation(conversation));
+      dispatch(setCurrentConversation(conversation));
     }
   };
 
@@ -196,7 +210,16 @@ export const ConversationList: React.FC = () => {
     }
   };
 
-      return (
+  // Show loading when conversations are being loaded initially
+  if (loadingConversations && roomPage.data.results.length === 0) {
+    return (
+      <div className={styles.conversationList}>
+        <Loading local={true} />
+      </div>
+    );
+  }
+
+  return (
     <div className={styles.conversationList}>
       <div className={styles.actionBar}>
         <Button
@@ -266,6 +289,10 @@ export const ConversationList: React.FC = () => {
             );
           }}
         />
+        {/* Show loading indicator at bottom when loading more conversations */}
+        {roomPage.loading && roomPage.data.results.length > 0 && (
+          <Loading local={true} />
+        )}
       </div>
       {/* Modal tạo nhóm chat */}
       <Modal

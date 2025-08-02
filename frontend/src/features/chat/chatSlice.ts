@@ -11,7 +11,7 @@ interface ChatState {
     error: string | null;
   };
   currentConversation: Conversation | null;
-  messages: Record<string, Message[]>;
+  messagesLoading: boolean;
   newSearchGroupUser: {
     data: PaginationResponse<Contact>;
     loading: boolean;
@@ -28,6 +28,11 @@ interface ChatState {
     error: string | null;
   };
   createPrivateRoom: {
+    data: null;
+    loading: boolean;
+    error: string | null;
+  };
+  markMessagesAsRead: {
     data: null;
     loading: boolean;
     error: string | null;
@@ -42,12 +47,12 @@ const initialState: ChatState = {
     error: null,
   },
   currentConversation: null,
+  messagesLoading: false,
   newSearchGroupUser: {
     data: new PaginationResponse<Contact>(),
     loading: false,
     error: null,
   },
-  messages: {},
   createGroupRoom: {
     data: null,
     loading: false,
@@ -59,6 +64,11 @@ const initialState: ChatState = {
     error: null,
   },
   createPrivateRoom: {
+    data: null,
+    loading: false,
+    error: null,
+  },
+  markMessagesAsRead: {
     data: null,
     loading: false,
     error: null,
@@ -88,20 +98,46 @@ const chatSlice = createSlice({
     },
     setCurrentConversation: (state, action: PayloadAction<Conversation>) => {
       state.currentConversation = action.payload;
+      state.roomPage.data.results = state.roomPage.data.results.map(conversation => {
+        if (conversation.room.id === action.payload.room.id) {
+          return {
+            ...conversation,
+            room: {
+              ...conversation.room,
+              memberPage: new PaginationResponse<Contact>(),
+              messagePage: new PaginationResponse<Message>()
+            }
+          };
+        }
+        return conversation;
+      });
     },
-    fetchMessagesRequest: (state, action: PayloadAction<string>) => {
-      state.roomPage.loading = true;
+    fetchMessagesRequest: (state, action: PayloadAction<{ roomId: string; pageRequest: PaginationRequest }>) => {
+      state.messagesLoading = true;
       state.error = null;
     },
-    fetchMessagesSuccess: (
-      state,
-      action: PayloadAction<{ conversationId: string; messages: Message[] }>,
-    ) => {
-      state.roomPage.loading = false;
-      state.messages[action.payload.conversationId] = action.payload.messages;
+    fetchMessagesSuccess: (state, action: PayloadAction<{ roomId: string; messages: PaginationResponse<Message> }>) => {
+      const conversationIndex = state.roomPage.data.results.findIndex(
+        (c) => c.room.id === action.payload.roomId,
+      );
+      if (conversationIndex !== -1) { 
+        const conversation = state.roomPage.data.results[conversationIndex];
+        state.roomPage.data.results[conversationIndex] = {
+          ...conversation,
+          room: {
+            ...conversation.room,
+            messagePage: {
+              ...conversation.room.messagePage,
+              results: [...conversation.room.messagePage.results, ...action.payload.messages.results],
+              meta: action.payload.messages.meta
+            }
+          }
+        };
+      }
+      state.messagesLoading = false;
     },
     fetchMessagesFailure: (state, action: PayloadAction<string>) => {
-      state.roomPage.loading = false;
+      state.messagesLoading = false;
       state.error = action.payload;
     },
     resetCreateGroupRoom: (state) => {
@@ -118,11 +154,21 @@ const chatSlice = createSlice({
     },
     sendMessageSuccess: (state, action: PayloadAction<Message>) => {
       state.roomPage.loading = false;
-      const conversationId = action.payload.room_id;
-      if (!state.messages[conversationId]) {
-        state.messages[conversationId] = [];
-      }
-      state.messages[conversationId].push(action.payload);
+      state.roomPage.data.results = state.roomPage.data.results.map(conversation => {
+        if (conversation.room.id === action.payload.room_id) {
+          return {
+            ...conversation,
+            room: {
+              ...conversation.room,
+              messagePage: {
+                ...conversation.room.messagePage,
+                results: [...conversation.room.messagePage.results, action.payload]
+              }
+            }
+          };
+        }
+        return conversation;
+      });
     },
     sendMessageFailure: (state, action: PayloadAction<string>) => {
       state.roomPage.loading = false;
@@ -130,39 +176,51 @@ const chatSlice = createSlice({
     },
     receiveMessage: (state, action: PayloadAction<Message>) => {
       const conversationId = action.payload.room_id;
-      if (!state.messages[conversationId]) {
-        state.messages[conversationId] = [];
-      }
-      state.messages[conversationId].push(action.payload);
-
-      // Update conversation last message and unread count
-      const conversation = state.roomPage.data.results.find(
-        (c) => c.room.id === conversationId,
-      );
-      if (conversation) {
-        conversation.lastMessage = action.payload;
-        if (conversationId !== state.currentConversation?.room.id) {
-          conversation.unread_count += 1;
+      state.roomPage.data.results = state.roomPage.data.results.map(conversation => {
+        if (conversation.room.id === conversationId) {
+          return {
+            ...conversation,
+            lastMessage: action.payload,
+            unread_count: conversationId !== state.currentConversation?.room.id 
+              ? (conversation.unread_count || 0) + 1 
+              : conversation.unread_count || 0,
+            room: {
+              ...conversation.room,
+              messagePage: {
+                ...conversation.room.messagePage,
+                results: [...conversation.room.messagePage.results, action.payload]
+              }
+            }
+          };
         }
-      }
+        return conversation;
+      });
     },
-    markMessagesAsRead: (state, action: PayloadAction<string>) => {
+    markMessagesAsReadRequest: (state, action: PayloadAction<string>) => {
+      state.markMessagesAsRead.loading = true;
+      state.markMessagesAsRead.error = null;
+    },
+    markMessagesAsReadSuccess: (state, action: PayloadAction<string>) => {
       const conversationId = action.payload;
-      const conversation = state.roomPage.data.results.find(
-        (c) => c.room.id === conversationId,
-      );
-      if (conversation) {
-        conversation.unread_count = 0;
-      }
-
-      const messages = state.messages[conversationId];
-      if (messages) {
-        messages.forEach((message) => {
-          if (message.status !== "read") {
-            message.status = "read";
-          }
-        });
-      }
+      state.roomPage.data.results = state.roomPage.data.results.map(conversation => {
+        if (conversation.room.id === conversationId) {
+          return {
+            ...conversation,
+            unread_count: 0,
+            room: {
+              ...conversation.room,
+              messagePage: {
+                ...conversation.room.messagePage,
+                results: conversation.room.messagePage.results.map(message => ({
+                  ...message,
+                  status: message.status !== "read" ? "read" : message.status
+                }))
+              }
+            }
+          };
+        }
+        return conversation;
+      });
     },
     searchGroupUserRequest: (state, action: PayloadAction<PaginationRequest>) => {
       state.newSearchGroupUser.loading = true;
@@ -232,6 +290,10 @@ const chatSlice = createSlice({
       state.createPrivateRoom.loading = false;
       state.createPrivateRoom.error = null;
     },
+    markMessagesAsReadFailure: (state, action: PayloadAction<string>) => {
+      state.markMessagesAsRead.loading = false;
+      state.markMessagesAsRead.error = action.payload;
+    },
   },
 });
 
@@ -247,7 +309,8 @@ export const {
   sendMessageSuccess,
   sendMessageFailure,
   receiveMessage,
-  markMessagesAsRead,
+  markMessagesAsReadRequest,
+  markMessagesAsReadSuccess,
   searchGroupUserRequest,
   searchGroupUserSuccess,
   searchGroupUserFailure,
@@ -265,6 +328,7 @@ export const {
   createPrivateRoomFailure,
   resetCreatePrivateRoom,
   removeAvailableFriend,
+  markMessagesAsReadFailure,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;

@@ -1,3 +1,4 @@
+import { PaginationResponse } from "../../types/pagination-response";
 import { Contact } from "../contacts/types";
 
 export interface Room {
@@ -7,6 +8,9 @@ export interface Room {
   avatar: string;
   created_at: Date;
   updated_at: Date;
+  created_by_id: string;
+  memberPage: PaginationResponse<Contact>;
+  messagePage: PaginationResponse<Message>;
 }
 
 export interface Message {
