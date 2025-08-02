@@ -517,7 +517,7 @@ export class AuthV1Service extends BaseService {
             { code: MessageCode.REFRESH_TOKEN_IS_USED },
           ]);
         }
-        const user = await this.userModel.findById(tokenSearched.user_id);
+        const user = await this.userModel.findById(new Types.ObjectId(tokenSearched.user_id));
         if (!user) {
           throw new NotFoundException([
             {

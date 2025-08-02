@@ -97,8 +97,8 @@ export class UserRelationshipService extends BaseService {
       }
 
       const [sender, receiver] = await Promise.all([
-        this.userModel.findOne({ _id: senderId, is_active: true }),
-        this.userModel.findOne({ _id: receiverId, is_active: true }),
+        this.userModel.findOne({ _id: new Types.ObjectId(senderId), is_active: true }),
+        this.userModel.findOne({ _id: new Types.ObjectId(receiverId), is_active: true }),
       ]);
 
       if (!sender || !receiver) {

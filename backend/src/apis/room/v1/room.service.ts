@@ -246,6 +246,8 @@ export class RoomService extends BaseService {
               content: lastMessageData.content,
               created_at: lastMessageData.created_at,
               status: lastMessageData.status,
+              message_reads: [],
+              type: lastMessageData.type,
             };
           }
 
@@ -412,7 +414,7 @@ export class RoomService extends BaseService {
         ]);
       }
 
-      const member = await this.userModel.findById(memberId).exec();
+      const member = await this.userModel.findById(new Types.ObjectId(memberId)).exec();
       if (!member) {
         throw new NotFoundException([{ code: MessageCode.USER_NOT_FOUND }]);
       }

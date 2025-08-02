@@ -5,7 +5,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Token, TokenSchema } from 'src/apis/auth/common/schemas';
 import { User, UserSchema } from 'src/apis/user/schemas';
 import { RedisModule } from 'src/common/redis/redis.module';
-import { Message, MessageSchema, Room, RoomSchema } from '../common/schemas';
+import { Message, MessageRead, MessageReadSchema, MessageSchema, Room, RoomSchema } from '../common/schemas';
 import { ChatController } from './chat.controller';
 import { ChatService } from './chat.service';
 
@@ -17,6 +17,7 @@ import { ChatService } from './chat.service';
       { name: Message.name, schema: MessageSchema },
       { name: User.name, schema: UserSchema },
       { name: Token.name, schema: TokenSchema },
+      { name: MessageRead.name, schema: MessageReadSchema },
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],

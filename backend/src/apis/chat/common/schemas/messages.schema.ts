@@ -26,6 +26,9 @@ export class Message extends Document {
 
   @Prop({ required: true, default: false })
   is_deleted: boolean;
+
+  @Prop({ required: true, default: 'sent' })
+  status: 'sent' | 'delivered' | 'read';
 }
 
 export const MessageSchema = SchemaFactory.createForClass(Message);
