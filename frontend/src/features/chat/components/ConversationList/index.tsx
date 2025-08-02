@@ -219,7 +219,7 @@ export const ConversationList: React.FC = () => {
     );
   }
 
-  return (
+      return (
     <div className={styles.conversationList}>
       <div className={styles.actionBar}>
         <Button

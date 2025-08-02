@@ -39,5 +39,18 @@ sagaMiddleware.run(rootSaga);
 // Initialize socketService with the store's dispatch function
 socketService.initialize(store.dispatch);
 
+// Connect socket when user is authenticated
+store.subscribe(() => {
+  const state = store.getState();
+  const { user } = state.auth;
+  const token = localStorage.getItem('accessToken');
+  
+  if (user && token && !socketService.isConnected()) {
+    socketService.connect(user.id, token);
+  } else if (!user && socketService.isConnected()) {
+    socketService.disconnect();
+  }
+});
+
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

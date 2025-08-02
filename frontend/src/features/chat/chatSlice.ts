@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { PaginationRequest } from "../../types/pagination-request";
 import { PaginationResponse } from "../../types/pagination-response";
 import { Contact } from "../contacts/types";
-import { Conversation, CreateGroupRoomRequest, Message } from "./types";
+import { Conversation, CreateGroupRoomRequest, Message, MessageMention, MessageThread, TypingIndicator, UserPresence } from "./types";
 
 interface ChatState {
   roomPage: {
@@ -37,6 +37,10 @@ interface ChatState {
     loading: boolean;
     error: string | null;
   };
+  typingIndicators: TypingIndicator[];
+  userPresence: UserPresence[];
+  messageThreads: MessageThread[];
+  messageMentions: MessageMention[];
   error: string | null;
 }
 
@@ -73,6 +77,10 @@ const initialState: ChatState = {
     loading: false,
     error: null,
   },
+  typingIndicators: [],
+  userPresence: [],
+  messageThreads: [],
+  messageMentions: [],
   error: null,
 };
 
@@ -147,7 +155,7 @@ const chatSlice = createSlice({
     },
     sendMessageRequest: (
       state,
-      action: PayloadAction<{ conversationId: string; content: string }>,
+      action: PayloadAction<{ conversationId: string; content: string; type?: string }>,
     ) => {
       state.roomPage.loading = true;
       state.error = null;
@@ -179,10 +187,10 @@ const chatSlice = createSlice({
       state.roomPage.data.results = state.roomPage.data.results.map(conversation => {
         if (conversation.room.id === conversationId) {
           return {
-            ...conversation,
-            lastMessage: action.payload,
-            unread_count: conversationId !== state.currentConversation?.room.id 
-              ? (conversation.unread_count || 0) + 1 
+          ...conversation,
+          lastMessage: action.payload,
+          unread_count: conversationId !== state.currentConversation?.room.id 
+            ? (conversation.unread_count || 0) + 1 
               : conversation.unread_count || 0,
             room: {
               ...conversation.room,
@@ -191,8 +199,8 @@ const chatSlice = createSlice({
                 results: [...conversation.room.messagePage.results, action.payload]
               }
             }
-          };
-        }
+        };
+      }
         return conversation;
       });
     },
@@ -294,6 +302,49 @@ const chatSlice = createSlice({
       state.markMessagesAsRead.loading = false;
       state.markMessagesAsRead.error = action.payload;
     },
+    // New actions for enhanced features
+    setTypingIndicator: (state, action: PayloadAction<TypingIndicator>) => {
+      const existingIndex = state.typingIndicators.findIndex(
+        ti => ti.room_id === action.payload.room_id && ti.user_id === action.payload.user_id
+      );
+      if (existingIndex >= 0) {
+        state.typingIndicators[existingIndex] = action.payload;
+      } else {
+        state.typingIndicators.push(action.payload);
+      }
+    },
+    removeTypingIndicator: (state, action: PayloadAction<{ room_id: string; user_id: string }>) => {
+      state.typingIndicators = state.typingIndicators.filter(
+        ti => !(ti.room_id === action.payload.room_id && ti.user_id === action.payload.user_id)
+      );
+    },
+    setUserPresence: (state, action: PayloadAction<UserPresence>) => {
+      const existingIndex = state.userPresence.findIndex(
+        up => up.user_id === action.payload.user_id
+      );
+      if (existingIndex >= 0) {
+        state.userPresence[existingIndex] = action.payload;
+      } else {
+        state.userPresence.push(action.payload);
+      }
+    },
+    addMessageThread: (state, action: PayloadAction<MessageThread>) => {
+      state.messageThreads.push(action.payload);
+    },
+    addMessageMention: (state, action: PayloadAction<MessageMention>) => {
+      state.messageMentions.push(action.payload);
+    },
+    updateMessageStatus: (state, action: PayloadAction<{ messageId: string; status: string }>) => {
+      // Update message status in current conversation
+      if (state.currentConversation) {
+        const messageIndex = state.currentConversation.room.messagePage.results.findIndex(
+          m => m.id === action.payload.messageId
+        );
+        if (messageIndex >= 0) {
+          state.currentConversation.room.messagePage.results[messageIndex].status = action.payload.status as any;
+        }
+      }
+    },
   },
 });
 
@@ -329,6 +380,12 @@ export const {
   resetCreatePrivateRoom,
   removeAvailableFriend,
   markMessagesAsReadFailure,
+  setTypingIndicator,
+  removeTypingIndicator,
+  setUserPresence,
+  addMessageThread,
+  addMessageMention,
+  updateMessageStatus,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;

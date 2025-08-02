@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import Loading from "../../../../components/atoms/Loading/Loading";
 import { startCallRequest } from "../../../../features/calls/callsSlice";
 import { roomService } from "../../../../services/roomService";
+import { socketService } from "../../../../services/socketService";
 import { RootState } from "../../../../store";
 import { PaginationRequest } from "../../../../types/pagination-request";
 import { User } from "../../../auth";
@@ -75,14 +76,34 @@ export const ChatWindow: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
+  const previousConversationId = useRef<string | null>(null);
 
   useEffect(() => {
     if (currentConversation) {
       setLoadingMessages(true);
       dispatch(fetchMessagesRequest({ roomId: currentConversation.room.id, pageRequest: new PaginationRequest({ page: 1, limit: 15 }) }));
       dispatch(markMessagesAsReadRequest(currentConversation.room.id));
+      
+      // Join new conversation
+      socketService.joinConversation(currentConversation.room.id);
+      
+      // Leave previous conversation if different
+      if (previousConversationId.current && previousConversationId.current !== currentConversation.room.id) {
+        socketService.leaveConversation(previousConversationId.current);
+      }
+      
+      previousConversationId.current = currentConversation.room.id;
     }
   }, [currentConversation, dispatch]);
+
+  // Cleanup when component unmounts
+  useEffect(() => {
+    return () => {
+      if (previousConversationId.current) {
+        socketService.leaveConversation(previousConversationId.current);
+      }
+    };
+  }, []);
 
   // Sync local loading state with Redux loading state
   useEffect(() => {
@@ -132,6 +153,7 @@ export const ChatWindow: React.FC = () => {
         sendMessageRequest({
           conversationId: currentConversation.room.id,
           content,
+          type: "text", // Thêm type cho text message
         })
       );
     } finally {
@@ -151,6 +173,7 @@ export const ChatWindow: React.FC = () => {
         sendMessageRequest({
           conversationId: currentConversation.room.id,
           content: URL.createObjectURL(file),
+          type, // Truyền type từ file
         })
       );
     } finally {
@@ -301,26 +324,26 @@ export const ChatWindow: React.FC = () => {
               <div key={dateKey}>
                 <DateSeparator date={date} />
                 {messages.map((msg) => {
-                  const sender = msg.sender;
-                  return (
-                    <MessageBubble
-                      key={msg.id}
-                      content={msg.content}
-                      type={
-                        msg.content.startsWith("data:image")
-                          ? "image"
-                          : msg.content.startsWith("data:audio")
-                            ? "audio"
-                            : msg.content.startsWith("data:application")
-                              ? "file"
-                              : "text"
-                      }
-                      isOwn={msg.sender.id === user?.id}
-                      timestamp={new Date(msg.created_at).toLocaleTimeString()}
-                      status={msg.status}
-                      senderAvatar={sender?.avatar}
-                      senderName={sender?.display_name}
-                    />
+            const sender = msg.sender;
+            return (
+              <MessageBubble
+                key={msg.id}
+                content={msg.content}
+                type={
+                  msg.content.startsWith("data:image")
+                    ? "image"
+                    : msg.content.startsWith("data:audio")
+                      ? "audio"
+                      : msg.content.startsWith("data:application")
+                        ? "file"
+                        : "text"
+                }
+                isOwn={msg.sender.id === user?.id}
+                timestamp={new Date(msg.created_at).toLocaleTimeString()}
+                status={msg.status}
+                senderAvatar={sender?.avatar}
+                senderName={sender?.display_name}
+              />
                   );
                 })}
               </div>
@@ -333,6 +356,7 @@ export const ChatWindow: React.FC = () => {
         onSendMessage={handleSendMessage}
         onSendFile={handleSendFile}
         loading={sending}
+        roomId={currentConversation?.room.id}
       />
 
       <CallModal

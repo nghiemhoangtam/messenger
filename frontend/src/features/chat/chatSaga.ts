@@ -53,18 +53,17 @@ function* handleFetchConversations(action: PayloadAction<PaginationRequest>) {
 }
 
 function* handleSendMessage(
-  action: PayloadAction<{ roomId: string; content: string }>,
+  action: PayloadAction<{ conversationId: string; content: string; type?: string }>,
 ) {
   try {
-    // TODO: Gọi API gửi message nếu cần
-    yield put(sendMessageSuccess({
-      id: Date.now().toString(),
-      room_id: action.payload.roomId,
-      sender: {} as any,
-      content: action.payload.content,
-      created_at: new Date(),
-      status: "sent",
-    }));
+    // Gọi API thực tế để gửi tin nhắn
+    const message: Message = yield call(
+      chatService.sendMessage,
+      action.payload.conversationId,
+      action.payload.content,
+      (action.payload.type as "text" | "image" | "file" | "audio") || "text" // Cast type
+    );
+    yield put(sendMessageSuccess(message));
   } catch (error) {
     yield put(
       sendMessageFailure(

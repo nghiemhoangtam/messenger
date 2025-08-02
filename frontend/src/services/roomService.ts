@@ -14,7 +14,6 @@ export const roomService = {
   },
 
   async createGroupRoom(request: CreateGroupRoomRequest): Promise<Conversation> {
-    console.log(request);
     return apiRequest<Conversation>(() =>
       accessTokenAxiosClient.post(`${API_PREFIX}/group`, request)
     );

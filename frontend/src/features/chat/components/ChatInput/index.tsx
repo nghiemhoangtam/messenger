@@ -1,12 +1,13 @@
 import {
-  AudioOutlined,
-  CloseOutlined,
-  FileImageOutlined,
-  FileOutlined,
-  SendOutlined,
+    AudioOutlined,
+    CloseOutlined,
+    FileImageOutlined,
+    FileOutlined,
+    SendOutlined,
 } from "@ant-design/icons";
 import { Button, Input, Upload, notification } from "antd";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { socketService } from "../../../../services/socketService";
 import styles from "./ChatInput.module.css";
 
 const { TextArea } = Input;
@@ -15,21 +16,62 @@ interface ChatInputProps {
   onSendMessage: (content: string) => void;
   onSendFile: (file: File, type: "image" | "file" | "audio") => void;
   loading?: boolean;
+  roomId?: string;
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({
   onSendMessage,
   onSendFile,
   loading = false,
+  roomId,
 }) => {
   const [message, setMessage] = useState("");
   const [preview, setPreview] = useState<{
     file: File;
     type: "image" | "file" | "audio";
   } | null>(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  // Typing indicator
+  useEffect(() => {
+    if (typingTimeout) {
+      clearTimeout(typingTimeout);
+    }
+
+    if (message.trim() && roomId) {
+      if (!isTyping) {
+        setIsTyping(true);
+        socketService.startTyping(roomId);
+      }
+      
+      const timeout = setTimeout(() => {
+        setIsTyping(false);
+        socketService.stopTyping(roomId);
+      }, 2000);
+      
+      setTypingTimeout(timeout);
+    } else if (isTyping && roomId) {
+      setIsTyping(false);
+      socketService.stopTyping(roomId);
+    }
+
+    return () => {
+      if (typingTimeout) {
+        clearTimeout(typingTimeout);
+      }
+    };
+  }, [message, roomId, isTyping, typingTimeout]);
 
   const handleSendMessage = () => {
     if (!message.trim()) return;
+    
+    // Stop typing when sending message
+    if (roomId) {
+      setIsTyping(false);
+      socketService.stopTyping(roomId);
+    }
+    
     onSendMessage(message);
     setMessage("");
   };
