@@ -201,7 +201,6 @@ export class RoomService extends BaseService {
             !Array.isArray(item.room) ||
             item.room.length === 0
           ) {
-            console.warn('Room not found for room member:', item);
             return null; // Skip this item
           }
 

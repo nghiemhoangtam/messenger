@@ -1,8 +1,8 @@
 import {
-  BadRequestException,
-  Logger,
-  ValidationPipe,
-  VersioningType,
+    BadRequestException,
+    Logger,
+    ValidationPipe,
+    VersioningType,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';

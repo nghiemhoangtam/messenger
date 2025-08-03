@@ -7,9 +7,10 @@ import { Socket } from 'socket.io';
 export class WsJwtAuthGuard implements CanActivate {
   constructor(private jwtService: JwtService) {}
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
+  async canActivate(context: ExecutionContext): Promise<boolean> {   
     try {
-      const client: Socket = context.switchToWs().getClient();
+      const client: Socket = context.switchToWs().getClient();      
+      
       const token = this.extractTokenFromHeader(client);
       
       if (!token) {
@@ -22,7 +23,7 @@ export class WsJwtAuthGuard implements CanActivate {
 
       // Attach user info to socket
       client.data.user = payload;
-      client.data.userId = payload.sub;
+      client.data.userId = payload.id; // Use 'id' field instead of 'sub'
 
       return true;
     } catch (error) {
@@ -30,13 +31,24 @@ export class WsJwtAuthGuard implements CanActivate {
     }
   }
 
-  private extractTokenFromHeader(client: Socket): string | undefined {
-    const auth = client.handshake.headers.authorization;
-    if (!auth) {
-      return undefined;
+  private extractTokenFromHeader(client: Socket): string | undefined {    
+    // Try to get from headers first
+    const authHeader = client.handshake.headers.authorization;
+    if (authHeader) {
+      const [type, token] = authHeader.split(' ');
+      return type === 'Bearer' ? token : undefined;
     }
     
-    const [type, token] = auth.split(' ');
-    return type === 'Bearer' ? token : undefined;
+    // Try to get from auth object
+    const authObject = client.handshake.auth;
+    if (authObject && authObject.token) {
+      const token = authObject.token;
+      if (token.startsWith('Bearer ')) {
+        return token.substring(7); // Remove 'Bearer ' prefix
+      }
+      return token;
+    }
+    
+    return undefined;
   }
 } 
