@@ -1,12 +1,12 @@
 import {
-    AudioOutlined,
-    CloseOutlined,
-    FileImageOutlined,
-    FileOutlined,
-    SendOutlined,
+  AudioOutlined,
+  CloseOutlined,
+  FileImageOutlined,
+  FileOutlined,
+  SendOutlined,
 } from "@ant-design/icons";
 import { Button, Input, Upload, notification } from "antd";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { socketService } from "../../../../services/socketService";
 import styles from "./ChatInput.module.css";
 
@@ -16,14 +16,14 @@ interface ChatInputProps {
   onSendMessage: (content: string) => void;
   onSendFile: (file: File, type: "image" | "file" | "audio") => void;
   loading?: boolean;
-  roomId?: string;
+  room_id?: string;
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({
   onSendMessage,
   onSendFile,
   loading = false,
-  roomId,
+  room_id,
 }) => {
   const [message, setMessage] = useState("");
   const [preview, setPreview] = useState<{
@@ -31,45 +31,49 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     type: "image" | "file" | "audio";
   } | null>(null);
   const [isTyping, setIsTyping] = useState(false);
-  const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Typing indicator
   useEffect(() => {
-    if (typingTimeout) {
-      clearTimeout(typingTimeout);
+    // Clear previous timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
     }
 
-    if (message.trim() && roomId) {
+    if (message.trim() && room_id) {
+      // Start typing if not already typing
       if (!isTyping) {
         setIsTyping(true);
-        socketService.startTyping(roomId);
+        socketService.startTyping(room_id);
       }
       
+      // Set timeout to stop typing after 2 seconds
       const timeout = setTimeout(() => {
         setIsTyping(false);
-        socketService.stopTyping(roomId);
+        socketService.stopTyping(room_id);
       }, 2000);
       
-      setTypingTimeout(timeout);
-    } else if (isTyping && roomId) {
+      typingTimeoutRef.current = timeout;
+    } else if (isTyping && room_id) {
+      // Stop typing if message is empty
       setIsTyping(false);
-      socketService.stopTyping(roomId);
+      socketService.stopTyping(room_id);
     }
 
     return () => {
-      if (typingTimeout) {
-        clearTimeout(typingTimeout);
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
       }
     };
-  }, [message, roomId, isTyping, typingTimeout]);
+  }, [message, room_id]); // Remove isTyping from dependencies to avoid infinite loop
 
   const handleSendMessage = () => {
     if (!message.trim()) return;
     
     // Stop typing when sending message
-    if (roomId) {
+    if (room_id) {
       setIsTyping(false);
-      socketService.stopTyping(roomId);
+      socketService.stopTyping(room_id);
     }
     
     onSendMessage(message);

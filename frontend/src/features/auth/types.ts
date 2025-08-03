@@ -37,4 +37,5 @@ export interface AuthState {
   isAuthenticated: boolean;
   status: RequestStatus;
   error: ErrorState;
+  token: string | null;
 }

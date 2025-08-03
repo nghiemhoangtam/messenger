@@ -17,6 +17,7 @@ import { CallControls } from "../CallControls";
 import { CallModal } from "../CallModal";
 import { ChatInput } from "../ChatInput";
 import { MessageBubble } from "../MessageBubble";
+import { TypingIndicator } from "../TypingIndicator";
 import styles from "./ChatWindow.module.css";
 
 // Date separator component
@@ -147,6 +148,8 @@ export const ChatWindow: React.FC = () => {
   const handleSendMessage = async (content: string) => {
     if (!currentConversation) return;
 
+    console.log('Sending message:', { content, conversationId: currentConversation.room.id });
+    
     setSending(true);
     try {
       await dispatch(
@@ -350,13 +353,16 @@ export const ChatWindow: React.FC = () => {
             );
           })}
         <div ref={messagesEndRef} />
+        
+        {/* Typing Indicator */}
+        <TypingIndicator room_id={currentConversation.room.id} />
       </div>
 
       <ChatInput
         onSendMessage={handleSendMessage}
         onSendFile={handleSendFile}
         loading={sending}
-        roomId={currentConversation?.room.id}
+        room_id={currentConversation?.room.id}
       />
 
       <CallModal

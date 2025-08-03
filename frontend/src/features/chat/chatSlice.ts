@@ -162,18 +162,47 @@ const chatSlice = createSlice({
     },
     sendMessageSuccess: (state, action: PayloadAction<Message>) => {
       state.roomPage.loading = false;
+      console.log('Message sent successfully:', action.payload);
+      
+      // Kiểm tra xem tin nhắn này có phải là tin nhắn tạm thời không
+      const isTempMessage = action.payload.id.startsWith('temp_');
+      
       state.roomPage.data.results = state.roomPage.data.results.map(conversation => {
         if (conversation.room.id === action.payload.room_id) {
-          return {
-            ...conversation,
-            room: {
-              ...conversation.room,
-              messagePage: {
-                ...conversation.room.messagePage,
-                results: [...conversation.room.messagePage.results, action.payload]
+          // Nếu là tin nhắn tạm thời, thêm vào cuối danh sách
+          // Nếu không phải tin nhắn tạm thời, cập nhật tin nhắn hiện có
+          const existingMessageIndex = conversation.room.messagePage.results.findIndex(
+            msg => msg.id === action.payload.id
+          );
+          
+          if (existingMessageIndex >= 0) {
+            // Cập nhật tin nhắn hiện có
+            const updatedResults = [...conversation.room.messagePage.results];
+            updatedResults[existingMessageIndex] = action.payload;
+            
+            return {
+              ...conversation,
+              room: {
+                ...conversation.room,
+                messagePage: {
+                  ...conversation.room.messagePage,
+                  results: updatedResults
+                }
               }
-            }
-          };
+            };
+          } else {
+            // Thêm tin nhắn mới
+            return {
+              ...conversation,
+              room: {
+                ...conversation.room,
+                messagePage: {
+                  ...conversation.room.messagePage,
+                  results: [...conversation.room.messagePage.results, action.payload]
+                }
+              }
+            };
+          }
         }
         return conversation;
       });
@@ -184,23 +213,52 @@ const chatSlice = createSlice({
     },
     receiveMessage: (state, action: PayloadAction<Message>) => {
       const conversationId = action.payload.room_id;
+      console.log('Received message in Redux:', action.payload);
+      
       state.roomPage.data.results = state.roomPage.data.results.map(conversation => {
         if (conversation.room.id === conversationId) {
-          return {
-          ...conversation,
-          lastMessage: action.payload,
-          unread_count: conversationId !== state.currentConversation?.room.id 
-            ? (conversation.unread_count || 0) + 1 
-              : conversation.unread_count || 0,
-            room: {
-              ...conversation.room,
-              messagePage: {
-                ...conversation.room.messagePage,
-                results: [...conversation.room.messagePage.results, action.payload]
-              }
+          // Kiểm tra xem tin nhắn đã tồn tại chưa (tránh duplicate)
+          const messageExists = conversation.room.messagePage.results.some(
+            msg => msg.id === action.payload.id
+          );
+          
+          // Kiểm tra xem có tin nhắn tạm thời nào cần thay thế không
+          const tempMessageIndex = conversation.room.messagePage.results.findIndex(
+            msg => msg.id.startsWith('temp_') && msg.content === action.payload.content
+          );
+          
+          console.log(`Message ${action.payload.id} exists: ${messageExists}, temp message index: ${tempMessageIndex}`);
+          
+          if (!messageExists) {
+            console.log(`Adding new message to conversation ${conversationId}`);
+            
+            let updatedResults = [...conversation.room.messagePage.results];
+            
+            // Nếu có tin nhắn tạm thời, thay thế nó
+            if (tempMessageIndex >= 0) {
+              console.log(`Replacing temp message at index ${tempMessageIndex}`);
+              updatedResults[tempMessageIndex] = action.payload;
+            } else {
+              // Thêm tin nhắn mới
+              updatedResults.push(action.payload);
             }
-        };
-      }
+            
+            return {
+              ...conversation,
+              lastMessage: action.payload,
+              unread_count: conversationId !== state.currentConversation?.room.id 
+                ? (conversation.unread_count || 0) + 1 
+                : conversation.unread_count || 0,
+              room: {
+                ...conversation.room,
+                messagePage: {
+                  ...conversation.room.messagePage,
+                  results: updatedResults
+                }
+              }
+            };
+          }
+        }
         return conversation;
       });
     },
@@ -305,7 +363,7 @@ const chatSlice = createSlice({
     // New actions for enhanced features
     setTypingIndicator: (state, action: PayloadAction<TypingIndicator>) => {
       const existingIndex = state.typingIndicators.findIndex(
-        ti => ti.room_id === action.payload.room_id && ti.user_id === action.payload.user_id
+        ti => ti.room_id === action.payload.room_id && ti.user.id === action.payload.user.id
       );
       if (existingIndex >= 0) {
         state.typingIndicators[existingIndex] = action.payload;
@@ -313,9 +371,9 @@ const chatSlice = createSlice({
         state.typingIndicators.push(action.payload);
       }
     },
-    removeTypingIndicator: (state, action: PayloadAction<{ room_id: string; user_id: string }>) => {
+    removeTypingIndicator: (state, action: PayloadAction<{ room_id: string; user: Contact }>) => {
       state.typingIndicators = state.typingIndicators.filter(
-        ti => !(ti.room_id === action.payload.room_id && ti.user_id === action.payload.user_id)
+        ti => !(ti.room_id === action.payload.room_id && ti.user.id === action.payload.user.id)
       );
     },
     setUserPresence: (state, action: PayloadAction<UserPresence>) => {
@@ -335,6 +393,8 @@ const chatSlice = createSlice({
       state.messageMentions.push(action.payload);
     },
     updateMessageStatus: (state, action: PayloadAction<{ messageId: string; status: string }>) => {
+      console.log('Updating message status:', action.payload);
+      
       // Update message status in current conversation
       if (state.currentConversation) {
         const messageIndex = state.currentConversation.room.messagePage.results.findIndex(
@@ -342,8 +402,55 @@ const chatSlice = createSlice({
         );
         if (messageIndex >= 0) {
           state.currentConversation.room.messagePage.results[messageIndex].status = action.payload.status as any;
+          console.log(`Updated message status in current conversation: ${action.payload.messageId} -> ${action.payload.status}`);
         }
       }
+      
+      // Update message status in all conversations
+      state.roomPage.data.results = state.roomPage.data.results.map(conversation => {
+        const messageIndex = conversation.room.messagePage.results.findIndex(
+          m => m.id === action.payload.messageId
+        );
+        if (messageIndex >= 0) {
+          console.log(`Updated message status in conversation ${conversation.room.id}: ${action.payload.messageId} -> ${action.payload.status}`);
+          return {
+            ...conversation,
+            room: {
+              ...conversation.room,
+              messagePage: {
+                ...conversation.room.messagePage,
+                results: conversation.room.messagePage.results.map((msg, index) => 
+                  index === messageIndex 
+                    ? { ...msg, status: action.payload.status as any }
+                    : msg
+                )
+              }
+            }
+          };
+        }
+        return conversation;
+      });
+    },
+    removeTempMessage: (state, action: PayloadAction<{ tempId: string; realMessage: Message }>) => {
+      const conversationId = action.payload.realMessage.room_id;
+      
+      state.roomPage.data.results = state.roomPage.data.results.map(conversation => {
+        if (conversation.room.id === conversationId) {
+          return {
+            ...conversation,
+            room: {
+              ...conversation.room,
+              messagePage: {
+                ...conversation.room.messagePage,
+                results: conversation.room.messagePage.results.map(msg => 
+                  msg.id === action.payload.tempId ? action.payload.realMessage : msg
+                )
+              }
+            }
+          };
+        }
+        return conversation;
+      });
     },
   },
 });
@@ -386,6 +493,7 @@ export const {
   addMessageThread,
   addMessageMention,
   updateMessageStatus,
+  removeTempMessage,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;

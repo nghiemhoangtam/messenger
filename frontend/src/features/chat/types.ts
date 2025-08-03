@@ -64,7 +64,7 @@ export interface MessageMention {
 export interface TypingIndicator {
   id: string;
   room_id: string;
-  user_id: string;
+  user: Contact;
   started_at: Date;
   expires_at: Date;
 }

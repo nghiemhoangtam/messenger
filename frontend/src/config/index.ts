@@ -1,6 +1,6 @@
-export const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3000";
+export const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8080";
 export const SOCKET_URL =
-  process.env.REACT_APP_SOCKET_URL || "http://localhost:3000";
+  process.env.REACT_APP_SOCKET_URL || "http://localhost:8080";
 
 export const APP_NAME = "Messenger App";
 export const APP_VERSION = "1.0.0";

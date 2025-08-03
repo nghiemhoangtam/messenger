@@ -42,8 +42,7 @@ socketService.initialize(store.dispatch);
 // Connect socket when user is authenticated
 store.subscribe(() => {
   const state = store.getState();
-  const { user } = state.auth;
-  const token = localStorage.getItem('accessToken');
+  const { user, token } = state.auth;
   
   if (user && token && !socketService.isConnected()) {
     socketService.connect(user.id, token);

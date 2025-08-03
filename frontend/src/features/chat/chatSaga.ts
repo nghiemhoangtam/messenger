@@ -1,38 +1,41 @@
 import { PayloadAction } from "@reduxjs/toolkit";
-import { call, put, takeLatest } from "redux-saga/effects";
+import { call, put, select, takeLatest } from "redux-saga/effects";
 import { chatService } from "../../services/chatService";
 import { contactService } from "../../services/contactService";
 import { roomService } from "../../services/roomService";
+import { socketService } from "../../services/socketService";
 import { userService } from "../../services/userService";
+import { RootState } from "../../store";
 import { PaginationRequest } from "../../types/pagination-request";
 import { PaginationResponse } from "../../types/pagination-response";
+import { User } from "../auth";
 import { Contact } from "../contacts/types";
 import {
-  createGroupRoomFailure,
-  createGroupRoomRequest,
-  createGroupRoomSuccess,
-  createPrivateRoomFailure,
-  createPrivateRoomRequest,
-  createPrivateRoomSuccess,
-  fetchConversationsFailure,
-  fetchConversationsRequest,
-  fetchConversationsSuccess,
-  fetchMessagesFailure,
-  fetchMessagesRequest,
-  fetchMessagesSuccess,
-  getAvailableFriendsFailure,
-  getAvailableFriendsRequest,
-  getAvailableFriendsSuccess,
-  markMessagesAsReadFailure,
-  markMessagesAsReadRequest,
-  markMessagesAsReadSuccess,
-  removeAvailableFriend,
-  searchGroupUserFailure,
-  searchGroupUserRequest,
-  searchGroupUserSuccess,
-  sendMessageFailure,
-  sendMessageRequest,
-  sendMessageSuccess,
+    createGroupRoomFailure,
+    createGroupRoomRequest,
+    createGroupRoomSuccess,
+    createPrivateRoomFailure,
+    createPrivateRoomRequest,
+    createPrivateRoomSuccess,
+    fetchConversationsFailure,
+    fetchConversationsRequest,
+    fetchConversationsSuccess,
+    fetchMessagesFailure,
+    fetchMessagesRequest,
+    fetchMessagesSuccess,
+    getAvailableFriendsFailure,
+    getAvailableFriendsRequest,
+    getAvailableFriendsSuccess,
+    markMessagesAsReadFailure,
+    markMessagesAsReadRequest,
+    markMessagesAsReadSuccess,
+    removeAvailableFriend,
+    searchGroupUserFailure,
+    searchGroupUserRequest,
+    searchGroupUserSuccess,
+    sendMessageFailure,
+    sendMessageRequest,
+    sendMessageSuccess,
 } from "./chatSlice";
 import { Conversation, CreateGroupRoomRequest, Message } from "./types";
 
@@ -56,15 +59,40 @@ function* handleSendMessage(
   action: PayloadAction<{ conversationId: string; content: string; type?: string }>,
 ) {
   try {
-    // Gọi API thực tế để gửi tin nhắn
-    const message: Message = yield call(
-      chatService.sendMessage,
-      action.payload.conversationId,
-      action.payload.content,
-      (action.payload.type as "text" | "image" | "file" | "audio") || "text" // Cast type
-    );
-    yield put(sendMessageSuccess(message));
+    console.log('Sending message via WebSocket:', action.payload);
+    // Lấy thông tin user từ store
+    const user: User | null = yield select((state: RootState) => state.auth.user);
+
+    // Sử dụng WebSocket để gửi tin nhắn real-time thay vì REST API
+    const messageData = {
+      room_id: action.payload.conversationId,
+      content: action.payload.content,
+      type: action.payload.type || "text"
+    };
+    
+    // Gửi tin nhắn qua WebSocket
+    socketService.sendMessage(messageData);
+    
+    // Tạo một message object tạm thời để cập nhật UI ngay lập tức
+    const tempMessage: Message = {
+      id: `temp_${Date.now()}`,
+      content: action.payload.content,
+      room_id: action.payload.conversationId,
+      sender: {
+        id: user?.id || "current_user", // Sử dụng ID thực của user
+        email: user?.email || "current@user.com",
+        display_name: user?.display_name || "You",
+        avatar: user?.avatar || null,
+        status: user?.status || "online"
+      },
+      created_at: new Date(),
+      status: "sent"
+    };
+    
+    console.log('Created temp message:', tempMessage);
+    yield put(sendMessageSuccess(tempMessage));
   } catch (error) {
+    console.error('Error sending message:', error);
     yield put(
       sendMessageFailure(
         error instanceof Error ? error.message : "Failed to send message"
