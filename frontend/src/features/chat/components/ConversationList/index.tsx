@@ -8,15 +8,15 @@ import { RootState } from "../../../../store";
 import { PaginationRequest } from "../../../../types/pagination-request";
 import { Contact } from "../../../contacts/types";
 import {
-    createGroupRoomRequest,
-    createPrivateRoomRequest,
-    fetchConversationsRequest,
-    getAvailableFriendsRequest,
-    resetCreateGroupRoom,
-    resetCreatePrivateRoom,
-    resetSearchGroupUser,
-    searchGroupUserRequest,
-    setCurrentConversation
+  createGroupRoomRequest,
+  createPrivateRoomRequest,
+  fetchConversationsRequest,
+  getAvailableFriendsRequest,
+  resetCreateGroupRoom,
+  resetCreatePrivateRoom,
+  resetSearchGroupUser,
+  searchGroupUserRequest,
+  setCurrentConversation
 } from "../../chatSlice";
 import { Conversation } from "../../types";
 import styles from "./ConversationList.module.css";
@@ -219,7 +219,7 @@ export const ConversationList: React.FC = () => {
     );
   }
 
-      return (
+  return (
     <div className={styles.conversationList}>
       <div className={styles.actionBar}>
         <Button

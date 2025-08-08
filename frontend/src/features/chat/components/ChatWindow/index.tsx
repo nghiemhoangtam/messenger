@@ -74,6 +74,18 @@ export const ChatWindow: React.FC = () => {
   const { currentConversation, roomPage, messagesLoading } = useSelector(
     (state: RootState) => state.chat
   );
+  
+  // Create a more specific selector for current conversation messages
+  const currentConversationMessages = useSelector((state: RootState) => {
+    const currentConv = state.chat.currentConversation;
+    if (!currentConv) return [];
+    
+    const conversation = state.chat.roomPage.data.results.find(
+      (c) => c.room.id === currentConv.room.id
+    );
+    
+    return conversation?.room.messagePage.results || [];
+  });
   const { user } = useSelector((state: RootState) => state.auth);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
@@ -118,6 +130,14 @@ export const ChatWindow: React.FC = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [roomPage]);
+
+  // Force re-render when messages change
+  useEffect(() => {
+    if (currentConversationMessages.length > 0) {
+      console.log('🔄 Messages changed, forcing re-render');
+      // This will trigger a re-render when messages change
+    }
+  }, [currentConversationMessages]);
 
   // Handle scroll to load more messages
   const handleMessageListScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -272,7 +292,11 @@ export const ChatWindow: React.FC = () => {
     .find((c) => c.room.id === currentConversation.room.id)
     ?.room.messagePage.results || [];
 
-  const groupedMessages = groupMessagesByDate(currentMessages);
+  console.log('🔄 ChatWindow render - currentMessages count:', currentMessages.length);
+  console.log('🔄 ChatWindow render - roomPage.data.results count:', roomPage.data.results.length);
+  console.log('🔄 ChatWindow render - currentConversationMessages count:', currentConversationMessages.length);
+
+  const groupedMessages = groupMessagesByDate(currentConversationMessages);
   const currentConversationData = roomPage.data.results.find(
     (c) => c.room.id === currentConversation.room.id
   );
@@ -330,7 +354,7 @@ export const ChatWindow: React.FC = () => {
             const sender = msg.sender;
             return (
               <MessageBubble
-                key={msg.id}
+                key={`${msg.id}_${msg.created_at}_${msg.content.substring(0, 10)}`}
                 content={msg.content}
                 type={
                   msg.content.startsWith("data:image")
