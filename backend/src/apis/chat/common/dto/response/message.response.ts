@@ -20,6 +20,7 @@ export class MessageResponse {
     this.content = message.content;
     this.created_at = message.created_at;
     this.type = message.type as 'text' | 'image' | 'audio' | 'video' | 'file';
+    this.status = message.status;
     this.message_reads = messageReads.map((messageRead) => new MessageReadResponse(messageRead, sender));
   }
 }
