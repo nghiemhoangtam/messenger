@@ -61,6 +61,22 @@ export class RoomController {
     }
   }
 
+  @Get('info/:roomId')
+  @ApiOperation({
+    summary: 'Get room information',
+    description: 'Get room information before joining',
+  })
+  @ApiResponse({ status: 200, description: 'Room information retrieved successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Room not found' })
+  async getRoomInfo(@Req() req: IJwtRequest, @Param('roomId') roomId: string) {
+    if (req.user) {
+      return this.roomService.getRoomInfo(req.user.id, roomId);
+    } else {
+      throw new ForbiddenException(MessageCode.FORBIDDEN);
+    }
+  }
+
   @Post('join/:roomId')
   @ApiOperation({
     summary: 'Join a room',
@@ -70,6 +86,7 @@ export class RoomController {
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Room not found' })
   @ApiResponse({ status: 409, description: 'User already in room' })
+  @ApiResponse({ status: 400, description: 'Invalid room type or room full' })
   async joinRoom(@Req() req: IJwtRequest, @Param('roomId') roomId: string) {
     if (req.user) {
       return this.roomService.joinRoom(req.user.id, roomId);

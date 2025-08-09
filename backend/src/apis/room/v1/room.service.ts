@@ -50,6 +50,12 @@ export class RoomService extends BaseService {
             as: 'room',
           },
         },
+        // Filter out records where room doesn't exist or is not active
+        {
+          $match: {
+            'room': { $ne: [], $exists: true }
+          }
+        },
         // Lấy thông tin thành viên phòng
         {
           $lookup: {
@@ -261,8 +267,11 @@ export class RoomService extends BaseService {
           return conversation;
         })
         .filter((record) => record !== null); // Filter out null records
-
-      return new PaginationResponse(records, total, page, limit);
+      
+      // Ensure we return the correct number of records
+      const finalRecords = records.slice(0, limit);
+      
+      return new PaginationResponse(finalRecords, total, page, limit);
     });
   }
 
@@ -366,6 +375,25 @@ export class RoomService extends BaseService {
       if (!room.is_active) {
         throw new NotFoundException([{ code: MessageCode.ROOM_NOT_FOUND }]);
       }
+
+      // Only allow joining group rooms, not private rooms
+      if (room.type !== 'group') {
+        throw new BadRequestException([
+          { code: MessageCode.INVALID_ROOM_TYPE_FOR_JOIN },
+        ]);
+      }
+
+      // Check if room has reached max members
+      const currentMemberCount = await this.roomMemberModel.countDocuments({
+        room_id: new Types.ObjectId(roomId),
+      }).exec();
+      
+      if (currentMemberCount >= room.max_members) {
+        throw new BadRequestException([
+          { code: MessageCode.ROOM_FULL },
+        ]);
+      }
+
       const existingMember = await this.roomMemberModel
         .findOne({
           room_id: new Types.ObjectId(roomId),
@@ -377,6 +405,7 @@ export class RoomService extends BaseService {
           { code: MessageCode.USER_ALREADY_IN_ROOM },
         ]);
       }
+
       const newRoomMember = new this.roomMemberModel({
         room_id: room._id,
         user_id: new Types.ObjectId(userId),
@@ -526,6 +555,57 @@ export class RoomService extends BaseService {
       result.unread_count = 0;
 
       return result;
+    });
+  }
+
+  async getRoomInfo(userId: string, roomId: string): Promise<any> {
+    return this.handle(async () => {
+      if (!isValidObjectId(roomId)) {
+        throw new NotFoundException([{ code: MessageCode.ROOM_NOT_FOUND }]);
+      }
+
+      const room = await this.roomModel.findById(roomId).exec();
+      if (!room) {
+        throw new NotFoundException([{ code: MessageCode.ROOM_NOT_FOUND }]);
+      }
+      if (!room.is_active) {
+        throw new NotFoundException([{ code: MessageCode.ROOM_NOT_FOUND }]);
+      }
+
+      // Get member count
+      const memberCount = await this.roomMemberModel.countDocuments({
+        room_id: new Types.ObjectId(roomId),
+      }).exec();
+
+      // Check if user is already a member
+      const isMember = await this.roomMemberModel
+        .findOne({
+          room_id: new Types.ObjectId(roomId),
+          user_id: new Types.ObjectId(userId),
+        })
+        .exec();
+
+      // Get creator info
+      const creator = await this.userModel.findById(room.created_by_id).exec();
+
+      return {
+        id: room._id,
+        name: room.name,
+        type: room.type,
+        description: room.description,
+        avatar: room.avatar,
+        max_members: room.max_members,
+        current_members: memberCount,
+        is_encrypted: room.is_encrypted,
+        created_at: room.created_at,
+        creator: creator ? {
+          id: creator._id,
+          display_name: creator.display_name,
+          avatar: creator.avatar,
+        } : null,
+        is_member: !!isMember,
+        can_join: room.type === 'group' && !isMember && memberCount < room.max_members,
+      };
     });
   }
 
