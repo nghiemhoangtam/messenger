@@ -25,6 +25,12 @@ export const roomService = {
     );
   },
 
+  async getRoomInfo(roomId: string): Promise<any> {
+    return apiRequest<any>(() =>
+      accessTokenAxiosClient.get(`${API_PREFIX}/info/${roomId}`)
+    );
+  },
+
   async joinRoom(roomId: string): Promise<void> {
     return apiRequest<void>(() =>
       accessTokenAxiosClient.post(`${API_PREFIX}/join/${roomId}`)

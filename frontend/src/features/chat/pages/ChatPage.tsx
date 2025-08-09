@@ -1,7 +1,5 @@
 import { Layout } from "antd";
 import React from "react";
-import { ConnectionStatus } from "../../../components/ConnectionStatus";
-import { DebugInfo } from "../../../components/DebugInfo";
 import { ChatWindow } from "../components/ChatWindow";
 import { ConversationList } from "../components/ConversationList";
 import styles from "./ChatPage.module.css";
@@ -17,8 +15,8 @@ export const ChatPage: React.FC = () => {
       <Content className={styles.content}>
         <ChatWindow />
       </Content>
-      <ConnectionStatus />
-      {process.env.NODE_ENV === 'development' && <DebugInfo />}
+      {/* <ConnectionStatus /> */}
+      {/* {process.env.NODE_ENV === 'development' && <DebugInfo />} */}
     </Layout>
   );
 };

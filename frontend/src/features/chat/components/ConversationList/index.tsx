@@ -1,5 +1,5 @@
-import { LoginOutlined, UserAddOutlined, UsergroupAddOutlined } from "@ant-design/icons";
-import { Avatar, Badge, Button, Form, Input, List, Modal, Select, message } from "antd";
+import { CopyOutlined, LoginOutlined, UserAddOutlined, UsergroupAddOutlined } from "@ant-design/icons";
+import { Avatar, Badge, Button, Form, Input, List, message, Modal, Select, Tooltip } from "antd";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Loading from "../../../../components/atoms/Loading/Loading";
@@ -54,11 +54,13 @@ export const ConversationList: React.FC = () => {
   const [joinModalVisible, setJoinModalVisible] = useState(false);
   const [joinForm] = Form.useForm();
   const [joining, setJoining] = useState(false);
+  const [checkingRoom, setCheckingRoom] = useState(false);
+  const [roomInfo, setRoomInfo] = useState<any>(null);
   const prevLoading = usePrevious(createGroupRoom.loading);
 
   useEffect(() => {
     setLoadingConversations(true);
-    dispatch(fetchConversationsRequest(new PaginationRequest({ page: 1, limit: 20 })));
+    dispatch(fetchConversationsRequest(new PaginationRequest({ page: 1, limit: 15 })));
     dispatch(getAvailableFriendsRequest(new PaginationRequest({ page: 1, limit: 10 })));
   }, [dispatch]);
 
@@ -146,15 +148,41 @@ export const ConversationList: React.FC = () => {
     joinForm.resetFields();
   };
 
+  const handleCheckRoom = async (roomId: string) => {
+    setCheckingRoom(true);
+    try {
+      const info = await roomService.getRoomInfo(roomId);
+      setRoomInfo(info);
+      
+      if (!info.can_join) {
+        if (info.is_member) {
+          message.warning("Bạn đã là thành viên của phòng này");
+        } else if (info.type !== 'group') {
+          message.error("Chỉ có thể tham gia phòng nhóm");
+        } else if (info.current_members >= info.max_members) {
+          message.error("Phòng đã đầy thành viên");
+        }
+      }
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || "Không tìm thấy phòng");
+      setRoomInfo(null);
+    } finally {
+      setCheckingRoom(false);
+    }
+  };
+
   const handleJoinRoom = async (values: any) => {
     setJoining(true);
     try {
       await roomService.joinRoom(values.roomId);
       message.success("Tham gia phòng thành công");
       setJoinModalVisible(false);
+      setRoomInfo(null);
+      joinForm.resetFields();
       dispatch(fetchConversationsRequest(new PaginationRequest({ page: 1, limit: 10 })));
-    } catch (err) {
-      message.error("Tham gia phòng thất bại");
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.message || "Tham gia phòng thất bại";
+      message.error(errorMessage);
     } finally {
       setJoining(false);
     }
@@ -191,7 +219,7 @@ export const ConversationList: React.FC = () => {
       && !roomPage.loading // nếu có biến loading
       && roomPage.data.results.length < roomPage.data.meta.total // nếu có phân trang
     ) {
-      dispatch(fetchConversationsRequest(new PaginationRequest({ page: roomPage.data.meta.page + 1, limit: 20 })));
+      dispatch(fetchConversationsRequest(new PaginationRequest({ page: roomPage.data.meta.page + 1, limit: 15 })));
     }
   };
 
@@ -207,6 +235,27 @@ export const ConversationList: React.FC = () => {
           new PaginationRequest({ page: availableFriends.data.meta.page + 1, limit: 10 })
         )
       );
+    }
+  };
+
+  const handleCopyRoomId = async (roomId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering conversation click
+    try {
+      await navigator.clipboard.writeText(roomId);
+      message.success("Đã copy Room ID vào clipboard");
+    } catch (err) {
+      // Fallback for older browsers
+      const textArea = document.createElement("textarea");
+      textArea.value = roomId;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        message.success("Đã copy Room ID vào clipboard");
+      } catch (fallbackErr) {
+        message.error("Không thể copy Room ID");
+      }
+      document.body.removeChild(textArea);
     }
   };
 
@@ -253,6 +302,11 @@ export const ConversationList: React.FC = () => {
           dataSource={roomPage.data.results}
           renderItem={(conversation: Conversation) => {
             const isActive = currentConversation?.room.id === conversation.room.id;
+            const isGroupRoom = conversation.room.type === 'group';
+            
+            // Debug logging
+            console.log(`[DEBUG] Conversation: ${conversation.room.name}, type: ${conversation.room.type}, isGroupRoom: ${isGroupRoom}`);
+            
             return (
               <List.Item
                 style={{
@@ -260,9 +314,10 @@ export const ConversationList: React.FC = () => {
                 }}
                 className={`${styles.conversationItem} ${
                   isActive ? styles.active : ""
-                }`}
+                } ${isGroupRoom ? styles.groupRoom : ""}`}
                 onClick={() => handleConversationClick(conversation.room.id)}
               >
+                {isGroupRoom && <div className={styles.groupRoomIndicator}></div>}
                 <List.Item.Meta
                   avatar={
                     <Badge count={conversation.unread_count}>
@@ -271,7 +326,43 @@ export const ConversationList: React.FC = () => {
                       </Avatar>
                     </Badge>
                   }
-                  title={conversation.room.name || "Nhóm chat"}
+                  title={
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ 
+                        fontWeight: isGroupRoom ? '600' : '400', 
+                        color: isGroupRoom ? '#1890ff' : 'inherit',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}>
+                        {conversation.room.name || "Nhóm chat"}
+                        {isGroupRoom && (
+                          <span style={{ 
+                            fontSize: '12px', 
+                            color: '#1890ff',
+                            background: 'rgba(24, 144, 255, 0.1)',
+                            padding: '2px 6px',
+                            borderRadius: '8px',
+                            fontWeight: '500'
+                          }}>
+                            👥 Nhóm
+                          </span>
+                        )}
+                      </span>
+                      {isGroupRoom && (
+                        <Tooltip title="Copy Room ID">
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<CopyOutlined />}
+                            onClick={(e) => handleCopyRoomId(conversation.room.id, e)}
+                            className={styles.copyButton}
+                            style={{ opacity: 0.3 }}
+                          />
+                        </Tooltip>
+                      )}
+                    </div>
+                  }
                   description={
                     <div className={styles.lastMessage}>
                       {conversation.lastMessage?.content}
@@ -395,11 +486,16 @@ export const ConversationList: React.FC = () => {
       <Modal
         title="Tham gia phòng bằng Room ID"
         visible={joinModalVisible}
-        onCancel={() => setJoinModalVisible(false)}
+        onCancel={() => {
+          setJoinModalVisible(false);
+          setRoomInfo(null);
+          joinForm.resetFields();
+        }}
         onOk={() => joinForm.submit()}
         confirmLoading={joining}
         okText="Tham gia"
         cancelText="Hủy"
+        okButtonProps={{ disabled: !roomInfo?.can_join }}
       >
         <Form form={joinForm} layout="vertical" onFinish={handleJoinRoom}>
           <Form.Item
@@ -407,9 +503,79 @@ export const ConversationList: React.FC = () => {
             label="Room ID"
             rules={[{ required: true, message: "Nhập Room ID" }]}
           >
-            <Input placeholder="Nhập Room ID" />
+            <Input 
+              placeholder="Nhập Room ID" 
+              onPressEnter={(e) => {
+                const roomId = e.currentTarget.value;
+                if (roomId) {
+                  handleCheckRoom(roomId);
+                }
+              }}
+              suffix={
+                <Button 
+                  type="text" 
+                  size="small" 
+                  loading={checkingRoom}
+                  onClick={() => {
+                    const roomId = joinForm.getFieldValue('roomId');
+                    if (roomId) {
+                      handleCheckRoom(roomId);
+                    }
+                  }}
+                >
+                  Kiểm tra
+                </Button>
+              }
+            />
           </Form.Item>
         </Form>
+
+        {/* Room Info Preview */}
+        {roomInfo && (
+          <div style={{ marginTop: 16, padding: 16, border: '1px solid #d9d9d9', borderRadius: 6 }}>
+            <h4 style={{ marginBottom: 12 }}>Thông tin phòng</h4>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+              <Avatar 
+                src={roomInfo.avatar} 
+                size={40}
+                style={{ marginRight: 12 }}
+              >
+                {roomInfo.name?.charAt(0)}
+              </Avatar>
+              <div>
+                <div style={{ fontWeight: 'bold', fontSize: 16 }}>{roomInfo.name}</div>
+                <div style={{ color: '#666', fontSize: 12 }}>
+                  {roomInfo.type === 'group' ? 'Nhóm' : 'Riêng tư'}
+                </div>
+              </div>
+            </div>
+            
+            {roomInfo.description && (
+              <div style={{ marginBottom: 8, color: '#666' }}>
+                {roomInfo.description}
+              </div>
+            )}
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#666' }}>
+              <span>Thành viên: {roomInfo.current_members}/{roomInfo.max_members}</span>
+              <span>Tạo bởi: {roomInfo.creator?.display_name}</span>
+            </div>
+            
+            {roomInfo.is_encrypted && (
+              <div style={{ marginTop: 8, color: '#52c41a', fontSize: 12 }}>
+                🔒 Tin nhắn được mã hóa
+              </div>
+            )}
+            
+            {!roomInfo.can_join && (
+              <div style={{ marginTop: 8, color: '#ff4d4f', fontSize: 12 }}>
+                {roomInfo.is_member ? 'Bạn đã là thành viên' : 
+                 roomInfo.type !== 'group' ? 'Chỉ có thể tham gia phòng nhóm' :
+                 'Phòng đã đầy thành viên'}
+              </div>
+            )}
+          </div>
+        )}
       </Modal>
     </div>
   );

@@ -1,4 +1,5 @@
-import { Button, message, Popconfirm } from "antd";
+import { CopyOutlined } from "@ant-design/icons";
+import { Button, message, Popconfirm, Tooltip } from "antd";
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Loading from "../../../../components/atoms/Loading/Loading";
@@ -11,6 +12,7 @@ import { User } from "../../../auth";
 import {
   fetchMessagesRequest,
   markMessagesAsReadRequest,
+  removeConversation,
   sendMessageRequest
 } from "../../chatSlice";
 import { CallControls } from "../CallControls";
@@ -249,10 +251,22 @@ export const ChatWindow: React.FC = () => {
     try {
       await roomService.leaveRoom(currentConversation.room.id);
       message.success("Đã rời khỏi phòng");
-      // Reload lại danh sách conversation
-      dispatch({ type: "chat/fetchConversationsRequest" });
+      // Remove conversation from list immediately
+      dispatch(removeConversation(currentConversation.room.id));
     } catch (err) {
       message.error("Rời phòng thất bại");
+    }
+  };
+
+  const handleCopyRoomId = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!currentConversation) return;
+    
+    try {
+      await navigator.clipboard.writeText(currentConversation.room.id);
+      message.success("Đã copy Room ID");
+    } catch (err) {
+      message.error("Copy Room ID thất bại");
     }
   };
 
@@ -305,7 +319,18 @@ export const ChatWindow: React.FC = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <h3>{currentConversation.room.name}</h3>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {currentConversation.room.type === 'group' && (
+            <Tooltip title="Copy Room ID">
+              <Button
+                type="text"
+                size="small"
+                icon={<CopyOutlined />}
+                onClick={handleCopyRoomId}
+                className={styles.copyButton}
+              />
+            </Tooltip>
+          )}
           <CallControls
             onAudioCall={handleAudioCall}
             onVideoCall={handleVideoCall}

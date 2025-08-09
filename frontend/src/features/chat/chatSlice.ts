@@ -379,6 +379,16 @@ const chatSlice = createSlice({
           ].status = action.payload.status as any;
         }
       }
+    },
+    removeConversation: (state, action: PayloadAction<string>) => {
+      // Remove conversation from list
+      state.roomPage.data.results = state.roomPage.data.results.filter(
+        conversation => conversation.room.id !== action.payload
+      );
+      // Clear current conversation if it's the one being removed
+      if (state.currentConversation?.room.id === action.payload) {
+        state.currentConversation = null;
+      }
     }
   },
 });
@@ -421,6 +431,7 @@ export const {
   addMessageThread,
   addMessageMention,
   updateMessageStatus,
+  removeConversation,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;

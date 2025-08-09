@@ -104,4 +104,106 @@
 .listWrapper {
   flex: 1 1 0%;
   overflow-y: auto;
+}
+
+.copyButton {
+  opacity: 0.3;
+  transition: opacity 0.2s ease;
+  color: #8c8c8c;
+  padding: 4px 8px;
+  height: auto;
+  border: none;
+  background: transparent;
+  margin-left: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+}
+
+.copyButton:hover {
+  color: #1890ff;
+  background: rgba(24, 144, 255, 0.1);
+  opacity: 1;
+}
+
+.conversationItem:hover .copyButton {
+  opacity: 1;
+}
+
+/* Ensure copy button is visible on group rooms */
+.conversationItem .copyButton {
+  opacity: 0.3;
+  visibility: visible;
+}
+
+.conversationItem:hover .copyButton {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Group room highlighting */
+.groupRoom {
+  background: linear-gradient(135deg, #f0f8ff 0%, #e6f7ff 100%);
+  border-left: 3px solid #1890ff;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.groupRoom::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(24, 144, 255, 0.05) 0%, rgba(24, 144, 255, 0.02) 100%);
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.groupRoom:hover {
+  background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%);
+  border-left: 3px solid #096dd9;
+  transform: translateX(2px);
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.15);
+}
+
+.groupRoom.active {
+  background: linear-gradient(135deg, #bae7ff 0%, #91d5ff 100%);
+  border-left: 3px solid #096dd9;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.2);
+}
+
+.groupRoom.active:hover {
+  background: linear-gradient(135deg, #91d5ff 0%, #69c0ff 100%);
+  border-left: 3px solid #0050b3;
+  transform: translateX(2px);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.25);
+}
+
+/* Group room indicator */
+.groupRoomIndicator {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  background: #1890ff;
+  border-radius: 50%;
+  box-shadow: 0 0 4px rgba(24, 144, 255, 0.4);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 4px rgba(24, 144, 255, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 8px rgba(24, 144, 255, 0.6);
+  }
+  100% {
+    box-shadow: 0 0 4px rgba(24, 144, 255, 0.4);
+  }
 } 
