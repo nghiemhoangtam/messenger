@@ -6,7 +6,10 @@ import { Token, TokenSchema } from 'src/apis/auth/common/schemas';
 import { Room, RoomSchema } from 'src/apis/chat/common/schemas';
 import { User, UserSchema } from 'src/apis/user/schemas';
 import { RedisModule } from 'src/common/redis/redis.module';
+import { RoomActivity, RoomActivitySchema } from '../common/schemas/room_activity.schema';
 import { RoomMember, RoomMemberSchema } from '../common/schemas/room_members.schema';
+import { RoomActivityRedisService } from './room-activity-redis.service';
+import { RoomActivityService } from './room-activity.service';
 import { RoomController } from './room.controller';
 import { RoomService } from './room.service';
 
@@ -17,7 +20,8 @@ import { RoomService } from './room.service';
         { name: Room.name, schema: RoomSchema },
         { name: User.name, schema: UserSchema },
         { name: Token.name, schema: TokenSchema },
-        { name: RoomMember.name, schema: RoomMemberSchema }, // Import RoomMember schema
+        { name: RoomMember.name, schema: RoomMemberSchema },
+        { name: RoomActivity.name, schema: RoomActivitySchema },
       ]),
       JwtModule.registerAsync({
         imports: [ConfigModule],
@@ -30,7 +34,7 @@ import { RoomService } from './room.service';
     ],
   
   controllers: [RoomController],
-  providers: [RoomService],
-  exports: [RoomService], // Export RoomService để có thể sử dụng trong ChatModule
+  providers: [RoomService, RoomActivityService, RoomActivityRedisService],
+  exports: [RoomService, RoomActivityService, RoomActivityRedisService],
 })
 export class RoomModule {}

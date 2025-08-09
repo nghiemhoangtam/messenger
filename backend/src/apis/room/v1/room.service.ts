@@ -626,4 +626,40 @@ export class RoomService extends BaseService {
       return !!member;
     });
   }
+
+  async getUserRooms(userId: string): Promise<{ id: string; name: string; type: string }[]> {
+    return this.handle(async () => {
+      if (!isValidObjectId(userId)) {
+        return [];
+      }
+
+      const userRooms = await this.roomMemberModel
+        .find({ user_id: new Types.ObjectId(userId) })
+        .populate('room_id', 'name type')
+        .exec();
+
+      return userRooms
+        .filter((member) => member.room_id && (member.room_id as any).is_active)
+        .map((member) => ({
+          id: (member.room_id as any)._id.toString(),
+          name: (member.room_id as any).name,
+          type: (member.room_id as any).type,
+        }));
+    });
+  }
+
+  /**
+   * Get the count of members in a room
+   */
+  async getRoomMemberCount(roomId: string): Promise<number> {
+    return this.handle(async () => {
+      if (!isValidObjectId(roomId)) {
+        return 0;
+      }
+      const count = await this.roomMemberModel.countDocuments({
+        room_id: new Types.ObjectId(roomId),
+      });
+      return count;
+    });
+  }
 }

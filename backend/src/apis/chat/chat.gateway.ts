@@ -11,6 +11,8 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { WsJwtAuthGuard } from '../../common/guards/ws-jwt-auth.guard';
+import { RoomActivityRedisService } from '../room/v1/room-activity-redis.service';
+import { RoomActivityService } from '../room/v1/room-activity.service';
 import { RoomService } from '../room/v1/room.service';
 import { ContactResponse } from '../user-relationship/common/dto/contact.response';
 import { UsersService } from '../user/users.service';
@@ -38,6 +40,8 @@ export class ChatGateway
   constructor(
     private readonly chatService: ChatService,
     private readonly roomService: RoomService,
+    private readonly roomActivityService: RoomActivityService,
+    private readonly roomActivityRedisService: RoomActivityRedisService,
     private readonly usersService: UsersService,
   ) {}
 
@@ -97,6 +101,34 @@ export class ChatGateway
     if (user_id) {
       this.connectedUsers.delete(user_id);
       this.logger.log(`Client disconnected: ${user_id}`);
+      
+      // Update user activity to offline in all rooms they were in
+      this.handleUserDisconnect(user_id);
+    }
+  }
+
+  private async handleUserDisconnect(userId: string) {
+    try {
+      // Remove user from all rooms using Redis
+      await this.roomActivityRedisService.removeUserFromAllRooms(userId);
+      
+      // Get all rooms the user was in to notify others
+      const userRooms = await this.roomService.getUserRooms(userId);
+      
+      // Notify other users in each room about the user going offline
+      for (const room of userRooms) {
+        const onlineCount = await this.roomActivityRedisService.getRoomOnlineCount(room.id);
+        
+        this.server.to(`room:${room.id}`).emit('user_activity_changed', {
+          user_id: userId,
+          room_id: room.id,
+          status: 'offline',
+          timestamp: new Date(),
+          online_count: onlineCount,
+        });
+      }
+    } catch (error) {
+      this.logger.error(`Error handling user disconnect: ${error.message}`);
     }
   }
 
@@ -123,10 +155,14 @@ export class ChatGateway
 
       // Leave previous room if any
       const rooms = Array.from(client.rooms);
-      rooms.forEach((room) => {
+      rooms.forEach(async (room) => {
         if (room.startsWith('room:')) {
           client.leave(room);
           this.logger.log(`User ${user_id} left room ${room}`);
+          
+          // Remove user from previous room using Redis
+          const previousRoomId = room.replace('room:', '');
+          await this.roomActivityRedisService.removeUserFromRoom(user_id, previousRoomId);
         }
       });
 
@@ -134,12 +170,58 @@ export class ChatGateway
       client.join(`room:${room_id}`);
       this.logger.log(`User ${user_id} joined room ${room_id}`);
 
-      // Notify other users in the room
+      // Add user to room's online users using Redis with default 'online' status
+      await this.roomActivityRedisService.addUserToRoom(user_id, room_id, 'online');
+
+      // Record room activity for green dot
+      await this.roomActivityRedisService.recordRoomActivity(room_id, 'join');
+
+      // Get room activity summary using Redis
+      const totalMembers = await this.roomService.getRoomMemberCount(room_id);
+      const activitySummary = await this.roomActivityRedisService.getRoomActivitySummary(room_id, totalMembers);
+
+      // Notify other users in the room about the new user joining
       client.to(`room:${room_id}`).emit('user_joined', {
         user_id,
         room_id,
         timestamp: new Date(),
+        online_count: activitySummary.online_users,
+        total_members: activitySummary.total_members,
+        away_count: activitySummary.away_users,
+        busy_count: activitySummary.busy_users,
       });
+
+      // Send current room activity to the joining user
+      client.emit('room_activity', {
+        room_id,
+        online_count: activitySummary.online_users,
+        total_members: activitySummary.total_members,
+        away_count: activitySummary.away_users,
+        busy_count: activitySummary.busy_users,
+        offline_count: activitySummary.offline_users,
+      });
+
+      // IMPORTANT: Update room activity for ALL users in the room (including the joining user)
+      // This ensures real-time sync of room status across all members
+      // Use setTimeout to debounce rapid updates and prevent infinite loops
+      setTimeout(() => {
+        this.server.to(`room:${room_id}`).emit('room_activity', {
+          room_id,
+          online_count: activitySummary.online_users,
+          total_members: activitySummary.total_members,
+          away_count: activitySummary.away_users,
+          busy_count: activitySummary.busy_users,
+          offline_count: activitySummary.offline_users,
+        });
+      }, 100); // 100ms debounce
+
+      // Send room online users list
+      const onlineUsers = await this.roomActivityRedisService.getRoomOnlineUsers(room_id);
+      client.emit('room_online_users', {
+        room_id,
+        users: onlineUsers,
+      });
+
     } catch (error) {
       this.logger.error(`Error joining conversation: ${error.message}`);
       client.emit('error', { message: 'Failed to join conversation' });
@@ -156,12 +238,40 @@ export class ChatGateway
     client.leave(`room:${room_id}`);
     this.logger.log(`User ${user_id} left room ${room_id}`);
 
-    // Notify other users in the room
-    client.to(`room:${room_id}`).emit('user_left', {
-      user_id,
-      room_id,
-      timestamp: new Date(),
-    });
+    // Remove user from room's online users using Redis
+    await this.roomActivityRedisService.removeUserFromRoom(user_id, room_id);
+
+    // Record room activity for green dot
+    await this.roomActivityRedisService.recordRoomActivity(room_id, 'leave');
+
+    // Get updated activity summary
+    const totalMembers = await this.roomService.getRoomMemberCount(room_id);
+    const activitySummary = await this.roomActivityRedisService.getRoomActivitySummary(room_id, totalMembers);
+
+          // Notify other users in the room about the user leaving
+      client.to(`room:${room_id}`).emit('user_left', {
+        user_id,
+        room_id,
+        timestamp: new Date(),
+        online_count: activitySummary.online_users,
+        total_members: activitySummary.total_members,
+        away_count: activitySummary.away_users,
+        busy_count: activitySummary.busy_users,
+      });
+
+      // IMPORTANT: Update room activity for ALL remaining users in the room
+      // This ensures real-time sync of room status when someone leaves
+      // Use setTimeout to debounce rapid updates and prevent infinite loops
+      setTimeout(() => {
+        this.server.to(`room:${room_id}`).emit('room_activity', {
+          room_id,
+          online_count: activitySummary.online_users,
+          total_members: activitySummary.total_members,
+          away_count: activitySummary.away_users,
+          busy_count: activitySummary.busy_users,
+          offline_count: activitySummary.offline_users,
+        });
+      }, 100); // 100ms debounce
   }
 
   @SubscribeMessage('send_message')
@@ -197,6 +307,9 @@ export class ChatGateway
 
       this.logger.log(`Message created successfully:`, message);
 
+      // Record room activity for green dot
+      await this.roomActivityRedisService.recordRoomActivity(data.room_id, 'message');
+
       // Broadcast message to all users in the room
       const roomSockets = await this.server
         .in(`room:${data.room_id}`)
@@ -207,6 +320,23 @@ export class ChatGateway
 
       this.server.to(`room:${data.room_id}`).emit('new_message', message);
       this.logger.log(`Broadcasted message to room ${data.room_id}`);
+
+      // IMPORTANT: Update room activity for ALL users in the room after sending message
+      // This ensures real-time sync of room status when activity occurs
+      // Use setTimeout to debounce rapid updates and prevent infinite loops
+      setTimeout(async () => {
+        const totalMembers = await this.roomService.getRoomMemberCount(data.room_id);
+        const activitySummary = await this.roomActivityRedisService.getRoomActivitySummary(data.room_id, totalMembers);
+        
+        this.server.to(`room:${data.room_id}`).emit('room_activity', {
+          room_id: data.room_id,
+          online_count: activitySummary.online_users,
+          total_members: activitySummary.total_members,
+          away_count: activitySummary.away_users,
+          busy_count: activitySummary.busy_users,
+          offline_count: activitySummary.offline_users,
+        });
+      }, 100); // 100ms debounce
 
       // Emit delivery confirmation to sender
       client.emit('message_delivered', {
@@ -324,6 +454,130 @@ export class ChatGateway
       });
     } catch (error) {
       this.logger.error(`Error marking messages as read: ${error.message}`);
+    }
+  }
+
+  @SubscribeMessage('update_activity_status')
+  async handleUpdateActivityStatus(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { room_id: string; status: 'online' | 'offline' | 'away' | 'busy' },
+  ) {
+    const user_id = client.data.user_id;
+
+    try {
+      const isMember = await this.roomService.isUserMemberOfRoom(
+        user_id,
+        data.room_id,
+      );
+      if (!isMember) {
+        client.emit('error', { message: 'You are not a member of this room' });
+        return;
+      }
+
+      // Update user activity status using Redis
+      await this.roomActivityRedisService.updateUserStatus(user_id, data.room_id, data.status);
+
+      // Record room activity for green dot
+      await this.roomActivityRedisService.recordRoomActivity(data.room_id, 'status_change');
+
+      // Get updated activity summary
+      const totalMembers = await this.roomService.getRoomMemberCount(data.room_id);
+      const activitySummary = await this.roomActivityRedisService.getRoomActivitySummary(data.room_id, totalMembers);
+
+      // Broadcast activity status change to other users in the room
+      client.to(`room:${data.room_id}`).emit('user_activity_changed', {
+        user_id,
+        room_id: data.room_id,
+        status: data.status,
+        timestamp: new Date(),
+        online_count: activitySummary.online_users,
+        total_members: activitySummary.total_members,
+        away_count: activitySummary.away_users,
+        busy_count: activitySummary.busy_users,
+      });
+
+      // IMPORTANT: Update room activity for ALL users in the room
+      // This ensures real-time sync of room status when activity changes
+      // Use setTimeout to debounce rapid updates and prevent infinite loops
+      setTimeout(() => {
+        this.server.to(`room:${data.room_id}`).emit('room_activity', {
+          room_id: data.room_id,
+          online_count: activitySummary.online_users,
+          total_members: activitySummary.total_members,
+          away_count: activitySummary.away_users,
+          busy_count: activitySummary.busy_users,
+          offline_count: activitySummary.offline_users,
+        });
+      }, 100); // 100ms debounce
+
+    } catch (error) {
+      this.logger.error(`Error updating activity status: ${error.message}`);
+      client.emit('error', { message: 'Failed to update activity status' });
+    }
+  }
+
+  @SubscribeMessage('get_room_activity')
+  async handleGetRoomActivity(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() room_id: string,
+  ) {
+    const user_id = client.data.user_id;
+
+    try {
+      const isMember = await this.roomService.isUserMemberOfRoom(
+        user_id,
+        room_id,
+      );
+      if (!isMember) {
+        client.emit('error', { message: 'You are not a member of this room' });
+        return;
+      }
+
+      // Get room activity using Redis
+      const totalMembers = await this.roomService.getRoomMemberCount(room_id);
+      const activitySummary = await this.roomActivityRedisService.getRoomActivitySummary(room_id, totalMembers);
+      const onlineUsers = await this.roomActivityRedisService.getRoomOnlineUsers(room_id);
+
+      // Send room activity to the requesting user
+      client.emit('room_activity', {
+        room_id,
+        online_count: activitySummary.online_users,
+        total_members: activitySummary.total_members,
+        away_count: activitySummary.away_users,
+        busy_count: activitySummary.busy_users,
+        offline_count: activitySummary.offline_users,
+      });
+
+      // Send online users list
+      client.emit('room_online_users', {
+        room_id,
+        users: onlineUsers,
+      });
+
+    } catch (error) {
+      this.logger.error(`Error getting room activity: ${error.message}`);
+      client.emit('error', { message: 'Failed to get room activity' });
+    }
+  }
+
+  @SubscribeMessage('keep_alive')
+  async handleKeepAlive(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() room_id: string,
+  ) {
+    const user_id = client.data.user_id;
+
+    try {
+      // Extend user's presence TTL to keep them online
+      await this.roomActivityRedisService.extendUserPresence(user_id);
+      
+      // Send acknowledgment
+      client.emit('keep_alive_ack', {
+        timestamp: new Date(),
+        status: 'active'
+      });
+    } catch (error) {
+      this.logger.error(`Error handling keep alive: ${error.message}`);
     }
   }
 

@@ -61,4 +61,28 @@ export class ChatController {
       throw new ForbiddenException(MessageCode.FORBIDDEN);
     }
   }
+
+  @Post('mark-as-read/:roomId')
+  @ApiOperation({
+    summary: 'Mark all messages in a room as read',
+    description: 'Mark all unread messages in a specific room as read for the current user',
+  })
+  @ApiResponse({ status: 200, description: 'Messages marked as read successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Room not found' })
+  async markMessagesAsRead(@Req() req: IJwtRequest, @Param('roomId') roomId: string) {
+    if (req.user) {
+      // Get all message IDs in the room and mark them as read
+      const messages = await this.chatService.getMessages(roomId, { page: 1, limit: 1000 });
+      const messageIds = messages.results.map(msg => msg.id);
+      
+      if (messageIds.length > 0) {
+        await this.chatService.markMessagesAsRead(req.user.id, roomId, messageIds);
+      }
+      
+      return { success: true, message: 'Messages marked as read successfully' };
+    } else {
+      throw new ForbiddenException(MessageCode.FORBIDDEN);
+    }
+  }
 }
