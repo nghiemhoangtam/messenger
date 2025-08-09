@@ -8,7 +8,7 @@ export const DebugInfo: React.FC = () => {
   
   useEffect(() => {
     renderCount.current += 1;
-    console.log('🔄 DebugInfo rendered:', renderCount.current, 'times');
+
   });
 
   return (

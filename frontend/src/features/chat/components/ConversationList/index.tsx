@@ -2,10 +2,12 @@ import { CopyOutlined, LoginOutlined, UserAddOutlined, UsergroupAddOutlined } fr
 import { Avatar, Badge, Button, Form, Input, List, message, Modal, Select, Tooltip } from "antd";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import ActivityDot from "../../../../components/atoms/ActivityDot";
 import Loading from "../../../../components/atoms/Loading/Loading";
+import { useRoomActivity } from "../../../../hooks/useRoomActivity";
 import { roomService } from "../../../../services/roomService";
 import { RootState } from "../../../../store";
-import { PaginationRequest } from "../../../../types/pagination-request";
+import { createPaginationRequest } from "../../../../types/pagination-request";
 import { Contact } from "../../../contacts/types";
 import {
   createGroupRoomRequest,
@@ -32,6 +34,110 @@ function usePrevious<T>(value: T): T | undefined {
 
 const { Option } = Select;
 
+// Conversation Item Component
+interface ConversationItemProps {
+  conversation: Conversation;
+  isActive: boolean;
+  onConversationClick: (conversationId: string) => void;
+  onCopyRoomId: (roomId: string, e: React.MouseEvent) => void;
+}
+
+const ConversationItem: React.FC<ConversationItemProps> = ({
+  conversation,
+  isActive,
+  onConversationClick,
+  onCopyRoomId
+}) => {
+  const isGroupRoom = conversation.room.type === 'group';
+  
+  // Use room activity hook for this conversation
+  const { isActive: roomIsActive, activityLevel } = useRoomActivity({ 
+    roomId: conversation.room.id, 
+    autoRefresh: true,
+    refreshInterval: 1000 // Refresh every 10 seconds as fallback (real-time updates handle most cases)
+  });
+
+  return (
+          <List.Item
+        style={{
+          padding: "10px",
+        }}
+        className={`${styles.conversationItem} ${
+          isActive ? styles.active : ""
+        }`}
+        onClick={() => onConversationClick(conversation.room.id)}
+      >
+        {/* ActivityDot ở góc trên bên phải */}
+        <div className={styles.activityDotTopRight}>
+          <ActivityDot 
+            isActive={roomIsActive}
+            activityLevel={activityLevel}
+            size="small"
+            showTooltip={true}
+          />
+        </div>
+      <List.Item.Meta
+        avatar={
+          <Badge count={conversation.unread_count}>
+            <Avatar src={conversation.room.avatar}>
+              {conversation.room.name?.[0].toUpperCase()}
+            </Avatar>
+          </Badge>
+        }
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ 
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}>
+              {conversation.room.name || "Nhóm chat"}
+              {isGroupRoom && (
+                <span style={{ 
+                  fontSize: '12px', 
+                  color: '#1890ff',
+                  background: 'rgba(24, 144, 255, 0.1)',
+                  padding: '2px 6px',
+                  borderRadius: '8px',
+                  fontWeight: '500'
+                }}>
+                  👥 Nhóm
+                </span>
+              )}
+            </span>
+            {isGroupRoom && (
+              <Tooltip title="Copy Room ID">
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<CopyOutlined />}
+                  onClick={(e) => onCopyRoomId(conversation.room.id, e)}
+                  className={styles.copyButton}
+                  style={{ opacity: 0.3 }}
+                />
+              </Tooltip>
+            )}
+          </div>
+        }
+        description={
+          <div className={styles.lastMessage}>
+            <div className={styles.messageContent}>
+              {conversation.lastMessage?.content}
+            </div>
+          </div>
+        }
+      />
+      {conversation.lastMessage && (
+        <div className={styles.messageTime}>
+          {new Date(
+            conversation.lastMessage.created_at
+          ).toLocaleTimeString()}
+        </div>
+      )}
+    </List.Item>
+  );
+};
+
 export const ConversationList: React.FC = () => {
   const dispatch = useDispatch();
   const [searchGroupUserQuery, setSearchGroupUserQuery] = useState('');
@@ -44,7 +150,14 @@ export const ConversationList: React.FC = () => {
     newSearchGroupUser,
     availableFriends,
   } = useSelector((state: RootState) => state.chat);
-  const { user } = useSelector((state: RootState) => state.auth);  
+  const { user } = useSelector((state: RootState) => state.auth);
+
+  // Use room activity hook for current conversation if exists
+  useRoomActivity({ 
+    roomId: currentConversation?.room.id || '', 
+    autoRefresh: !!currentConversation?.room.id,
+    refreshInterval: 5000 // Real-time updates handle most cases, this is just fallback
+  });  
 
   // Modal state
   const [modalVisible, setModalVisible] = useState(false);
@@ -60,8 +173,8 @@ export const ConversationList: React.FC = () => {
 
   useEffect(() => {
     setLoadingConversations(true);
-    dispatch(fetchConversationsRequest(new PaginationRequest({ page: 1, limit: 15 })));
-    dispatch(getAvailableFriendsRequest(new PaginationRequest({ page: 1, limit: 10 })));
+    dispatch(fetchConversationsRequest(createPaginationRequest({ page: 1, limit: 15 })));
+    dispatch(getAvailableFriendsRequest(createPaginationRequest({ page: 1, limit: 10 })));
   }, [dispatch]);
 
   // Sync local loading state with Redux loading state
@@ -73,7 +186,7 @@ export const ConversationList: React.FC = () => {
   useEffect(() => {
     if (modalVisible) {
       dispatch(resetSearchGroupUser());
-      dispatch(searchGroupUserRequest(new PaginationRequest({ page: 1, search: "" })));
+              dispatch(searchGroupUserRequest(createPaginationRequest({ page: 1, search: "" })));
     }
   }, [modalVisible, dispatch]);
 
@@ -179,7 +292,7 @@ export const ConversationList: React.FC = () => {
       setJoinModalVisible(false);
       setRoomInfo(null);
       joinForm.resetFields();
-      dispatch(fetchConversationsRequest(new PaginationRequest({ page: 1, limit: 10 })));
+              dispatch(fetchConversationsRequest(createPaginationRequest({ page: 1, limit: 10 })));
     } catch (err: any) {
       const errorMessage = err?.response?.data?.message || "Tham gia phòng thất bại";
       message.error(errorMessage);
@@ -191,7 +304,7 @@ export const ConversationList: React.FC = () => {
   // Khi search user
   const handleSearchGroupUser = (value: string) => {
     setSearchGroupUserQuery(value);
-    dispatch(searchGroupUserRequest(new PaginationRequest({ page: 1, search: value })));
+            dispatch(searchGroupUserRequest(createPaginationRequest({ page: 1, search: value })));
   };
 
   // Khi scroll tới cuối danh sách user
@@ -204,7 +317,7 @@ export const ConversationList: React.FC = () => {
     ) {
       dispatch(
         searchGroupUserRequest(
-          new PaginationRequest({ page: newSearchGroupUser.data.meta.page + 1, search: searchGroupUserQuery })
+          createPaginationRequest({ page: newSearchGroupUser.data.meta.page + 1, search: searchGroupUserQuery })
         )
       );
     }
@@ -219,7 +332,7 @@ export const ConversationList: React.FC = () => {
       && !roomPage.loading // nếu có biến loading
       && roomPage.data.results.length < roomPage.data.meta.total // nếu có phân trang
     ) {
-      dispatch(fetchConversationsRequest(new PaginationRequest({ page: roomPage.data.meta.page + 1, limit: 15 })));
+              dispatch(fetchConversationsRequest(createPaginationRequest({ page: roomPage.data.meta.page + 1, limit: 15 })));
     }
   };
 
@@ -232,7 +345,7 @@ export const ConversationList: React.FC = () => {
     ) {
       dispatch(
         getAvailableFriendsRequest(
-          new PaginationRequest({ page: availableFriends.data.meta.page + 1, limit: 10 })
+          createPaginationRequest({ page: availableFriends.data.meta.page + 1, limit: 10 })
         )
       );
     }
@@ -301,82 +414,14 @@ export const ConversationList: React.FC = () => {
         <List          
           dataSource={roomPage.data.results}
           renderItem={(conversation: Conversation) => {
-            const isActive = currentConversation?.room.id === conversation.room.id;
-            const isGroupRoom = conversation.room.type === 'group';
-            
-            // Debug logging
-            console.log(`[DEBUG] Conversation: ${conversation.room.name}, type: ${conversation.room.type}, isGroupRoom: ${isGroupRoom}`);
-            
             return (
-              <List.Item
-                style={{
-                  padding: "10px",
-                }}
-                className={`${styles.conversationItem} ${
-                  isActive ? styles.active : ""
-                } ${isGroupRoom ? styles.groupRoom : ""}`}
-                onClick={() => handleConversationClick(conversation.room.id)}
-              >
-                {isGroupRoom && <div className={styles.groupRoomIndicator}></div>}
-                <List.Item.Meta
-                  avatar={
-                    <Badge count={conversation.unread_count}>
-                      <Avatar src={conversation.room.avatar}>
-                        {conversation.room.name?.[0].toUpperCase()}
-                      </Avatar>
-                    </Badge>
-                  }
-                  title={
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ 
-                        fontWeight: isGroupRoom ? '600' : '400', 
-                        color: isGroupRoom ? '#1890ff' : 'inherit',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                      }}>
-                        {conversation.room.name || "Nhóm chat"}
-                        {isGroupRoom && (
-                          <span style={{ 
-                            fontSize: '12px', 
-                            color: '#1890ff',
-                            background: 'rgba(24, 144, 255, 0.1)',
-                            padding: '2px 6px',
-                            borderRadius: '8px',
-                            fontWeight: '500'
-                          }}>
-                            👥 Nhóm
-                          </span>
-                        )}
-                      </span>
-                      {isGroupRoom && (
-                        <Tooltip title="Copy Room ID">
-                          <Button
-                            type="text"
-                            size="small"
-                            icon={<CopyOutlined />}
-                            onClick={(e) => handleCopyRoomId(conversation.room.id, e)}
-                            className={styles.copyButton}
-                            style={{ opacity: 0.3 }}
-                          />
-                        </Tooltip>
-                      )}
-                    </div>
-                  }
-                  description={
-                    <div className={styles.lastMessage}>
-                      {conversation.lastMessage?.content}
-                    </div>
-                  }
-                />
-                {conversation.lastMessage && (
-                  <div className={styles.messageTime}>
-                    {new Date(
-                      conversation.lastMessage.created_at
-                    ).toLocaleTimeString()}
-                  </div>
-                )}
-              </List.Item>
+              <ConversationItem 
+                key={conversation.room.id}
+                conversation={conversation}
+                isActive={currentConversation?.room.id === conversation.room.id}
+                onConversationClick={handleConversationClick}
+                onCopyRoomId={handleCopyRoomId}
+              />
             );
           }}
         />
@@ -388,7 +433,7 @@ export const ConversationList: React.FC = () => {
       {/* Modal tạo nhóm chat */}
       <Modal
         title="Tạo nhóm chat mới"
-        visible={modalVisible}
+        open={modalVisible}
         onCancel={() => setModalVisible(false)}
         onOk={() => form.submit()}
         confirmLoading={createGroupRoom.loading}
@@ -437,7 +482,7 @@ export const ConversationList: React.FC = () => {
       {/* Modal tạo chat riêng tư */}
       <Modal
         title="Tạo chat riêng tư"
-        visible={privateModalVisible}
+        open={privateModalVisible}
         onCancel={() => setPrivateModalVisible(false)}
         onOk={() => privateForm.submit()}
         confirmLoading={createPrivateRoom.loading}
@@ -485,7 +530,7 @@ export const ConversationList: React.FC = () => {
       {/* Modal tham gia phòng */}
       <Modal
         title="Tham gia phòng bằng Room ID"
-        visible={joinModalVisible}
+        open={joinModalVisible}
         onCancel={() => {
           setJoinModalVisible(false);
           setRoomInfo(null);

@@ -1,4 +1,4 @@
-export class PaginationResponse<T> {
+export interface PaginationResponse<T> {
   results: T[];
   meta: {
     total: number;
@@ -6,14 +6,15 @@ export class PaginationResponse<T> {
     limit: number;
     totalPages: number;
   };
-
-  constructor() {
-    this.results = [];
-    this.meta = {
-      total: 0,
-      page: 0,
-      limit: 10,
-      totalPages: 0,
-    };
-  }
 }
+
+// Helper function to create a new pagination response
+export const createPaginationResponse = <T>(): PaginationResponse<T> => ({
+  results: [],
+  meta: {
+    total: 0,
+    page: 0,
+    limit: 10,
+    totalPages: 0,
+  },
+});

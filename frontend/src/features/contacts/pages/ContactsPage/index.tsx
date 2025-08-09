@@ -1,24 +1,24 @@
 import {
-  SearchOutlined,
-  UserAddOutlined,
-  UserDeleteOutlined,
-  UserOutlined,
+    SearchOutlined,
+    UserAddOutlined,
+    UserDeleteOutlined,
+    UserOutlined,
 } from "@ant-design/icons";
 import { Avatar, Badge, Button, Input, List, Modal, Tabs } from "antd";
 import React, { startTransition, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../../../store";
-import { PaginationRequest } from "../../../../types/pagination-request";
+import { createPaginationRequest } from "../../../../types/pagination-request";
 import {
-  acceptFriendRequest,
-  fetchAcceptedFriendsRequest,
-  fetchReceiveFriendsRequest,
-  fetchSentFriendsRequest,
-  rejectFriendRequest,
-  removeFriendRequest,
-  searchAnotherUserRequest,
-  searchFriendsRequest,
-  sendFriendRequest
+    acceptFriendRequest,
+    fetchAcceptedFriendsRequest,
+    fetchReceiveFriendsRequest,
+    fetchSentFriendsRequest,
+    rejectFriendRequest,
+    removeFriendRequest,
+    searchAnotherUserRequest,
+    searchFriendsRequest,
+    sendFriendRequest
 } from "../../contactsSlice";
 import { Contact } from "../../types";
 import styles from "./ContactsPage.module.css";
@@ -48,16 +48,16 @@ export const ContactsPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    dispatch(searchFriendsRequest(new PaginationRequest({
-      page: 1,
-      search: searchQuery
-    })));
+            dispatch(searchFriendsRequest(createPaginationRequest({
+          page: 1,
+          search: searchQuery
+        })));
   }, [searchQuery]);
 
   useEffect(() => {
     dispatch(
       searchAnotherUserRequest(
-        new PaginationRequest({
+        createPaginationRequest({
           page: 1,
           search: searchAnotherUserQuery,
         })
@@ -68,7 +68,7 @@ export const ContactsPage: React.FC = () => {
   const loadAcceptedFriends = async () => {
     dispatch(
       fetchAcceptedFriendsRequest(
-        new PaginationRequest({
+        createPaginationRequest({
           page: contactState.acceptedFriendPagination.meta.page + 1,
           search: searchQuery
         })
@@ -79,7 +79,7 @@ export const ContactsPage: React.FC = () => {
   const loadReceiveRequestFriends = async () => {
     dispatch(
       fetchReceiveFriendsRequest(
-        new PaginationRequest({
+        createPaginationRequest({
           page: contactState.receivedFriendPagination.meta.page + 1,
         })
       )
@@ -89,7 +89,7 @@ export const ContactsPage: React.FC = () => {
   const loadSearchAnotherUser = async () => {
     dispatch(
       searchAnotherUserRequest(
-        new PaginationRequest({
+        createPaginationRequest({
           page: contactState.searchAnotherUserPagination.meta.page + 1,
           search: searchAnotherUserQuery
         })
@@ -100,7 +100,7 @@ export const ContactsPage: React.FC = () => {
   const loadSentRequestFriends = async () => {
     dispatch(
       fetchSentFriendsRequest(
-        new PaginationRequest({
+        createPaginationRequest({
           page: contactState.sentFriendPagination.meta.page + 1,
         })
       )
@@ -287,7 +287,7 @@ export const ContactsPage: React.FC = () => {
 
       <Modal
         title="Thêm bạn bè"
-        visible={modalVisible}
+        open={modalVisible}
         onCancel={() => setModalVisible(false)}
         footer={null}
       >

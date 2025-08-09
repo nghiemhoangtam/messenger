@@ -5,7 +5,7 @@ import { User } from "../../../auth";
 import styles from "./CallModal.module.css";
 
 interface CallModalProps {
-  visible: boolean;
+  open: boolean;
   type: "audio" | "video";
   caller: User;
   onAnswer: () => void;
@@ -15,7 +15,7 @@ interface CallModalProps {
 }
 
 export const CallModal: React.FC<CallModalProps> = ({
-  visible,
+  open,
   type,
   caller,
   onAnswer,
@@ -25,7 +25,7 @@ export const CallModal: React.FC<CallModalProps> = ({
 }) => {
   return (
     <Modal
-      visible={visible}
+      open={open}
       footer={null}
       closable={false}
       centered

@@ -1,17 +1,22 @@
 
-export class PaginationRequest {
-  page?: number = 0;
-  limit?: number = 10;
+export interface PaginationRequest {
+  page?: number;
+  limit?: number;
   sortBy?: string;
   search?: string;
   filter?: Record<string, any>;
+}
 
-  constructor(init?: Partial<PaginationRequest>) {
-    Object.assign(this, init);
-  }
+// Helper function to create a new pagination request
+export const createPaginationRequest = (init?: Partial<PaginationRequest>): PaginationRequest => ({
+  page: 0,
+  limit: 10,
+  ...init,
+});
 
-  cleanParams() {
-    return Object.entries(this)
+// Helper function to clean parameters (moved from class method)
+export const cleanPaginationParams = (params: PaginationRequest) => {
+  return Object.entries(params)
     .filter(([_, value]) => value !== undefined && value !== null)
     .reduce(
       (obj, [key, value]) => {
@@ -20,5 +25,4 @@ export class PaginationRequest {
       },
       {} as Record<string, any>
     );
-  }
-}
+};

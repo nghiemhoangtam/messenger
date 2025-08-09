@@ -7,7 +7,7 @@ import { startCallRequest } from "../../../../features/calls/callsSlice";
 import { roomService } from "../../../../services/roomService";
 import { socketService } from "../../../../services/socketService";
 import { RootState } from "../../../../store";
-import { PaginationRequest } from "../../../../types/pagination-request";
+import { createPaginationRequest } from "../../../../types/pagination-request";
 import { User } from "../../../auth";
 import {
   fetchMessagesRequest,
@@ -96,7 +96,7 @@ export const ChatWindow: React.FC = () => {
   useEffect(() => {
     if (currentConversation) {
       setLoadingMessages(true);
-      dispatch(fetchMessagesRequest({ roomId: currentConversation.room.id, pageRequest: new PaginationRequest({ page: 1, limit: 15 }) }));
+              dispatch(fetchMessagesRequest({ roomId: currentConversation.room.id, pageRequest: createPaginationRequest({ page: 1, limit: 15 }) }));
       dispatch(markMessagesAsReadRequest(currentConversation.room.id));
       
       // Join new conversation
@@ -136,7 +136,7 @@ export const ChatWindow: React.FC = () => {
   // Force re-render when messages change
   useEffect(() => {
     if (currentConversationMessages.length > 0) {
-      console.log('🔄 Messages changed, forcing re-render');
+  
       // This will trigger a re-render when messages change
     }
   }, [currentConversationMessages]);
@@ -161,7 +161,7 @@ export const ChatWindow: React.FC = () => {
       dispatch(
         fetchMessagesRequest({ 
           roomId: currentConversation.room.id, 
-          pageRequest: new PaginationRequest({ page: nextPage, limit: 15 }) 
+          pageRequest: createPaginationRequest({ page: nextPage, limit: 15 }) 
         })
       );
     }
@@ -170,7 +170,7 @@ export const ChatWindow: React.FC = () => {
   const handleSendMessage = async (content: string) => {
     if (!currentConversation) return;
 
-    console.log('Sending message:', { content, conversationId: currentConversation.room.id });
+
     
     setSending(true);
     try {
@@ -306,9 +306,7 @@ export const ChatWindow: React.FC = () => {
     .find((c) => c.room.id === currentConversation.room.id)
     ?.room.messagePage.results || [];
 
-  console.log('🔄 ChatWindow render - currentMessages count:', currentMessages.length);
-  console.log('🔄 ChatWindow render - roomPage.data.results count:', roomPage.data.results.length);
-  console.log('🔄 ChatWindow render - currentConversationMessages count:', currentConversationMessages.length);
+  
 
   const groupedMessages = groupMessagesByDate(currentConversationMessages);
   const currentConversationData = roomPage.data.results.find(
@@ -415,7 +413,7 @@ export const ChatWindow: React.FC = () => {
       />
 
       <CallModal
-        visible={isCallModalVisible}
+        open={isCallModalVisible}
         type={callType}
         caller={user as User}
         onAnswer={handleAnswerCall}

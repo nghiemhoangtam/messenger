@@ -1,14 +1,14 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { ErrorState } from "../../types/error";
 import { PaginationRequest } from "../../types/pagination-request";
-import { PaginationResponse } from "../../types/pagination-response";
+import { createPaginationResponse, PaginationResponse } from "../../types/pagination-response";
 import { Contact, ContactsState } from "./types";
 
 const initialState: ContactsState = {
-  acceptedFriendPagination: new PaginationResponse<Contact>(),
-  receivedFriendPagination: new PaginationResponse<Contact>(),
-  sentFriendPagination: new PaginationResponse<Contact>(),
-  searchAnotherUserPagination: new PaginationResponse<Contact>(),
+  acceptedFriendPagination: createPaginationResponse<Contact>(),
+  receivedFriendPagination: createPaginationResponse<Contact>(),
+  sentFriendPagination: createPaginationResponse<Contact>(),
+  searchAnotherUserPagination: createPaginationResponse<Contact>(),
   status: "idle",
   error: null,
 };

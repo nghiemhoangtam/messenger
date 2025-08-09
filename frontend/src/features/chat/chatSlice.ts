@@ -1,8 +1,8 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { PaginationRequest } from "../../types/pagination-request";
-import { PaginationResponse } from "../../types/pagination-response";
+import { createPaginationResponse, PaginationResponse } from "../../types/pagination-response";
 import { Contact } from "../contacts/types";
-import { Conversation, CreateGroupRoomRequest, Message, MessageMention, MessageThread, TypingIndicator, UserPresence } from "./types";
+import { Conversation, CreateGroupRoomRequest, Message, MessageMention, MessageThread, RoomActivityState, RoomOnlineUsers, TypingIndicator, UserPresence } from "./types";
 
 interface ChatState {
   roomPage: {
@@ -42,12 +42,14 @@ interface ChatState {
   userPresence: UserPresence[];
   messageThreads: MessageThread[];
   messageMentions: MessageMention[];
+  roomActivity: { [roomId: string]: RoomActivityState };
+  roomOnlineUsers: RoomOnlineUsers;
   error: string | null;
 }
 
 const initialState: ChatState = {
   roomPage: {
-    data: new PaginationResponse<Conversation>(),
+    data: createPaginationResponse<Conversation>(),
     loading: false,
     error: null,
   },
@@ -55,7 +57,7 @@ const initialState: ChatState = {
   messagesLoading: false,
   messageUpdateCounter: 0,
   newSearchGroupUser: {
-    data: new PaginationResponse<Contact>(),
+    data: createPaginationResponse<Contact>(),
     loading: false,
     error: null,
   },
@@ -65,7 +67,7 @@ const initialState: ChatState = {
     error: null,
   },
   availableFriends: {
-    data: new PaginationResponse<Contact>(),
+    data: createPaginationResponse<Contact>(),
     loading: false,
     error: null,
   },
@@ -83,6 +85,8 @@ const initialState: ChatState = {
   userPresence: [],
   messageThreads: [],
   messageMentions: [],
+  roomActivity: {},
+  roomOnlineUsers: {},
   error: null,
 };
 
@@ -114,8 +118,8 @@ const chatSlice = createSlice({
             ...conversation,
             room: {
               ...conversation.room,
-              memberPage: new PaginationResponse<Contact>(),
-              messagePage: new PaginationResponse<Message>()
+                      memberPage: createPaginationResponse<Contact>(),
+        messagePage: createPaginationResponse<Message>()
             }
           };
         }
@@ -172,32 +176,28 @@ const chatSlice = createSlice({
     receiveMessage: (state, action: PayloadAction<Message>) => {
       const conversationId = action.payload.room_id;
       
-      console.log('🔄 receiveMessage action triggered:', {
-        messageId: action.payload.id,
-        conversationId,
-        content: action.payload.content
-      });
+
       
       const conversationIndex = state.roomPage.data.results.findIndex(
         conversation => conversation.room.id === conversationId
       );
       
-      console.log('📊 Found conversation at index:', conversationIndex);
+
       
       if (conversationIndex === -1) {
-        console.warn('❌ Conversation not found for message:', conversationId);
+
         return;
       }
       
       const conversation = state.roomPage.data.results[conversationIndex];
-      console.log('📋 Current messages count:', conversation.room.messagePage.results.length);
+
       
       // Kiểm tra xem message đã tồn tại chưa (tránh duplicate)
       const messageExists = conversation.room.messagePage.results.some(
         msg => msg.id === action.payload.id
       );
       
-      console.log('🔍 Message already exists:', messageExists);
+
       
       if (!messageExists) {
         // Thêm message mới vào danh sách
@@ -221,7 +221,7 @@ const chatSlice = createSlice({
               }
             };
             
-            console.log('✅ Updated conversation with new message. New message count:', updatedResults.length);
+
             return updatedConversation;
           }
           return conv;
@@ -231,9 +231,8 @@ const chatSlice = createSlice({
         state.roomPage.data.results = updatedConversations;
         state.messageUpdateCounter += 1; // Increment counter to force re-render
 
-        console.log('🎉 Added new message:', action.payload.id);
-      } else {
-        console.log('⏭️ Message already exists, skipping:', action.payload.id);      
+
+      } else {      
       }
     },
     markMessagesAsReadRequest: (state, action: PayloadAction<string>) => {
@@ -276,7 +275,7 @@ const chatSlice = createSlice({
       state.newSearchGroupUser.error = action.payload;
     },
     resetSearchGroupUser: (state) => {
-      state.newSearchGroupUser.data = new PaginationResponse<Contact>();
+      state.newSearchGroupUser.data = createPaginationResponse<Contact>();
       state.newSearchGroupUser.loading = false;
       state.newSearchGroupUser.error = null;
     },
@@ -306,7 +305,7 @@ const chatSlice = createSlice({
       state.availableFriends.error = action.payload;
     },
     resetAvailableFriends: (state) => {
-      state.availableFriends.data = new PaginationResponse<Contact>();
+      state.availableFriends.data = createPaginationResponse<Contact>();
       state.availableFriends.loading = false;
       state.availableFriends.error = null;
     },
@@ -389,7 +388,106 @@ const chatSlice = createSlice({
       if (state.currentConversation?.room.id === action.payload) {
         state.currentConversation = null;
       }
-    }
+    },
+    updateRoomActivity: (state, action: PayloadAction<{ 
+      room_id: string; 
+      online_count: number; 
+      total_members: number;
+      away_count: number;
+      busy_count: number;
+      offline_count: number;
+    }>) => {
+      const { room_id, online_count, total_members, away_count, busy_count, offline_count } = action.payload;
+      
+      // Check if the data has actually changed to prevent unnecessary updates
+      const existingActivity = state.roomActivity[room_id];
+      if (existingActivity) {
+        const hasChanged = 
+          existingActivity.online_count !== online_count ||
+          existingActivity.total_members !== total_members ||
+          existingActivity.away_count !== away_count ||
+          existingActivity.busy_count !== busy_count ||
+          existingActivity.offline_count !== offline_count;
+        
+        // Only update if there are actual changes
+        if (!hasChanged) {
+          return;
+        }
+      }
+      
+      // Calculate if room is active based on multiple criteria
+      const hasOnlineUsers = online_count > 0 || away_count > 0 || busy_count > 0;
+      const isActive = hasOnlineUsers;
+      
+      // Determine activity level
+      let activityLevel: 'high' | 'medium' | 'low' | 'inactive' = 'inactive';
+      if (online_count >= 3) {
+        activityLevel = 'high';
+      } else if (online_count >= 1 || away_count >= 1 || busy_count >= 1) {
+        activityLevel = 'low';
+      } else if (isActive) {
+        activityLevel = 'low';
+      }
+      
+      state.roomActivity[room_id] = {
+        room_id,
+        online_count,
+        total_members,
+        away_count,
+        busy_count,
+        offline_count,
+        is_active: isActive,
+        activity_level: activityLevel,
+      };
+    },
+
+    updateRoomOnlineUsers: (state, action: PayloadAction<{ 
+      room_id: string; 
+      users: string[] 
+    }>) => {
+      if (!state.roomOnlineUsers[action.payload.room_id]) {
+        state.roomOnlineUsers[action.payload.room_id] = [];
+      }
+      state.roomOnlineUsers[action.payload.room_id] = action.payload.users;
+    },
+
+    updateUserActivity: (state, action: PayloadAction<{ 
+      user_id: string; 
+      room_id: string; 
+      status: string; 
+      timestamp: Date; 
+      online_count: number;
+      total_members: number;
+      away_count: number;
+      busy_count: number;
+    }>) => {
+      const { room_id, online_count, total_members, away_count, busy_count } = action.payload;
+      
+      // Update room activity if it exists
+      if (state.roomActivity[room_id]) {
+        // Check if the data has actually changed to prevent unnecessary updates
+        const existingActivity = state.roomActivity[room_id];
+        const newOfflineCount = total_members - online_count - away_count - busy_count;
+        
+        const hasChanged = 
+          existingActivity.online_count !== online_count ||
+          existingActivity.total_members !== total_members ||
+          existingActivity.away_count !== away_count ||
+          existingActivity.busy_count !== busy_count ||
+          existingActivity.offline_count !== newOfflineCount;
+        
+        // Only update if there are actual changes
+        if (!hasChanged) {
+          return;
+        }
+        
+        state.roomActivity[room_id].online_count = online_count;
+        state.roomActivity[room_id].total_members = total_members;
+        state.roomActivity[room_id].away_count = away_count;
+        state.roomActivity[room_id].busy_count = busy_count;
+        state.roomActivity[room_id].offline_count = newOfflineCount;
+      }
+    },
   },
 });
 
@@ -432,6 +530,9 @@ export const {
   addMessageMention,
   updateMessageStatus,
   removeConversation,
+  updateRoomActivity,
+  updateRoomOnlineUsers,
+  updateUserActivity,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;

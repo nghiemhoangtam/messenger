@@ -1,5 +1,5 @@
 import { Contact } from "../features/contacts/types";
-import { PaginationRequest } from "../types/pagination-request";
+import { PaginationRequest, cleanPaginationParams } from "../types/pagination-request";
 import { PaginationResponse } from "../types/pagination-response";
 import { accessTokenAxiosClient } from "../utils/request/axiosClient";
 import { apiRequest } from "../utils/request/http-request";
@@ -10,7 +10,7 @@ class ContactService {
   ): Promise<PaginationResponse<Contact>> {
     return apiRequest<PaginationResponse<Contact>>(() =>
       accessTokenAxiosClient.get("/user-relationship/list-accepted-friends", {
-        params: pageRequest.cleanParams(),
+        params: cleanPaginationParams(pageRequest),
       })
     );
   }
@@ -20,7 +20,7 @@ class ContactService {
   ): Promise<PaginationResponse<Contact>> {
     return apiRequest<PaginationResponse<Contact>>(() =>
       accessTokenAxiosClient.get("/user-relationship/list-received-friends", {
-        params: pageRequest.cleanParams(),
+        params: cleanPaginationParams(pageRequest),
       })
     );
   }
@@ -30,7 +30,7 @@ class ContactService {
   ): Promise<PaginationResponse<Contact>> {
     return apiRequest<PaginationResponse<Contact>>(() =>
       accessTokenAxiosClient.get("/user-relationship/list-sent-friends", {
-        params: pageRequest.cleanParams(),
+        params: cleanPaginationParams(pageRequest),
       })
     );
   }
@@ -40,7 +40,7 @@ class ContactService {
   ): Promise<PaginationResponse<Contact>> {
     return apiRequest<PaginationResponse<Contact>>(() =>
       accessTokenAxiosClient.get("/user-relationship/search-another-user", {
-        params: pageRequest.cleanParams(),
+        params: cleanPaginationParams(pageRequest),
       })
     );
   }
@@ -80,7 +80,7 @@ class ContactService {
   async getAvailableFriends(pageRequest: PaginationRequest): Promise<PaginationResponse<Contact>> {
     return apiRequest<PaginationResponse<Contact>>(() =>
       accessTokenAxiosClient.get("/user-relationship/available-friends", {
-        params: pageRequest.cleanParams(),
+        params: cleanPaginationParams(pageRequest),
       })
     );
   }

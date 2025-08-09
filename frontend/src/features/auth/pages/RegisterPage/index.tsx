@@ -1,7 +1,7 @@
 import {
-  FacebookOutlined,
-  GithubOutlined,
-  GoogleOutlined,
+    FacebookOutlined,
+    GithubOutlined,
+    GoogleOutlined,
 } from "@ant-design/icons";
 import { Button, Divider, Form, Input, message, Spin } from "antd";
 import React, { useEffect } from "react";
@@ -62,7 +62,7 @@ export const RegisterPage: React.FC = () => {
 
   const handleSocialRegister = (provider: string): void => {
     // Implement social register logic here
-    console.log(`Register with ${provider}`);
+
   };
 
   if (auth.status === "loading") {

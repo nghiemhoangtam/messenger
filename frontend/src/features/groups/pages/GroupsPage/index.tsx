@@ -1,26 +1,26 @@
 import {
-  DeleteOutlined,
-  EditOutlined,
-  InfoCircleOutlined,
-  PlusOutlined,
-  SearchOutlined,
-  TeamOutlined,
-  UserAddOutlined,
-  UserDeleteOutlined,
-  UserOutlined,
+    DeleteOutlined,
+    EditOutlined,
+    InfoCircleOutlined,
+    PlusOutlined,
+    SearchOutlined,
+    TeamOutlined,
+    UserAddOutlined,
+    UserDeleteOutlined,
+    UserOutlined,
 } from "@ant-design/icons";
 import {
-  Avatar,
-  Button,
-  Form,
-  Input,
-  List,
-  message,
-  Modal,
-  Select,
-  Tabs,
-  Tag,
-  Tooltip,
+    Avatar,
+    Button,
+    Form,
+    Input,
+    List,
+    message,
+    Modal,
+    Select,
+    Tabs,
+    Tag,
+    Tooltip,
 } from "antd";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -329,7 +329,7 @@ export const GroupsPage: React.FC = () => {
 
       <Modal
         title={selectedGroup ? "Chỉnh sửa nhóm" : "Tạo nhóm mới"}
-        visible={modalVisible}
+        open={modalVisible}
         onCancel={() => setModalVisible(false)}
         footer={null}
       >

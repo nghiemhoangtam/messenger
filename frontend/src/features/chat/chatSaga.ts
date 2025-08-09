@@ -9,31 +9,31 @@ import { PaginationRequest } from "../../types/pagination-request";
 import { PaginationResponse } from "../../types/pagination-response";
 import { Contact } from "../contacts/types";
 import {
-  createGroupRoomFailure,
-  createGroupRoomRequest,
-  createGroupRoomSuccess,
-  createPrivateRoomFailure,
-  createPrivateRoomRequest,
-  createPrivateRoomSuccess,
-  fetchConversationsFailure,
-  fetchConversationsRequest,
-  fetchConversationsSuccess,
-  fetchMessagesFailure,
-  fetchMessagesRequest,
-  fetchMessagesSuccess,
-  getAvailableFriendsFailure,
-  getAvailableFriendsRequest,
-  getAvailableFriendsSuccess,
-  markMessagesAsReadFailure,
-  markMessagesAsReadRequest,
-  markMessagesAsReadSuccess,
-  removeAvailableFriend,
-  searchGroupUserFailure,
-  searchGroupUserRequest,
-  searchGroupUserSuccess,
-  sendMessageFailure,
-  sendMessageRequest,
-  sendMessageSuccess,
+    createGroupRoomFailure,
+    createGroupRoomRequest,
+    createGroupRoomSuccess,
+    createPrivateRoomFailure,
+    createPrivateRoomRequest,
+    createPrivateRoomSuccess,
+    fetchConversationsFailure,
+    fetchConversationsRequest,
+    fetchConversationsSuccess,
+    fetchMessagesFailure,
+    fetchMessagesRequest,
+    fetchMessagesSuccess,
+    getAvailableFriendsFailure,
+    getAvailableFriendsRequest,
+    getAvailableFriendsSuccess,
+    markMessagesAsReadFailure,
+    markMessagesAsReadRequest,
+    markMessagesAsReadSuccess,
+    removeAvailableFriend,
+    searchGroupUserFailure,
+    searchGroupUserRequest,
+    searchGroupUserSuccess,
+    sendMessageFailure,
+    sendMessageRequest,
+    sendMessageSuccess,
 } from "./chatSlice";
 import { Conversation, CreateGroupRoomRequest, Message } from "./types";
 
@@ -57,7 +57,7 @@ function* handleSendMessage(
   action: PayloadAction<{ conversationId: string; content: string; type?: string }>,
 ) {
   try {
-    console.log('Sending message via WebSocket:', action.payload);
+
     
     // Sử dụng WebSocket để gửi tin nhắn real-time thay vì REST API
     const messageData = {

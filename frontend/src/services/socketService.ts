@@ -2,8 +2,9 @@ import { io, Socket } from "socket.io-client";
 import { receiveIncomingCall } from "../features/calls/callsSlice";
 import { receiveMessage, removeTypingIndicator, setTypingIndicator, updateMessageStatus } from "../features/chat/chatSlice";
 
-class SocketService {
+export class SocketService {
   private socket: Socket | null = null;
+  private keepAliveIntervals: Map<string, NodeJS.Timeout> = new Map();
   private dispatch: Function | null = null;
 
   initialize(dispatch: Function) {
@@ -11,12 +12,13 @@ class SocketService {
   }
 
   isConnected(): boolean {
-    return this.socket?.connected || false;
+    const connected = this.socket?.connected || false;
+    return connected;
   }
 
+
+
   connect(userId: string, token: string) {
-    console.log("Connecting to socket server");
-    
     // Sử dụng port 8080 và namespace /chat như trong chat.gateway.ts
     this.socket = io(
       `${process.env.REACT_APP_SOCKET_URL || "http://localhost:8080"}/chat`,
@@ -31,47 +33,34 @@ class SocketService {
     );
 
     this.socket.on("connect", () => {
-      console.log("✅ Connected to socket server");
-      console.log("Socket ID:", this.socket?.id);
     });
 
     this.socket.on("disconnect", (reason) => {
-      console.log("🔌 Disconnected from socket server:", reason);
-    });
-
-    this.socket.on("connect_error", (error) => {
-      console.error("❌ Socket connection error:", error);
     });
 
     // Call events
     this.socket.on("incoming_call", (call) => {
-      console.log("📞 Incoming call:", call);
       this.dispatch?.(receiveIncomingCall(call));
     });
 
     this.socket.on("call_accepted", (call) => {
-      console.log("📞 Call accepted:", call);
       // Handle call accepted
     });
 
     this.socket.on("call_rejected", (call) => {
-      console.log("📞 Call rejected:", call);
       // Handle call rejected
     });
 
     this.socket.on("call_ended", (call) => {
-      console.log("📞 Call ended:", call);
       // Handle call ended
     });
 
-    // Chat events - tương thích với chat.gateway.ts
+    // Message events
     this.socket.on("new_message", (message) => {
-      console.log('📨 Received new message via WebSocket:', message);
       this.dispatch?.(receiveMessage(message));
     });
 
     this.socket.on("message_delivered", (data) => {
-      console.log("✅ Message delivered:", data);
       this.dispatch?.(updateMessageStatus({ 
         messageId: data.message_id, 
         status: "delivered" 
@@ -79,28 +68,26 @@ class SocketService {
     });
 
     this.socket.on("message_read", (data) => {
-      console.log("👁️ Message read:", data);
       this.dispatch?.(updateMessageStatus({ 
         messageId: data.message_id, 
         status: "read" 
       }));
     });
 
+    // Typing events
     this.socket.on("typing_start", (data) => {
-      console.log("⌨️ User typing:", data);
       // Create typing indicator with user data
       const typingIndicator = {
         id: `${data.user.id}_${data.room_id}`,
         room_id: data.room_id,
         user: data.user,
-        started_at: new Date(data.timestamp),
-        expires_at: new Date(Date.now() + 5000) // 5 seconds expiry
+        started_at: data.timestamp, // Store as ISO string or timestamp
+        expires_at: Date.now() + 5000 // Store as timestamp
       };
       this.dispatch?.(setTypingIndicator(typingIndicator));
     });
 
     this.socket.on("typing_stop", (data) => {
-      console.log("⏹️ User stopped typing:", data);
       this.dispatch?.(removeTypingIndicator({ 
         room_id: data.room_id, 
         user: data.user 
@@ -108,23 +95,103 @@ class SocketService {
     });
 
     this.socket.on("user_joined", (data) => {
-      console.log("👋 User joined room:", data);
-      // Có thể dispatch action để update room participants
+      if (this.dispatch) {
+        // Dispatch action để update room activity
+        this.dispatch({
+          type: 'chat/updateUserActivity',
+          payload: {
+            user_id: data.user_id,
+            room_id: data.room_id,
+            status: 'online',
+            timestamp: data.timestamp,
+            online_count: data.online_count,
+            total_members: data.total_members,
+            away_count: data.away_count,
+            busy_count: data.busy_count,
+          }
+        });
+      }
     });
 
     this.socket.on("user_left", (data) => {
-      console.log("👋 User left room:", data);
-      // Có thể dispatch action để update room participants
+      if (this.dispatch) {
+        // Dispatch action để update room activity
+        this.dispatch({
+          type: 'chat/updateUserActivity',
+          payload: {
+            user_id: data.user_id,
+            room_id: data.room_id,
+            status: 'offline',
+            timestamp: data.timestamp,
+            online_count: data.online_count,
+            total_members: data.total_members,
+            away_count: data.away_count,
+            busy_count: data.busy_count,
+          }
+        });
+      }
     });
 
-    this.socket.on("error", (error) => {
-      console.error("❌ Socket error:", error);
+    this.socket.on("user_activity_changed", (data) => {
+      if (this.dispatch) {
+        // Dispatch action để update room activity
+        this.dispatch({
+          type: 'chat/updateUserActivity',
+          payload: {
+            user_id: data.user_id,
+            room_id: data.room_id,
+            status: data.status,
+            timestamp: data.timestamp,
+            online_count: data.online_count,
+            total_members: data.total_members,
+            away_count: data.away_count,
+            busy_count: data.busy_count,
+          }
+        });
+      }
+    });
+
+    // Room activity events - QUAN TRỌNG: Lắng nghe event room_activity để cập nhật real-time
+    this.socket.on("room_activity", (data) => {
+      if (this.dispatch) {
+        // Dispatch action để update room activity
+        this.dispatch({
+          type: 'chat/updateRoomActivity',
+          payload: {
+            room_id: data.room_id,
+            online_count: data.online_count,
+            total_members: data.total_members,
+            away_count: data.away_count,
+            busy_count: data.busy_count,
+            offline_count: data.offline_count,
+          }
+        });
+      }
+    });
+
+    // Room online users events
+    this.socket.on("room_online_users", (data) => {
+      if (this.dispatch) {
+        // Dispatch action để update room online users
+        this.dispatch({
+          type: 'chat/updateRoomOnlineUsers',
+          payload: {
+            room_id: data.room_id,
+            users: data.users,
+          }
+        });
+      }
+    });
+
+    // Keep alive events
+    this.socket.on("keep_alive_ack", (data) => {
+      // Có thể thêm logic xử lý keep alive nếu cần
     });
   }
 
   disconnect() {
     if (this.socket) {
-      console.log("🔌 Disconnecting from socket server");
+      // Disconnect from socket server
       this.socket.disconnect();
       this.socket = null;
     }
@@ -132,59 +199,112 @@ class SocketService {
 
   // Chat methods - tương thích với chat.gateway.ts
   sendMessage(message: { room_id: string; content: string; type?: string }) {
-    console.log('📤 Sending message via WebSocket:', message);
-    this.socket?.emit("send_message", message);
+    if (this.socket?.connected) {
+      this.socket.emit("send_message", message);
+    }
   }
 
   joinConversation(room_id: string) {
-    console.log('🚪 Joining conversation:', room_id);
-    this.socket?.emit("join_conversation", room_id);
+    if (this.socket?.connected) {
+      this.socket.emit("join_conversation", room_id);
+    }
   }
 
   leaveConversation(room_id: string) {
-    console.log('🚪 Leaving conversation:', room_id);
-    this.socket?.emit("leave_conversation", room_id);
+    if (this.socket?.connected) {
+      this.socket.emit("leave_conversation", room_id);
+    }
   }
 
+  // Typing methods
   startTyping(room_id: string) {
-    console.log('⌨️ Starting typing in room:', room_id);
-    this.socket?.emit("typing_start", { room_id });
+    if (this.socket?.connected) {
+      this.socket.emit("typing_start", { room_id });
+    }
   }
 
   stopTyping(room_id: string) {
-    console.log('⏹️ Stopping typing in room:', room_id);
-    this.socket?.emit("typing_stop", { room_id });
+    if (this.socket?.connected) {
+      // Stop typing in room
+      this.socket.emit("typing_stop", { room_id });
+    }
   }
 
-  markAsRead(room_id: string, message_ids: string[]) {
-    console.log('👁️ Marking messages as read:', { room_id, message_ids });
-    this.socket?.emit("mark_as_read", { room_id, message_ids });
+  // Message read methods
+  markMessagesAsRead(message_ids: string[]) { 
+    if (this.socket?.connected) {
+      // Mark messages as read
+      this.socket.emit("mark_messages_read", { message_ids });
+    }
+  }
+
+  // Activity methods
+  updateActivityStatus(room_id: string, status: 'online' | 'offline' | 'away' | 'busy') {
+    if (this.socket?.connected) {
+      // Update activity status
+      this.socket.emit("update_activity_status", { room_id, status });
+    }
+  }
+
+  getRoomActivity(room_id: string) {
+    if (this.socket?.connected) {
+      // Get room activity for room
+      this.socket.emit("get_room_activity", room_id);
+    }
+  }
+
+  // Keep alive methods
+  startKeepAlive(room_id: string, interval: number = 30000) {
+    // Clear existing interval if any
+    this.stopKeepAlive(room_id);
+
+    // Start new keep alive interval
+    const keepAliveInterval = setInterval(() => {
+      if (this.socket?.connected) {
+        this.socket.emit("keep_alive", { room_id });
+      }
+    }, interval);
+
+    this.keepAliveIntervals.set(room_id, keepAliveInterval);
+  }
+
+  stopKeepAlive(room_id: string) {
+    const interval = this.keepAliveIntervals.get(room_id);
+    if (interval) {
+      clearInterval(interval);
+      this.keepAliveIntervals.delete(room_id);
+    }
   }
 
   // Call methods
   startCall(receiverId: string, type: "audio" | "video") {
-    console.log('📞 Starting call:', { receiverId, type });
-    this.socket?.emit("start_call", { receiverId, type });
+    if (this.socket?.connected) {
+      this.socket.emit("start_call", { receiverId, type });
+    }
   }
 
   answerCall(callerId: string) {
-    console.log('📞 Answering call:', callerId);
-    this.socket?.emit("answer_call", { callerId });
+      if (this.socket?.connected) {
+      this.socket.emit("answer_call", { callerId });
+    }
   }
 
   rejectCall(callerId: string) {
-    console.log('📞 Rejecting call:', callerId);
-    this.socket?.emit("reject_call", { callerId });
+    if (this.socket?.connected) {
+      this.socket.emit("reject_call", { callerId });
+    }
   }
 
   endCall(participantId: string) {
-    console.log('📞 Ending call:', participantId);
-    this.socket?.emit("end_call", { participantId });
+    if (this.socket?.connected) {
+      this.socket.emit("end_call", { participantId });
+    }
   }
 
   // Utility methods
   getSocketId(): string | undefined {
-    return this.socket?.id;
+    const socketId = this.socket?.id;
+    return socketId;
   }
 
   isSocketConnected(): boolean {

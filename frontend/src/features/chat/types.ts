@@ -16,6 +16,8 @@ export interface Room {
   pinned_message_id?: string;
   memberPage: PaginationResponse<Contact>;
   messagePage: PaginationResponse<Message>;
+  isActive?: boolean;
+  activityLevel?: 'high' | 'medium' | 'low' | 'inactive';
 }
 
 export interface Message {
@@ -65,8 +67,8 @@ export interface TypingIndicator {
   id: string;
   room_id: string;
   user: Contact;
-  started_at: Date;
-  expires_at: Date;
+  started_at: string | number; // ISO string or timestamp
+  expires_at: number; // timestamp
 }
 
 export interface UserPresence {
@@ -76,4 +78,34 @@ export interface UserPresence {
   last_seen: Date;
   custom_status?: string;
   updated_at: Date;
+}
+
+export interface RoomActivity {
+  user_id: Contact;
+  status: "online" | "offline" | "away" | "busy";
+  last_seen: Date;
+  joined_at: Date;
+}
+
+export interface RoomActivitySummary {
+  total_members: number;
+  online_users: number;
+  offline_users: number;
+  away_users: number;
+  busy_users: number;
+}
+
+export interface RoomActivityState {
+  room_id: string;
+  online_count: number;
+  total_members: number;
+  away_count: number;
+  busy_count: number;
+  offline_count: number;
+  is_active?: boolean;
+  activity_level?: 'high' | 'medium' | 'low' | 'inactive';
+}
+
+export interface RoomOnlineUsers {
+  [roomId: string]: string[];
 }
