@@ -214,6 +214,7 @@ export class RoomService extends BaseService {
           const room: RoomResponse = {
             id: roomData._id.toString(),
             name: item.displayName,
+            type: roomData.type,
             avatar: item.displayAvatar,
             created_at: roomData.created_at,
           };
