@@ -36,7 +36,7 @@ export const CallsPage: React.FC = () => {
       return (
         <CallCard
           key={call.id}
-          username={otherParticipant.username}
+          username={otherParticipant.display_name}
           avatar={otherParticipant.avatar}
           type={call.type}
           status={getCallStatus(call)}

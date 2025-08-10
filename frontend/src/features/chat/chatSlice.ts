@@ -229,7 +229,7 @@ const chatSlice = createSlice({
 
         // Cập nhật toàn bộ roomPage.data.results để đảm bảo React nhận biết được thay đổi
         state.roomPage.data.results = updatedConversations;
-        state.messageUpdateCounter += 1; // Increment counter to force re-render
+        // state.messageUpdateCounter += 1; // Increment counter to force re-render
 
 
       } else {      
@@ -488,6 +488,50 @@ const chatSlice = createSlice({
         state.roomActivity[room_id].offline_count = newOfflineCount;
       }
     },
+    editMessageRequest: (state, action: PayloadAction<{ messageId: string; content: string }>) => {
+      // No loading state needed for edit as it's optimistic
+    },
+    editMessageSuccess: (state, action: PayloadAction<Message>) => {
+      const updatedMessage = action.payload;
+      
+      // Update message in all conversations
+      state.roomPage.data.results = state.roomPage.data.results.map(conversation => {
+        if (conversation.room.id === updatedMessage.room_id) {
+          // Update messages in the conversation
+          const updatedMessages = conversation.room.messagePage.results.map(message => 
+            message.id === updatedMessage.id ? updatedMessage : message
+          );
+          
+          // Find the most recent message to determine the lastMessage
+          const mostRecentMessage = updatedMessages.length > 0 
+            ? updatedMessages.reduce((latest, current) => {
+                return new Date(current.created_at) > new Date(latest.created_at) ? current : latest;
+              })
+            : conversation.lastMessage;
+          
+          const updatedConversation = {
+            ...conversation,
+            // Update lastMessage to the most recent message
+            lastMessage: mostRecentMessage,
+            room: {
+              ...conversation.room,
+              messagePage: {
+                ...conversation.room.messagePage,
+                results: updatedMessages
+              }
+            }
+          };
+          
+          return updatedConversation;
+        }
+        return conversation;
+      });
+      
+      // state.messageUpdateCounter += 1; // Force re-render
+    },
+    editMessageFailure: (state, action: PayloadAction<{ messageId: string; error: string }>) => {
+      // Could add error handling here if needed
+    },
   },
 });
 
@@ -533,6 +577,9 @@ export const {
   updateRoomActivity,
   updateRoomOnlineUsers,
   updateUserActivity,
+  editMessageRequest,
+  editMessageSuccess,
+  editMessageFailure,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;

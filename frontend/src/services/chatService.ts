@@ -34,6 +34,19 @@ class ChatService {
       accessTokenAxiosClient.post(`${API_PREFIX}/mark-as-read/${roomId}`)
     );
   }
+
+  async editMessage(
+    messageId: string,
+    content: string,
+    type: "text" | "image" | "file" | "audio" = "text",
+  ): Promise<Message> {
+    return apiRequest<Message>(() =>
+      accessTokenAxiosClient.put(`${API_PREFIX}/${messageId}`, {
+        content,
+        type,
+      })
+    );
+  }
 }
 
 export const chatService = new ChatService();

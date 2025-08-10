@@ -1,0 +1,147 @@
+.container {
+  display: flex;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+
+.container.own {
+  flex-direction: row-reverse;
+}
+
+.bubbleWrapper {
+  display: flex;
+  flex-direction: column;
+  max-width: 70%;
+  position: relative;
+}
+
+.senderName {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.bubble {
+  padding: 8px 12px;
+  border-radius: 18px;
+  background-color: #f0f0f0;
+  word-wrap: break-word;
+  position: relative;
+}
+
+.container.own .bubble {
+  background-color: #1890ff;
+  color: white;
+}
+
+.bubble.text {
+  max-width: 100%;
+}
+
+.bubble.image img {
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: 8px;
+}
+
+.bubble.file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+}
+
+.bubble.audio audio {
+  max-width: 200px;
+}
+
+.metadata {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.timestamp {
+  font-size: 11px;
+}
+
+.status {
+  font-size: 11px;
+}
+
+.editButton {
+  position: absolute;
+  top: 0;
+  right: -30px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  color: #666;
+}
+
+.container.own .editButton {
+  right: auto;
+  left: -30px;
+}
+
+.bubbleWrapper:hover .editButton {
+  opacity: 1;
+}
+
+.editContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.editTextArea {
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  resize: none;
+}
+
+.editTextArea:focus {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.editActions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.saveButton {
+  color: #52c41a;
+}
+
+.saveButton:hover {
+  color: #389e0d;
+  background-color: rgba(82, 196, 26, 0.1);
+}
+
+.cancelButton {
+  color: #ff4d4f;
+}
+
+.cancelButton:hover {
+  color: #cf1322;
+  background-color: rgba(255, 77, 79, 0.1);
+}
+
+.editedIndicator {
+  font-size: 11px;
+  opacity: 0.7;
+  font-style: italic;
+  margin-top: 2px;
+}
+
+.container.own .editedIndicator {
+  color: rgba(255, 255, 255, 0.8);
+}

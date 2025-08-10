@@ -1,6 +1,7 @@
 import { io, Socket } from "socket.io-client";
 import { receiveIncomingCall } from "../features/calls/callsSlice";
 import {
+  editMessageSuccess,
   receiveMessage,
   removeTypingIndicator,
   setTypingIndicator,
@@ -66,6 +67,10 @@ export class SocketService {
     // Message events
     this.socket.on("new_message", (message) => {
       this.dispatch?.(receiveMessage(message));
+    });
+
+    this.socket.on("message_edited", (message) => {
+      this.dispatch?.(editMessageSuccess(message));
     });
 
     this.socket.on("message_delivered", (data) => {

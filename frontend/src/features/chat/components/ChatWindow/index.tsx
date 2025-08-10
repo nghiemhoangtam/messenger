@@ -10,6 +10,7 @@ import { RootState } from "../../../../store";
 import { createPaginationRequest } from "../../../../types/pagination-request";
 import { User } from "../../../auth";
 import {
+  editMessageRequest,
   fetchMessagesRequest,
   markMessagesAsReadRequest,
   removeConversation,
@@ -18,7 +19,7 @@ import {
 import { CallControls } from "../CallControls";
 import { CallModal } from "../CallModal";
 import { ChatInput } from "../ChatInput";
-import { MessageBubble } from "../MessageBubble";
+import { MessageList } from "../MessageList";
 import { TypingIndicator } from "../TypingIndicator";
 import styles from "./ChatWindow.module.css";
 
@@ -206,6 +207,16 @@ export const ChatWindow: React.FC = () => {
     }
   };
 
+  const handleEditMessage = async (messageId: string, newContent: string) => {
+    if (!currentConversation) return;
+    
+    try {
+      await dispatch(editMessageRequest({ messageId, content: newContent }));
+    } catch (error) {
+      message.error("Chỉnh sửa tin nhắn thất bại");
+    }
+  };
+
   const handleAudioCall = () => {
     if (!currentConversation) return;
     setCallType("audio");
@@ -302,16 +313,7 @@ export const ChatWindow: React.FC = () => {
     );
   }
 
-  const currentMessages = roomPage.data.results
-    .find((c) => c.room.id === currentConversation.room.id)
-    ?.room.messagePage.results || [];
-
-  
-
   const groupedMessages = groupMessagesByDate(currentConversationMessages);
-  const currentConversationData = roomPage.data.results.find(
-    (c) => c.room.id === currentConversation.room.id
-  );
 
   return (
     <div className={styles.container}>
@@ -373,29 +375,11 @@ export const ChatWindow: React.FC = () => {
             return (
               <div key={dateKey}>
                 <DateSeparator date={date} />
-                {messages.map((msg) => {
-            const sender = msg.sender;
-            return (
-              <MessageBubble
-                key={`${msg.id}_${msg.created_at}_${msg.content.substring(0, 10)}`}
-                content={msg.content}
-                type={
-                  msg.content.startsWith("data:image")
-                    ? "image"
-                    : msg.content.startsWith("data:audio")
-                      ? "audio"
-                      : msg.content.startsWith("data:application")
-                        ? "file"
-                        : "text"
-                }
-                isOwn={msg.sender.id === user?.id}
-                timestamp={new Date(msg.created_at).toLocaleTimeString()}
-                status={msg.status}
-                senderAvatar={sender?.avatar}
-                senderName={sender?.display_name}
-              />
-                  );
-                })}
+                <MessageList
+                  messages={messages}
+                  currentUserId={user?.id || ""}
+                  onEditMessage={handleEditMessage}
+                />
               </div>
             );
           })}

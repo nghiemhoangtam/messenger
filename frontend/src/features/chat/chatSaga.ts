@@ -15,6 +15,9 @@ import {
   createPrivateRoomFailure,
   createPrivateRoomRequest,
   createPrivateRoomSuccess,
+  editMessageFailure,
+  editMessageRequest,
+  editMessageSuccess,
   fetchConversationsFailure,
   fetchConversationsRequest,
   fetchConversationsSuccess,
@@ -176,6 +179,24 @@ function* handleGetMessages(action: PayloadAction<{ roomId: string; pageRequest:
   }
 }
 
+function* handleEditMessage(action: PayloadAction<{ messageId: string; content: string }>) {
+  try {
+    const updatedMessage: Message = yield call(
+      chatService.editMessage,
+      action.payload.messageId,
+      action.payload.content
+    );
+    yield put(editMessageSuccess(updatedMessage));
+  } catch (error) {
+    yield put(
+      editMessageFailure({
+        messageId: action.payload.messageId,
+        error: error instanceof Error ? error.message : "Failed to edit message"
+      })
+    );
+  }
+}
+
 export function* chatSaga() {
   yield takeLatest(fetchConversationsRequest.type, handleFetchConversations);
   yield takeLatest(sendMessageRequest.type, handleSendMessage);
@@ -185,4 +206,5 @@ export function* chatSaga() {
   yield takeLatest(createPrivateRoomRequest.type, handleCreatePrivateRoom);
   yield takeLatest(markMessagesAsReadRequest.type, handleMarkMessagesAsRead);
   yield takeLatest(fetchMessagesRequest.type, handleGetMessages);
+  yield takeLatest(editMessageRequest.type, handleEditMessage);
 }
