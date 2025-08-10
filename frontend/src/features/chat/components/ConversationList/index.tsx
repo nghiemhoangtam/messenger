@@ -42,7 +42,7 @@ interface ConversationItemProps {
   onCopyRoomId: (roomId: string, e: React.MouseEvent) => void;
 }
 
-const ConversationItem: React.FC<ConversationItemProps> = ({
+const ConversationItem: React.FC<ConversationItemProps> = React.memo(({
   conversation,
   isActive,
   onConversationClick,
@@ -51,11 +51,14 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   const isGroupRoom = conversation.room.type === 'group';
   
   // Use room activity hook for this conversation
-  const { isActive: roomIsActive, activityLevel } = useRoomActivity({ 
+  const { isActive: roomIsActive, activityLevel, onlineCount, totalMembers, awayCount, busyCount, offlineCount, isLoading } = useRoomActivity({ 
     roomId: conversation.room.id, 
     autoRefresh: true,
     refreshInterval: 1000 // Refresh every 10 seconds as fallback (real-time updates handle most cases)
   });
+
+  // Handle error state for online status
+  const hasError = totalMembers === 0 && !isLoading;
 
   return (
           <List.Item
@@ -124,6 +127,70 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
             <div className={styles.messageContent}>
               {conversation.lastMessage?.content}
             </div>
+            {/* Hiển thị số lượng thành viên online cho nhóm chat */}
+            {isGroupRoom && totalMembers > 0 && (
+              <Tooltip 
+                title={
+                  <div>
+                    <div>👥 {totalMembers} thành viên</div>
+                    <div>🟢 {onlineCount} online</div>
+                    {awayCount > 0 && <div>🟡 {awayCount} away</div>}
+                    {busyCount > 0 && <div>🔴 {busyCount} busy</div>}
+                    {offlineCount > 0 && <div>⚪ {offlineCount} offline</div>}
+                  </div>
+                }
+                placement="right"
+              >
+                <div className={styles.onlineStatus} role="button" tabIndex={0} aria-label={`${onlineCount} thành viên online trong tổng số ${totalMembers} thành viên`} onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    // Có thể thêm action ở đây nếu cần
+                  }
+                }}>
+                  <span className={`${styles.onlineDot} ${onlineCount > 0 ? styles.online : styles.offline}`} aria-hidden="true"></span>
+                  {isLoading ? (
+                    <span className={styles.loadingText}>Đang tải...</span>
+                  ) : hasError ? (
+                    <span className={styles.errorText}>Không thể tải</span>
+                  ) : onlineCount > 0 ? (
+                    <span className={styles.onlineCount}>
+                      {onlineCount} online
+                    </span>
+                  ) : (
+                    <span className={styles.offlineText}>Offline</span>
+                  )}
+                  <span className={styles.separator}>•</span>
+                  <span className={styles.memberCount}>{totalMembers} thành viên</span>
+                </div>
+              </Tooltip>
+            )}
+            {/* Hiển thị trạng thái online cho chat riêng tư */}
+            {!isGroupRoom && totalMembers > 0 && (
+              <Tooltip 
+                title={onlineCount > 0 ? "Đang online" : "Đang offline"}
+                placement="right"
+              >
+                <div className={styles.onlineStatus} role="button" tabIndex={0} aria-label={onlineCount > 0 ? "Người dùng đang online" : "Người dùng đang offline"} onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    // Có thể thêm action ở đây nếu cần
+                  }
+                }}>
+                  <span className={`${styles.onlineDot} ${onlineCount > 0 ? styles.online : styles.offline}`} aria-hidden="true"></span>
+                  {isLoading ? (
+                    <span className={styles.loadingText}>Đang tải...</span>
+                  ) : hasError ? (
+                    <span className={styles.errorText}>Không thể tải</span>
+                  ) : onlineCount > 0 ? (
+                    <span className={styles.onlineCount}>
+                      Online
+                    </span>
+                  ) : (
+                    <span className={styles.offlineText}>Offline</span>
+                  )}
+                </div>
+              </Tooltip>
+            )}
           </div>
         }
       />
@@ -136,7 +203,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
       )}
     </List.Item>
   );
-};
+});
 
 export const ConversationList: React.FC = () => {
   const dispatch = useDispatch();

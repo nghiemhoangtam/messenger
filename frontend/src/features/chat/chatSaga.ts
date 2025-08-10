@@ -9,31 +9,31 @@ import { PaginationRequest } from "../../types/pagination-request";
 import { PaginationResponse } from "../../types/pagination-response";
 import { Contact } from "../contacts/types";
 import {
-    createGroupRoomFailure,
-    createGroupRoomRequest,
-    createGroupRoomSuccess,
-    createPrivateRoomFailure,
-    createPrivateRoomRequest,
-    createPrivateRoomSuccess,
-    fetchConversationsFailure,
-    fetchConversationsRequest,
-    fetchConversationsSuccess,
-    fetchMessagesFailure,
-    fetchMessagesRequest,
-    fetchMessagesSuccess,
-    getAvailableFriendsFailure,
-    getAvailableFriendsRequest,
-    getAvailableFriendsSuccess,
-    markMessagesAsReadFailure,
-    markMessagesAsReadRequest,
-    markMessagesAsReadSuccess,
-    removeAvailableFriend,
-    searchGroupUserFailure,
-    searchGroupUserRequest,
-    searchGroupUserSuccess,
-    sendMessageFailure,
-    sendMessageRequest,
-    sendMessageSuccess,
+  createGroupRoomFailure,
+  createGroupRoomRequest,
+  createGroupRoomSuccess,
+  createPrivateRoomFailure,
+  createPrivateRoomRequest,
+  createPrivateRoomSuccess,
+  fetchConversationsFailure,
+  fetchConversationsRequest,
+  fetchConversationsSuccess,
+  fetchMessagesFailure,
+  fetchMessagesRequest,
+  fetchMessagesSuccess,
+  getAvailableFriendsFailure,
+  getAvailableFriendsRequest,
+  getAvailableFriendsSuccess,
+  markMessagesAsReadFailure,
+  markMessagesAsReadRequest,
+  markMessagesAsReadSuccess,
+  removeAvailableFriend,
+  searchGroupUserFailure,
+  searchGroupUserRequest,
+  searchGroupUserSuccess,
+  sendMessageFailure,
+  sendMessageRequest,
+  sendMessageSuccess,
 } from "./chatSlice";
 import { Conversation, CreateGroupRoomRequest, Message } from "./types";
 
@@ -151,7 +151,7 @@ function* handleCreatePrivateRoom(action: PayloadAction<string>) {
 
 function* handleMarkMessagesAsRead(action: PayloadAction<string>) {
   try {
-    yield call(roomService.markMessagesAsRead, action.payload);
+    yield call(chatService.markMessagesAsRead, action.payload);
     yield put(markMessagesAsReadSuccess(action.payload));
   } catch (error) {
     yield put(
