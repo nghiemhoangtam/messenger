@@ -1,5 +1,5 @@
-import { CheckOutlined, CloseOutlined, EditOutlined } from "@ant-design/icons";
-import { Button, Input } from "antd";
+import { CheckOutlined, CloseOutlined, DeleteOutlined, EditOutlined } from "@ant-design/icons";
+import { Button, Input, Popconfirm } from "antd";
 import React, { useEffect, useRef, useState } from "react";
 import { Avatar } from "../../../../components/atoms/Avatar";
 import { Message } from "../../types";
@@ -11,6 +11,7 @@ interface EditableMessageBubbleProps {
   message: Message;
   isOwn: boolean;
   onEditMessage: (messageId: string, newContent: string) => Promise<void>;
+  onDeleteMessage?: (messageId: string) => Promise<void>;
   onCancelEdit?: () => void;
 }
 
@@ -18,11 +19,13 @@ export const EditableMessageBubble: React.FC<EditableMessageBubbleProps> = ({
   message,
   isOwn,
   onEditMessage,
+  onDeleteMessage,
   onCancelEdit,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const textAreaRef = useRef<any>(null);
 
   useEffect(() => {
@@ -69,6 +72,19 @@ export const EditableMessageBubble: React.FC<EditableMessageBubbleProps> = ({
     setIsEditing(false);
     setEditContent(message.content);
     onCancelEdit?.();
+  };
+
+  const handleDeleteClick = async () => {
+    if (!onDeleteMessage) return;
+    
+    setIsDeleting(true);
+    try {
+      await onDeleteMessage(message.id);
+    } catch (error) {
+      console.error("Failed to delete message:", error);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -184,14 +200,35 @@ export const EditableMessageBubble: React.FC<EditableMessageBubbleProps> = ({
             {isOwn && <span className={styles.status}>{renderStatus()}</span>}
           </div>
         </div>
-        {isOwn && !isEditing && getMessageType() === "text" && (
-          <Button
-            type="text"
-            icon={<EditOutlined />}
-            onClick={handleEditClick}
-            size="small"
-            className={styles.editButton}
-          />
+        {isOwn && !isEditing && (
+          <div className={styles.actionButtons}>
+            {getMessageType() === "text" && (
+              <Button
+                type="text"
+                icon={<EditOutlined />}
+                onClick={handleEditClick}
+                size="small"
+                className={styles.editButton}
+              />
+            )}
+            {onDeleteMessage && (
+              <Popconfirm
+                title="Bạn có chắc chắn muốn xóa tin nhắn này không?"
+                onConfirm={handleDeleteClick}
+                okButtonProps={{ loading: isDeleting }}
+                cancelButtonProps={{ loading: isDeleting }}
+              >
+                <Button
+                  type="text"
+                  icon={<DeleteOutlined />}
+                  onClick={handleDeleteClick}
+                  size="small"
+                  className={styles.deleteButton}
+                  loading={isDeleting}
+                />
+              </Popconfirm>
+            )}
+          </div>
         )}
       </div>
     </div>

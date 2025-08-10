@@ -10,6 +10,7 @@ import { RootState } from "../../../../store";
 import { createPaginationRequest } from "../../../../types/pagination-request";
 import { User } from "../../../auth";
 import {
+  deleteMessageRequest,
   editMessageRequest,
   fetchMessagesRequest,
   markMessagesAsReadRequest,
@@ -217,6 +218,17 @@ export const ChatWindow: React.FC = () => {
     }
   };
 
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!currentConversation) return;
+
+    try {
+      await dispatch(deleteMessageRequest({ messageId }));
+      message.success("Đã xóa tin nhắn");
+    } catch (error) {
+      message.error("Xóa tin nhắn thất bại");
+    }
+  };
+
   const handleAudioCall = () => {
     if (!currentConversation) return;
     setCallType("audio");
@@ -379,6 +391,7 @@ export const ChatWindow: React.FC = () => {
                   messages={messages}
                   currentUserId={user?.id || ""}
                   onEditMessage={handleEditMessage}
+                  onDeleteMessage={handleDeleteMessage}
                 />
               </div>
             );

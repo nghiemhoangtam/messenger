@@ -1,6 +1,7 @@
 import { io, Socket } from "socket.io-client";
 import { receiveIncomingCall } from "../features/calls/callsSlice";
 import {
+  deleteMessageSuccess,
   editMessageSuccess,
   receiveMessage,
   removeTypingIndicator,
@@ -71,6 +72,10 @@ export class SocketService {
 
     this.socket.on("message_edited", (message) => {
       this.dispatch?.(editMessageSuccess(message));
+    });
+
+    this.socket.on("message_deleted", (data) => {
+      this.dispatch?.(deleteMessageSuccess({ messageId: data.messageId }));
     });
 
     this.socket.on("message_delivered", (data) => {

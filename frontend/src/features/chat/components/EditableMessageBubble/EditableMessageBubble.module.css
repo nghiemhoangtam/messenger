@@ -94,6 +94,34 @@
   opacity: 1;
 }
 
+.actionButtons {
+  position: absolute;
+  top: 0;
+  right: -60px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.container.own .actionButtons {
+  right: auto;
+  left: -60px;
+}
+
+.bubbleWrapper:hover .actionButtons {
+  opacity: 1;
+}
+
+.deleteButton {
+  color: #ff4d4f;
+}
+
+.deleteButton:hover {
+  color: #cf1322;
+  background-color: rgba(255, 77, 79, 0.1);
+}
+
 .editContainer {
   display: flex;
   flex-direction: column;

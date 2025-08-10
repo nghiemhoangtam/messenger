@@ -102,6 +102,11 @@ const chatSlice = createSlice({
       state,
       action: PayloadAction<PaginationResponse<Conversation>>,
     ) => {
+      // Ensure roomPage.data exists
+      if (!state.roomPage.data) {
+        state.roomPage.data = createPaginationResponse<Conversation>();
+      }
+      
       state.roomPage.data.results = [...state.roomPage.data.results, ...action.payload.results];
       state.roomPage.data.meta = action.payload.meta;
       state.roomPage.loading = false;
@@ -112,6 +117,12 @@ const chatSlice = createSlice({
     },
     setCurrentConversation: (state, action: PayloadAction<Conversation>) => {
       state.currentConversation = action.payload;
+      
+      // Check if data and results exist before processing
+      if (!state.roomPage.data || !state.roomPage.data.results) {
+        return;
+      }
+      
       state.roomPage.data.results = state.roomPage.data.results.map(conversation => {
         if (conversation.room.id === action.payload.room.id) {
           return {
@@ -131,6 +142,11 @@ const chatSlice = createSlice({
       state.error = null;
     },
     fetchMessagesSuccess: (state, action: PayloadAction<{ roomId: string; messages: PaginationResponse<Message> }>) => {
+      // Check if data and results exist before processing
+      if (!state.roomPage.data || !state.roomPage.data.results) {
+        return;
+      }
+      
       const conversationIndex = state.roomPage.data.results.findIndex(
         (c) => c.room.id === action.payload.roomId,
       );
@@ -176,7 +192,10 @@ const chatSlice = createSlice({
     receiveMessage: (state, action: PayloadAction<Message>) => {
       const conversationId = action.payload.room_id;
       
-
+      // Check if data and results exist before processing
+      if (!state.roomPage.data || !state.roomPage.data.results) {
+        return;
+      }
       
       const conversationIndex = state.roomPage.data.results.findIndex(
         conversation => conversation.room.id === conversationId
@@ -241,6 +260,12 @@ const chatSlice = createSlice({
     },
     markMessagesAsReadSuccess: (state, action: PayloadAction<string>) => {
       const conversationId = action.payload;
+      
+      // Check if data and results exist before processing
+      if (!state.roomPage.data || !state.roomPage.data.results) {
+        return;
+      }
+      
       state.roomPage.data.results = state.roomPage.data.results.map(conversation => {
         if (conversation.room.id === conversationId) {
           return {
@@ -284,6 +309,11 @@ const chatSlice = createSlice({
       state.createGroupRoom.error = null;
     },
     createGroupRoomSuccess: (state, action: PayloadAction<Conversation>) => {
+      // Ensure roomPage.data exists
+      if (!state.roomPage.data) {
+        state.roomPage.data = createPaginationResponse<Conversation>();
+      }
+      
       state.roomPage.data.results.push(action.payload);
       state.createGroupRoom.loading = false;
     },
@@ -314,6 +344,11 @@ const chatSlice = createSlice({
       state.createPrivateRoom.error = null;
     },
     createPrivateRoomSuccess: (state, action: PayloadAction<Conversation>) => {
+      // Ensure roomPage.data exists
+      if (!state.roomPage.data) {
+        state.roomPage.data = createPaginationResponse<Conversation>();
+      }
+      
       state.roomPage.data.results.push(action.payload);            
       state.createPrivateRoom.loading = false;
     },
@@ -366,6 +401,11 @@ const chatSlice = createSlice({
       state.messageMentions.push(action.payload);
     },
     updateMessageStatus: (state, action: PayloadAction<{ messageId: string; status: string }>) => {      
+      // Check if data and results exist before processing
+      if (!state.roomPage.data || !state.roomPage.data.results) {
+        return;
+      }
+      
       // Update message status in current conversation
       const room = state.roomPage.data.results.find(item => state.currentConversation?.room.id === item.room.id)?.room;
       if (room) {
@@ -380,6 +420,11 @@ const chatSlice = createSlice({
       }
     },
     removeConversation: (state, action: PayloadAction<string>) => {
+      // Check if data and results exist before processing
+      if (!state.roomPage.data || !state.roomPage.data.results) {
+        return;
+      }
+      
       // Remove conversation from list
       state.roomPage.data.results = state.roomPage.data.results.filter(
         conversation => conversation.room.id !== action.payload
@@ -494,8 +539,18 @@ const chatSlice = createSlice({
     editMessageSuccess: (state, action: PayloadAction<Message>) => {
       const updatedMessage = action.payload;
       
+      // Check if data and results exist before processing
+      if (!state.roomPage.data || !state.roomPage.data.results) {
+        return;
+      }
+      
       // Update message in all conversations
       state.roomPage.data.results = state.roomPage.data.results.map(conversation => {
+        // Check if messagePage.results exists
+        if (!conversation.room.messagePage.results) {
+          return conversation;
+        }
+        
         if (conversation.room.id === updatedMessage.room_id) {
           // Update messages in the conversation
           const updatedMessages = conversation.room.messagePage.results.map(message => 
@@ -507,11 +562,11 @@ const chatSlice = createSlice({
             ? updatedMessages.reduce((latest, current) => {
                 return new Date(current.created_at) > new Date(latest.created_at) ? current : latest;
               })
-            : conversation.lastMessage;
+            : undefined;
           
           const updatedConversation = {
             ...conversation,
-            // Update lastMessage to the most recent message
+            // Update lastMessage to the most recent message or undefined if no messages
             lastMessage: mostRecentMessage,
             room: {
               ...conversation.room,
@@ -530,6 +585,63 @@ const chatSlice = createSlice({
       // state.messageUpdateCounter += 1; // Force re-render
     },
     editMessageFailure: (state, action: PayloadAction<{ messageId: string; error: string }>) => {
+      // Could add error handling here if needed
+    },
+    deleteMessageRequest: (state, action: PayloadAction<{ messageId: string }>) => {
+      // No loading state needed for delete as it's optimistic
+    },
+    deleteMessageSuccess: (state, action: PayloadAction<{ messageId: string }>) => {
+      const { messageId } = action.payload;
+      
+      // Check if data and results exist before processing
+      if (!state.roomPage.data || !state.roomPage.data.results) {
+        return;
+      }
+      
+      // Remove message from all conversations
+      state.roomPage.data.results = state.roomPage.data.results.map(conversation => {
+        // Check if messagePage.results exists
+        console.log(!conversation.room.messagePage);
+        if (!conversation.room.messagePage || !conversation.room.messagePage.results) {
+          return conversation;
+        }
+        
+        if (conversation.room.messagePage.results.some(message => message.id === messageId)) {
+          // Remove the message from the conversation
+          const updatedMessages = conversation.room.messagePage.results.filter(message => 
+            message.id !== messageId
+          );
+          
+          // Find the most recent message to determine the lastMessage
+          const mostRecentMessage = updatedMessages.length > 0 
+            ? updatedMessages.reduce((latest, current) => {
+                return new Date(current.created_at) > new Date(latest.created_at) ? current : latest;
+              })
+            : undefined;
+          
+          const updatedConversation = {
+            ...conversation,
+            // Update lastMessage to the most recent message or undefined if no messages
+            lastMessage: mostRecentMessage,
+            room: {
+              ...conversation.room,
+              messagePage: {
+                ...conversation.room.messagePage,
+                results: updatedMessages,
+                meta: {
+                  ...conversation.room.messagePage.meta,
+                  total: Math.max(0, conversation.room.messagePage.meta.total - 1)
+                }
+              }
+            }
+          };
+          
+          return updatedConversation;
+        }
+        return conversation;
+      });
+    },
+    deleteMessageFailure: (state, action: PayloadAction<{ messageId: string; error: string }>) => {
       // Could add error handling here if needed
     },
   },
@@ -580,6 +692,9 @@ export const {
   editMessageRequest,
   editMessageSuccess,
   editMessageFailure,
+  deleteMessageRequest,
+  deleteMessageSuccess,
+  deleteMessageFailure,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;

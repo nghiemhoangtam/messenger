@@ -47,6 +47,12 @@ class ChatService {
       })
     );
   }
+
+  async deleteMessage(messageId: string): Promise<void> {
+    return apiRequest<void>(() =>
+      accessTokenAxiosClient.delete(`${API_PREFIX}/${messageId}`)
+    );
+  }
 }
 
 export const chatService = new ChatService();

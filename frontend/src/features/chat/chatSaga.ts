@@ -15,6 +15,9 @@ import {
   createPrivateRoomFailure,
   createPrivateRoomRequest,
   createPrivateRoomSuccess,
+  deleteMessageFailure,
+  deleteMessageRequest,
+  deleteMessageSuccess,
   editMessageFailure,
   editMessageRequest,
   editMessageSuccess,
@@ -197,6 +200,20 @@ function* handleEditMessage(action: PayloadAction<{ messageId: string; content: 
   }
 }
 
+function* handleDeleteMessage(action: PayloadAction<{ messageId: string }>) {
+  try {
+    yield call(chatService.deleteMessage, action.payload.messageId);
+    yield put(deleteMessageSuccess({ messageId: action.payload.messageId }));
+  } catch (error) {
+    yield put(
+      deleteMessageFailure({
+        messageId: action.payload.messageId,
+        error: error instanceof Error ? error.message : "Failed to delete message"
+      })
+    );
+  }
+}
+
 export function* chatSaga() {
   yield takeLatest(fetchConversationsRequest.type, handleFetchConversations);
   yield takeLatest(sendMessageRequest.type, handleSendMessage);
@@ -207,4 +224,5 @@ export function* chatSaga() {
   yield takeLatest(markMessagesAsReadRequest.type, handleMarkMessagesAsRead);
   yield takeLatest(fetchMessagesRequest.type, handleGetMessages);
   yield takeLatest(editMessageRequest.type, handleEditMessage);
+  yield takeLatest(deleteMessageRequest.type, handleDeleteMessage);
 }
