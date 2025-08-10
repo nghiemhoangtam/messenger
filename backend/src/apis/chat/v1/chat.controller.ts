@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   ForbiddenException,
   Get,
   Param,
@@ -109,6 +110,30 @@ export class ChatController {
       this.chatGateway.emitMessageEdited(message.room_id, message);
       
       return message;
+    } else {
+      throw new ForbiddenException(MessageCode.FORBIDDEN);
+    }
+  }
+
+  @Delete(':messageId')
+  @ApiOperation({ 
+    summary: 'Delete a message', 
+    description: 'Delete an existing message by message ID (soft delete)' 
+  })
+  @ApiResponse({ status: 200, description: 'Message deleted successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden - User can only delete their own messages' })
+  @ApiResponse({ status: 404, description: 'Message not found' })
+  async deleteMessage(
+    @Param('messageId') messageId: string,
+    @Req() req: IJwtRequest
+  ): Promise<{ success: boolean; message: string }> {
+    if (req.user) {
+      await this.chatService.deleteMessage(req.user.id, messageId);
+      
+      // Emit real-time event to all users in the room
+      this.chatGateway.emitMessageDeleted(messageId);
+      
+      return { success: true, message: 'Message deleted successfully' };
     } else {
       throw new ForbiddenException(MessageCode.FORBIDDEN);
     }

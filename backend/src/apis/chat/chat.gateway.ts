@@ -588,4 +588,9 @@ export class ChatGateway
   emitMessageEdited(room_id: string, message: MessageResponse) {
     this.server.to(`room:${room_id}`).emit('message_edited', message);
   }
+
+  // Method to emit message deleted event to specific room (used by REST API)
+  emitMessageDeleted(messageId: string) {
+    this.server.emit('message_deleted', { messageId });
+  }
 } 

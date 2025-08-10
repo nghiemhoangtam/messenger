@@ -65,13 +65,19 @@ export class ChatService extends BaseService {
       const skip = (page - 1) * limit;
       
       const messages = await this.messageModel
-        .find({ room_id: new Types.ObjectId(roomId) })
+        .find({ 
+          room_id: new Types.ObjectId(roomId),
+          is_deleted: false // Filter out deleted messages
+        })
         .sort({ created_at: -1 })
         .skip(skip)
         .limit(limit)
         .exec();
       
-      const total = await this.messageModel.countDocuments({ room_id: new Types.ObjectId(roomId) });
+      const total = await this.messageModel.countDocuments({ 
+        room_id: new Types.ObjectId(roomId),
+        is_deleted: false // Filter out deleted messages
+      });
       
       return {
         results: await Promise.all(messages.map(async (message) => {
@@ -161,6 +167,30 @@ export class ChatService extends BaseService {
       const messageReads = await this.messageReadModel.find({ message_id: updatedMessage._id }).exec();
       
       return new MessageResponse(updatedMessage, messageReads, sender);
+    });
+  }
+
+  async deleteMessage(userId: string, messageId: string): Promise<void> {
+    return await this.handle(async () => {
+      // Find the message
+      const message = await this.messageModel.findById(new Types.ObjectId(messageId)).exec();
+      if (!message) {
+        throw new NotFoundException([{ code: MessageCode.MESSAGE_NOT_FOUND }]);
+      }
+
+      // Check if user is the sender of the message
+      if (message.sender_id.toString() !== userId) {
+        throw new ForbiddenException([{ code: MessageCode.FORBIDDEN }]);
+      }
+
+      // Soft delete the message by setting is_deleted to true
+      await this.messageModel.findByIdAndUpdate(
+        new Types.ObjectId(messageId),
+        {
+          is_deleted: true,
+          updated_at: new Date(),
+        }
+      ).exec();
     });
   }
 }

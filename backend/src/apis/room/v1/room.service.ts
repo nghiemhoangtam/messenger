@@ -79,7 +79,12 @@ export class RoomService extends BaseService {
             from: 'messages',
             let: { roomId: '$room_id' },
             pipeline: [
-              { $match: { $expr: { $eq: ['$room_id', '$$roomId'] } } },
+              { 
+                $match: { 
+                  $expr: { $eq: ['$room_id', '$$roomId'] },
+                  is_deleted: false
+                } 
+              },
               {
                 $lookup: {
                   from: 'users',
@@ -97,8 +102,15 @@ export class RoomService extends BaseService {
         {
           $lookup: {
             from: 'messages',
-            localField: 'room_id',
-            foreignField: 'room_id',
+            let: { roomId: '$room_id' },
+            pipeline: [
+              { 
+                $match: { 
+                  $expr: { $eq: ['$room_id', '$$roomId'] },
+                  is_deleted: false
+                } 
+              }
+            ],
             as: 'allMessages',
           },
         },
