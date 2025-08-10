@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Post,
+  Put,
   Query,
   Req,
   UseGuards,
@@ -16,6 +17,7 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { MessageCode } from 'src/common/messages/message.enum';
 import { ChatGateway } from '../chat.gateway';
 import { CreateMessageDto } from '../common/dto/request/create-message.dto';
+import { EditMessageDto } from '../common/dto/request/edit-message.dto';
 import { MessageResponse } from '../common/dto/response/message.response';
 import { ChatService } from './chat.service';
 
@@ -81,6 +83,32 @@ export class ChatController {
       }
       
       return { success: true, message: 'Messages marked as read successfully' };
+    } else {
+      throw new ForbiddenException(MessageCode.FORBIDDEN);
+    }
+  }
+
+  @Put(':messageId')
+  @ApiOperation({ 
+    summary: 'Edit a message', 
+    description: 'Edit an existing message by message ID' 
+  })
+  @ApiBody({ type: EditMessageDto })
+  @ApiResponse({ status: 200, description: 'Message edited successfully', type: MessageResponse })
+  @ApiResponse({ status: 403, description: 'Forbidden - User can only edit their own messages' })
+  @ApiResponse({ status: 404, description: 'Message not found' })
+  async editMessage(
+    @Param('messageId') messageId: string,
+    @Body() dto: EditMessageDto,
+    @Req() req: IJwtRequest
+  ): Promise<MessageResponse> {
+    if (req.user) {
+      const message = await this.chatService.editMessage(req.user.id, messageId, dto);
+      
+      // Emit real-time event to all users in the room
+      this.chatGateway.emitMessageEdited(message.room_id, message);
+      
+      return message;
     } else {
       throw new ForbiddenException(MessageCode.FORBIDDEN);
     }

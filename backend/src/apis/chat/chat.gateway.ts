@@ -583,4 +583,9 @@ export class ChatGateway
   emitMessageToRoom(room_id: string, message: MessageResponse) {
     this.server.to(`room:${room_id}`).emit('new_message', message);
   }
+
+  // Method to emit message edited event to specific room (used by REST API)
+  emitMessageEdited(room_id: string, message: MessageResponse) {
+    this.server.to(`room:${room_id}`).emit('message_edited', message);
+  }
 } 
