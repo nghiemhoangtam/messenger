@@ -1,6 +1,14 @@
 import { io, Socket } from "socket.io-client";
 import { receiveIncomingCall } from "../features/calls/callsSlice";
-import { receiveMessage, removeTypingIndicator, setTypingIndicator, updateMessageStatus } from "../features/chat/chatSlice";
+import {
+  receiveMessage,
+  removeTypingIndicator,
+  setTypingIndicator,
+  updateMessageStatus,
+  updateRoomActivity,
+  updateRoomOnlineUsers,
+  updateUserActivity
+} from "../features/chat/chatSlice";
 
 export class SocketService {
   private socket: Socket | null = null;
@@ -97,57 +105,48 @@ export class SocketService {
     this.socket.on("user_joined", (data) => {
       if (this.dispatch) {
         // Dispatch action để update room activity
-        this.dispatch({
-          type: 'chat/updateUserActivity',
-          payload: {
-            user_id: data.user_id,
-            room_id: data.room_id,
-            status: 'online',
-            timestamp: data.timestamp,
-            online_count: data.online_count,
-            total_members: data.total_members,
-            away_count: data.away_count,
-            busy_count: data.busy_count,
-          }
-        });
+        this.dispatch(updateUserActivity({
+          user_id: data.user_id,
+          room_id: data.room_id,
+          status: 'online',
+          timestamp: data.timestamp,
+          online_count: data.online_count,
+          total_members: data.total_members,
+          away_count: data.away_count,
+          busy_count: data.busy_count,
+        }));
       }
     });
 
     this.socket.on("user_left", (data) => {
       if (this.dispatch) {
         // Dispatch action để update room activity
-        this.dispatch({
-          type: 'chat/updateUserActivity',
-          payload: {
-            user_id: data.user_id,
-            room_id: data.room_id,
-            status: 'offline',
-            timestamp: data.timestamp,
-            online_count: data.online_count,
-            total_members: data.total_members,
-            away_count: data.away_count,
-            busy_count: data.busy_count,
-          }
-        });
+        this.dispatch(updateUserActivity({
+          user_id: data.user_id,
+          room_id: data.room_id,
+          status: 'offline',
+          timestamp: data.timestamp,
+          online_count: data.online_count,
+          total_members: data.total_members,
+          away_count: data.away_count,
+          busy_count: data.busy_count,
+        }));
       }
     });
 
     this.socket.on("user_activity_changed", (data) => {
       if (this.dispatch) {
         // Dispatch action để update room activity
-        this.dispatch({
-          type: 'chat/updateUserActivity',
-          payload: {
-            user_id: data.user_id,
-            room_id: data.room_id,
-            status: data.status,
-            timestamp: data.timestamp,
-            online_count: data.online_count,
-            total_members: data.total_members,
-            away_count: data.away_count,
-            busy_count: data.busy_count,
-          }
-        });
+        this.dispatch(updateUserActivity({
+          user_id: data.user_id,
+          room_id: data.room_id,
+          status: data.status,
+          timestamp: data.timestamp,
+          online_count: data.online_count,
+          total_members: data.total_members,
+          away_count: data.away_count,
+          busy_count: data.busy_count,
+        }));
       }
     });
 
@@ -155,17 +154,14 @@ export class SocketService {
     this.socket.on("room_activity", (data) => {
       if (this.dispatch) {
         // Dispatch action để update room activity
-        this.dispatch({
-          type: 'chat/updateRoomActivity',
-          payload: {
-            room_id: data.room_id,
-            online_count: data.online_count,
-            total_members: data.total_members,
-            away_count: data.away_count,
-            busy_count: data.busy_count,
-            offline_count: data.offline_count,
-          }
-        });
+        this.dispatch(updateRoomActivity({
+          room_id: data.room_id,
+          online_count: data.online_count,
+          total_members: data.total_members,
+          away_count: data.away_count,
+          busy_count: data.busy_count,
+          offline_count: data.offline_count,
+        }));
       }
     });
 
@@ -173,13 +169,10 @@ export class SocketService {
     this.socket.on("room_online_users", (data) => {
       if (this.dispatch) {
         // Dispatch action để update room online users
-        this.dispatch({
-          type: 'chat/updateRoomOnlineUsers',
-          payload: {
-            room_id: data.room_id,
-            users: data.users,
-          }
-        });
+        this.dispatch(updateRoomOnlineUsers({
+          room_id: data.room_id,
+          users: data.users,
+        }));
       }
     });
 
