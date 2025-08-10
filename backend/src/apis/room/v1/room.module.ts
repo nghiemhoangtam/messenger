@@ -9,7 +9,6 @@ import { RedisModule } from 'src/common/redis/redis.module';
 import { RoomActivity, RoomActivitySchema } from '../common/schemas/room_activity.schema';
 import { RoomMember, RoomMemberSchema } from '../common/schemas/room_members.schema';
 import { RoomActivityRedisService } from './room-activity-redis.service';
-import { RoomActivityService } from './room-activity.service';
 import { RoomController } from './room.controller';
 import { RoomService } from './room.service';
 
@@ -34,7 +33,7 @@ import { RoomService } from './room.service';
     ],
   
   controllers: [RoomController],
-  providers: [RoomService, RoomActivityService, RoomActivityRedisService],
-  exports: [RoomService, RoomActivityService, RoomActivityRedisService],
+  providers: [RoomService, RoomActivityRedisService],
+  exports: [RoomService, RoomActivityRedisService],
 })
 export class RoomModule {}

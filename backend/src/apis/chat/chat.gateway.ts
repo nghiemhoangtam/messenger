@@ -12,7 +12,6 @@ import {
 import { Server, Socket } from 'socket.io';
 import { WsJwtAuthGuard } from '../../common/guards/ws-jwt-auth.guard';
 import { RoomActivityRedisService } from '../room/v1/room-activity-redis.service';
-import { RoomActivityService } from '../room/v1/room-activity.service';
 import { RoomService } from '../room/v1/room.service';
 import { ContactResponse } from '../user-relationship/common/dto/contact.response';
 import { UsersService } from '../user/users.service';
@@ -40,7 +39,6 @@ export class ChatGateway
   constructor(
     private readonly chatService: ChatService,
     private readonly roomService: RoomService,
-    private readonly roomActivityService: RoomActivityService,
     private readonly roomActivityRedisService: RoomActivityRedisService,
     private readonly usersService: UsersService,
   ) {}
@@ -584,36 +582,5 @@ export class ChatGateway
   // Method to emit message to specific room (used by REST API)
   emitMessageToRoom(room_id: string, message: MessageResponse) {
     this.server.to(`room:${room_id}`).emit('new_message', message);
-  }
-
-  // Method to emit typing indicator
-  async emitTypingIndicator(room_id: string, user_id: string, isTyping: boolean) {
-    try {
-      const user = await this.usersService.getProfile(user_id);
-      if (!user) {
-        this.logger.error(`User not found: ${user_id}`);
-        return;
-      }
-      const contactResponse = new ContactResponse(user);
-      
-      const event = isTyping ? 'typing_start' : 'typing_stop';
-      this.server.to(`room:${room_id}`).emit(event, {
-        user: contactResponse,
-        room_id,
-        timestamp: new Date(),
-      });
-    } catch (error) {
-      this.logger.error(`Error emitting typing indicator: ${error.message}`);
-    }
-  }
-
-  // Method to emit read receipt
-  emitReadReceipt(room_id: string, user_id: string, message_ids: string[]) {
-    this.server.to(`room:${room_id}`).emit('message_read', {
-      user_id,
-      room_id,
-      message_ids,
-      timestamp: new Date(),
-    });
   }
 } 
