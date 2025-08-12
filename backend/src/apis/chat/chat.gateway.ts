@@ -16,6 +16,7 @@ import { RoomService } from '../room/v1/room.service';
 import { ContactResponse } from '../user-relationship/common/dto/contact.response';
 import { UsersService } from '../user/users.service';
 import { CreateMessageDto } from './common/dto/request/create-message.dto';
+import { EditMessageDto } from './common/dto/request/edit-message.dto';
 import { MessageResponse } from './common/dto/response/message.response';
 import { ChatService } from './v1/chat.service';
 
@@ -275,11 +276,9 @@ export class ChatGateway
   @SubscribeMessage('send_message')
   async handleSendMessage(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { room_id: string; content: string; type?: string },
+    @MessageBody() data: { room_id: string; content: string; type?: string; reply_to_id?: string },
   ) {
     const user_id = client.data.user_id;
-
-    this.logger.log(`Received send_message from user ${user_id}:`, data);
 
     try {
       // Check if user is member of the room
@@ -297,6 +296,7 @@ export class ChatGateway
       createMessageDto.room_id = data.room_id;
       createMessageDto.content = data.content;
       createMessageDto.type = data.type || 'text';
+      createMessageDto.reply_to_id = data.reply_to_id;
 
       const message = await this.chatService.createMessage(
         user_id,
@@ -579,18 +579,99 @@ export class ChatGateway
     }
   }
 
+  @SubscribeMessage('edit_message')
+  async handleEditMessage(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { message_id: string; content: string; type?: string },
+  ) {
+    const user_id = client.data.user_id;
+
+    this.logger.log(`Received edit_message from user ${user_id}:`, data);
+
+    try {
+      // Create edit message DTO
+      const editMessageDto = new EditMessageDto();
+      editMessageDto.content = data.content;
+      editMessageDto.type = (data.type as any) || 'text';
+
+      // Edit the message
+      const updatedMessage = await this.chatService.editMessage(
+        user_id,
+        data.message_id,
+        editMessageDto,
+      );
+
+      this.logger.log(`Message edited successfully:`, updatedMessage);
+
+      // Record room activity for green dot
+      await this.roomActivityRedisService.recordRoomActivity(updatedMessage.room_id, 'message');
+
+      // Broadcast edited message to all users in the room
+      this.server.to(`room:${updatedMessage.room_id}`).emit('message_edited', updatedMessage);
+      this.logger.log(`Broadcasted edited message to room ${updatedMessage.room_id}`);
+
+      // Emit confirmation to sender
+      client.emit('message_edit_confirmed', {
+        message_id: updatedMessage.id,
+        room_id: updatedMessage.room_id,
+        timestamp: new Date(),
+      });
+
+    } catch (error) {
+      this.logger.error(`Error editing message: ${error.message}`);
+      client.emit('error', { message: 'Failed to edit message' });
+    }
+  }
+
+  @SubscribeMessage('delete_message')
+  async handleDeleteMessage(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { message_id: string },
+  ) {
+    const user_id = client.data.user_id;
+
+    this.logger.log(`Received delete_message from user ${user_id}:`, data);
+
+    try {
+      // Delete the message
+      const result = await this.chatService.deleteMessage(user_id, data.message_id);
+
+      this.logger.log(`Message deleted successfully:`, result);
+
+      // Record room activity for green dot
+      await this.roomActivityRedisService.recordRoomActivity(result.room_id, 'message');
+
+      // Broadcast deleted message to all users in the room
+      this.server.to(`room:${result.room_id}`).emit('message_deleted', { 
+        messageId: data.message_id 
+      });
+      this.logger.log(`Broadcasted deleted message to room ${result.room_id}`);
+
+      // Emit confirmation to sender
+      client.emit('message_delete_confirmed', {
+        message_id: data.message_id,
+        room_id: result.room_id,
+        timestamp: new Date(),
+      });
+
+    } catch (error) {
+      this.logger.error(`Error deleting message: ${error.message}`);
+      client.emit('error', { message: 'Failed to delete message' });
+    }
+  }
+
   // Method to emit message to specific room (used by REST API)
   emitMessageToRoom(room_id: string, message: MessageResponse) {
     this.server.to(`room:${room_id}`).emit('new_message', message);
   }
 
-  // Method to emit message edited event to specific room (used by REST API)
+  // Method to emit edited message to specific room (used by REST API)
   emitMessageEdited(room_id: string, message: MessageResponse) {
     this.server.to(`room:${room_id}`).emit('message_edited', message);
   }
 
-  // Method to emit message deleted event to specific room (used by REST API)
-  emitMessageDeleted(messageId: string) {
-    this.server.emit('message_deleted', { messageId });
+  // Method to emit deleted message to specific room (used by REST API)
+  emitMessageDeleted(messageId: string, room_id: string) {
+    this.server.to(`room:${room_id}`).emit('message_deleted', { messageId });
   }
 } 

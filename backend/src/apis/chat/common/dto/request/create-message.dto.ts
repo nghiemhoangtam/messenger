@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsIn, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsIn, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateMessageDto {
   @ApiProperty({ default: '001' })
@@ -14,4 +14,9 @@ export class CreateMessageDto {
   @IsOptional()
   @IsIn(['text', 'image', 'file', 'audio', 'video', 'sticker', 'emoji'], { message: 'Invalid message type' })
   type?: string = 'text';
+
+  @ApiProperty({ required: false, description: 'ID of the message being replied to' })
+  @IsOptional()
+  @IsString({ message: 'Reply to ID must be a string' })
+  reply_to_id?: string;
 }

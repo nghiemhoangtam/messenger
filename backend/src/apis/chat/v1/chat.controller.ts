@@ -1,15 +1,15 @@
 import {
-  Body,
-  Controller,
-  Delete,
-  ForbiddenException,
-  Get,
-  Param,
-  Post,
-  Put,
-  Query,
-  Req,
-  UseGuards,
+    Body,
+    Controller,
+    Delete,
+    ForbiddenException,
+    Get,
+    Param,
+    Post,
+    Put,
+    Query,
+    Req,
+    UseGuards,
 } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { IJwtRequest } from 'src/apis/auth/common/interfaces';
@@ -128,12 +128,28 @@ export class ChatController {
     @Req() req: IJwtRequest
   ): Promise<{ success: boolean; message: string }> {
     if (req.user) {
-      await this.chatService.deleteMessage(req.user.id, messageId);
+      const result = await this.chatService.deleteMessage(req.user.id, messageId);
       
       // Emit real-time event to all users in the room
-      this.chatGateway.emitMessageDeleted(messageId);
+      this.chatGateway.emitMessageDeleted(messageId, result.room_id);
       
       return { success: true, message: 'Message deleted successfully' };
+    } else {
+      throw new ForbiddenException(MessageCode.FORBIDDEN);
+    }
+  }
+
+  @Get('message/:messageId')
+  @ApiOperation({
+    summary: 'Get message by ID',
+    description: 'Retrieve a specific message by its ID',
+  })
+  @ApiResponse({ status: 200, description: 'Message retrieved successfully', type: MessageResponse })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Message not found' })
+  async getMessageById(@Param('messageId') messageId: string, @Req() req: IJwtRequest): Promise<MessageResponse> {
+    if (req.user) {
+      return this.chatService.getMessageById(messageId);
     } else {
       throw new ForbiddenException(MessageCode.FORBIDDEN);
     }

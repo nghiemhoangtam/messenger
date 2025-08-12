@@ -37,6 +37,27 @@ export class ChatService extends BaseService {
       if (!sender) {
         throw new NotFoundException([{ code: MessageCode.USER_NOT_FOUND }]);
       }
+
+      // Validate reply_to_id if provided
+      let replyToMessage: Message | undefined = undefined;
+      let replyToSender: User | undefined = undefined;
+      if (dto.reply_to_id) {
+        const foundReplyMessage = await this.messageModel.findOne({
+          _id: new Types.ObjectId(dto.reply_to_id),
+          room_id: new Types.ObjectId(dto.room_id),
+          is_deleted: false,
+        }).exec();
+        if (!foundReplyMessage) {
+          throw new NotFoundException([{ code: MessageCode.MESSAGE_NOT_FOUND }]);
+        }
+        replyToMessage = foundReplyMessage;
+        
+        const foundReplySender = await this.userModel.findById(replyToMessage.sender_id).exec();
+        if (!foundReplySender) {
+          throw new NotFoundException([{ code: MessageCode.USER_NOT_FOUND }]);
+        }
+        replyToSender = foundReplySender;
+      }
       
       // Tạo message mới
       const newMessage = new this.messageModel({
@@ -44,6 +65,7 @@ export class ChatService extends BaseService {
         sender_id: new Types.ObjectId(senderId),
         content: dto.content,
         type: dto.type || 'text', // Sử dụng type từ dto
+        reply_to_id: dto.reply_to_id ? new Types.ObjectId(dto.reply_to_id) : undefined,
         created_at: new Date(),
         updated_at: new Date(),
         is_deleted: false,
@@ -54,7 +76,7 @@ export class ChatService extends BaseService {
       
       // Trả về MessageResponse
       const messageReads = await this.messageReadModel.find({ message_id: savedMessage._id }).exec();
-      return new MessageResponse(savedMessage, messageReads, sender);
+      return new MessageResponse(savedMessage, messageReads, sender, replyToMessage, replyToSender);
     });
   }
 
@@ -86,7 +108,22 @@ export class ChatService extends BaseService {
           if (!sender) {
             throw new NotFoundException([{ code: MessageCode.USER_NOT_FOUND }]);
           }
-          return new MessageResponse(message, messageReads, sender);
+          
+          // Get reply message info if exists
+          let replyToMessage: Message | undefined = undefined;
+          let replyToSender: User | undefined = undefined;
+          if (message.reply_to_id) {
+            const foundReplyMessage = await this.messageModel.findById(message.reply_to_id).exec();
+            if (foundReplyMessage) {
+              replyToMessage = foundReplyMessage;
+              const foundReplySender = await this.userModel.findById(replyToMessage.sender_id).exec();
+              if (foundReplySender) {
+                replyToSender = foundReplySender;
+              }
+            }
+          }
+          
+          return new MessageResponse(message, messageReads, sender, replyToMessage, replyToSender);
         })),
         meta: {
           total,
@@ -166,11 +203,25 @@ export class ChatService extends BaseService {
 
       const messageReads = await this.messageReadModel.find({ message_id: updatedMessage._id }).exec();
       
-      return new MessageResponse(updatedMessage, messageReads, sender);
+      // Get reply message info if exists
+      let replyToMessage: Message | undefined = undefined;
+      let replyToSender: User | undefined = undefined;
+      if (updatedMessage.reply_to_id) {
+        const foundReplyMessage = await this.messageModel.findById(updatedMessage.reply_to_id).exec();
+        if (foundReplyMessage) {
+          replyToMessage = foundReplyMessage;
+          const foundReplySender = await this.userModel.findById(replyToMessage.sender_id).exec();
+          if (foundReplySender) {
+            replyToSender = foundReplySender;
+          }
+        }
+      }
+      
+      return new MessageResponse(updatedMessage, messageReads, sender, replyToMessage, replyToSender);
     });
   }
 
-  async deleteMessage(userId: string, messageId: string): Promise<void> {
+  async deleteMessage(userId: string, messageId: string): Promise<{ room_id: string }> {
     return await this.handle(async () => {
       // Find the message
       const message = await this.messageModel.findById(new Types.ObjectId(messageId)).exec();
@@ -191,6 +242,40 @@ export class ChatService extends BaseService {
           updated_at: new Date(),
         }
       ).exec();
+
+      // Return room_id for real-time notification
+      return { room_id: message.room_id.toString() };
+    });
+  }
+
+  async getMessageById(messageId: string): Promise<MessageResponse> {
+    return await this.handle(async () => {
+      const message = await this.messageModel.findById(new Types.ObjectId(messageId)).exec();
+      if (!message) {
+        throw new NotFoundException([{ code: MessageCode.MESSAGE_NOT_FOUND }]);
+      }
+
+      const messageReads = await this.messageReadModel.find({ message_id: message._id }).exec();
+      const sender = await this.userModel.findById(message.sender_id).exec();
+      if (!sender) {
+        throw new NotFoundException([{ code: MessageCode.USER_NOT_FOUND }]);
+      }
+
+      // Get reply message info if exists
+      let replyToMessage: Message | undefined = undefined;
+      let replyToSender: User | undefined = undefined;
+      if (message.reply_to_id) {
+        const foundReplyMessage = await this.messageModel.findById(message.reply_to_id).exec();
+        if (foundReplyMessage) {
+          replyToMessage = foundReplyMessage;
+          const foundReplySender = await this.userModel.findById(replyToMessage.sender_id).exec();
+          if (foundReplySender) {
+            replyToSender = foundReplySender;
+          }
+        }
+      }
+
+      return new MessageResponse(message, messageReads, sender, replyToMessage, replyToSender);
     });
   }
 }
