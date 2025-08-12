@@ -105,7 +105,12 @@ const chatSlice = createSlice({
       // Ensure roomPage.data exists
       if (!state.roomPage.data) {
         state.roomPage.data = createPaginationResponse<Conversation>();
-      }
+      }      
+      action.payload.results = action.payload.results.map(conversation => {
+        conversation.room.memberPage = createPaginationResponse<Contact>();
+        conversation.room.messagePage = createPaginationResponse<Message>();
+        return conversation;
+      });
       
       state.roomPage.data.results = [...state.roomPage.data.results, ...action.payload.results];
       state.roomPage.data.meta = action.payload.meta;
@@ -177,7 +182,7 @@ const chatSlice = createSlice({
     },
     sendMessageRequest: (
       state,
-      action: PayloadAction<{ conversationId: string; content: string; type?: string }>,
+      action: PayloadAction<{ conversationId: string; content: string; type?: string; reply_to_id?: string }>,
     ) => {
       state.roomPage.loading = true;
       state.error = null;
@@ -200,16 +205,18 @@ const chatSlice = createSlice({
       const conversationIndex = state.roomPage.data.results.findIndex(
         conversation => conversation.room.id === conversationId
       );
-      
-
-      
+            
       if (conversationIndex === -1) {
-
         return;
       }
       
       const conversation = state.roomPage.data.results[conversationIndex];
 
+      if(!conversation.room.messagePage) {
+        state.roomPage.data.results[conversationIndex].lastMessage = action.payload;
+        state.roomPage.data.results[conversationIndex].unread_count += 1;
+        return;
+      }
       
       // Kiểm tra xem message đã tồn tại chưa (tránh duplicate)
       const messageExists = conversation.room.messagePage.results.some(
@@ -601,7 +608,6 @@ const chatSlice = createSlice({
       // Remove message from all conversations
       state.roomPage.data.results = state.roomPage.data.results.map(conversation => {
         // Check if messagePage.results exists
-        console.log(!conversation.room.messagePage);
         if (!conversation.room.messagePage || !conversation.room.messagePage.results) {
           return conversation;
         }

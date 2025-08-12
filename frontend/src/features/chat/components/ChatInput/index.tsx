@@ -1,22 +1,27 @@
 import {
-  AudioOutlined,
-  CloseOutlined,
-  FileImageOutlined,
-  FileOutlined,
-  SendOutlined,
+    AudioOutlined,
+    CloseOutlined,
+    FileImageOutlined,
+    FileOutlined,
+    SendOutlined,
+    UndoOutlined,
 } from "@ant-design/icons";
 import { Button, Input, Upload, notification } from "antd";
 import React, { useEffect, useRef, useState } from "react";
 import { socketService } from "../../../../services/socketService";
+import { ReplyMessage } from "../../types";
 import styles from "./ChatInput.module.css";
 
 const { TextArea } = Input;
 
 interface ChatInputProps {
-  onSendMessage: (content: string) => void;
-  onSendFile: (file: File, type: "image" | "file" | "audio") => void;
+  onSendMessage: (content: string, replyToId?: string) => void;
+  onSendFile: (file: File, type: "image" | "file" | "audio", replyToId?: string) => void;
   loading?: boolean;
   room_id?: string;
+  replyToMessage?: ReplyMessage | null;
+  onCancelReply?: () => void;
+  onScrollToMessage?: (messageId: string) => void;
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({
@@ -24,6 +29,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   onSendFile,
   loading = false,
   room_id,
+  replyToMessage,
+  onCancelReply,
+  onScrollToMessage,
 }) => {
   const [message, setMessage] = useState("");
   const [preview, setPreview] = useState<{
@@ -76,7 +84,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       socketService.stopTyping(room_id);
     }
     
-    onSendMessage(message);
+    onSendMessage(message, replyToMessage?.id);
     setMessage("");
   };
 
@@ -95,7 +103,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const handleSendFile = async () => {
     if (!preview) return;
     try {
-      await onSendFile(preview.file, preview.type);
+      await onSendFile(preview.file, preview.type, replyToMessage?.id);
       setPreview(null);
       notification.success({
         message: "Thành công",
@@ -109,8 +117,60 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     }
   };
 
+  const renderReplyPreview = () => {
+    if (!replyToMessage) return null;
+
+    const renderReplyContent = () => {
+      switch (replyToMessage.type) {
+        case "image":
+          return <img src={replyToMessage.content} alt="reply" className={styles.replyImage} />;
+        case "file":
+          return (
+            <div className={styles.replyFile}>
+              <FileOutlined />
+              <span>{replyToMessage.content}</span>
+            </div>
+          );
+        case "audio":
+          return (
+            <div className={styles.replyAudio}>
+              <AudioOutlined />
+              <span>Audio</span>
+            </div>
+          );
+        default:
+          return replyToMessage.content;
+      }
+    };
+
+    return (
+      <div className={styles.replyPreview}>
+        <div className={styles.replyIcon}>
+          <UndoOutlined />
+        </div>
+        <div 
+          className={styles.replyContent}
+          onClick={() => onScrollToMessage?.(replyToMessage.id)}
+          style={{ cursor: 'pointer' }}
+        >
+          <div className={styles.replySender}>Trả lời {replyToMessage.sender.display_name}</div>
+          <div className={styles.replyText}>{renderReplyContent()}</div>
+        </div>
+        <Button
+          type="text"
+          icon={<CloseOutlined />}
+          onClick={onCancelReply}
+          className={styles.cancelReply}
+          size="small"
+        />
+      </div>
+    );
+  };
+
   return (
     <div className={styles.container}>
+      {replyToMessage && renderReplyPreview()}
+      
       {preview && (
         <div className={styles.preview}>
           {preview.type === "image" && (
@@ -167,7 +227,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         <TextArea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          placeholder="Nhập tin nhắn..."
+          placeholder={replyToMessage ? "Nhập tin nhắn trả lời..." : "Nhập tin nhắn..."}
           autoSize={{ minRows: 1, maxRows: 4 }}
           onPressEnter={(e) => {
             if (!e.shiftKey) {

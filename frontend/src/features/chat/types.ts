@@ -20,6 +20,14 @@ export interface Room {
   activityLevel?: 'high' | 'medium' | 'low' | 'inactive';
 }
 
+export interface ReplyMessage {
+  id: string;
+  content: string;
+  type: string;
+  sender: Contact;
+  created_at: Date;
+}
+
 export interface Message {
   id: string;
   room_id: string;
@@ -28,9 +36,11 @@ export interface Message {
   created_at: Date;
   status: "sent" | "delivered" | "read" | "failed";
   reply_to_id?: string;
+  reply_to?: ReplyMessage;
   edited_at?: Date;
   edited_by?: string;
   encryption_key?: string;
+  type?: string;
 }
 
 export interface Conversation {

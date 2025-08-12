@@ -1,6 +1,6 @@
 import { CopyOutlined } from "@ant-design/icons";
 import { Button, message, Popconfirm, Tooltip } from "antd";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Loading from "../../../../components/atoms/Loading/Loading";
 import { startCallRequest } from "../../../../features/calls/callsSlice";
@@ -17,6 +17,7 @@ import {
   removeConversation,
   sendMessageRequest
 } from "../../chatSlice";
+import { Message, ReplyMessage } from "../../types";
 import { CallControls } from "../CallControls";
 import { CallModal } from "../CallModal";
 import { ChatInput } from "../ChatInput";
@@ -75,6 +76,7 @@ export const ChatWindow: React.FC = () => {
   const [sending, setSending] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [loadingMoreMessages, setLoadingMoreMessages] = useState(false);
+  const [replyToMessage, setReplyToMessage] = useState<ReplyMessage | null>(null);
   const { currentConversation, roomPage, messagesLoading } = useSelector(
     (state: RootState) => state.chat
   );
@@ -98,8 +100,11 @@ export const ChatWindow: React.FC = () => {
   useEffect(() => {
     if (currentConversation) {
       setLoadingMessages(true);
-              dispatch(fetchMessagesRequest({ roomId: currentConversation.room.id, pageRequest: createPaginationRequest({ page: 1, limit: 15 }) }));
+      dispatch(fetchMessagesRequest({ roomId: currentConversation.room.id, pageRequest: createPaginationRequest({ page: 1, limit: 15 }) }));
       dispatch(markMessagesAsReadRequest(currentConversation.room.id));
+      
+      // Reset reply message when changing conversation
+      setReplyToMessage(null);
       
       // Join new conversation
       socketService.joinConversation(currentConversation.room.id);
@@ -138,13 +143,12 @@ export const ChatWindow: React.FC = () => {
   // Force re-render when messages change
   useEffect(() => {
     if (currentConversationMessages.length > 0) {
-  
       // This will trigger a re-render when messages change
     }
   }, [currentConversationMessages]);
 
   // Handle scroll to load more messages
-  const handleMessageListScroll = (e: React.UIEvent<HTMLDivElement>) => {
+  const handleMessageListScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
     if (!currentConversation) return;
     
@@ -167,13 +171,11 @@ export const ChatWindow: React.FC = () => {
         })
       );
     }
-  };
+  }, [currentConversation, roomPage.data.results, loadingMoreMessages, dispatch]);
 
-  const handleSendMessage = async (content: string) => {
+  const handleSendMessage = useCallback(async (content: string, replyToId?: string) => {
     if (!currentConversation) return;
 
-
-    
     setSending(true);
     try {
       await dispatch(
@@ -181,16 +183,20 @@ export const ChatWindow: React.FC = () => {
           conversationId: currentConversation.room.id,
           content,
           type: "text", // Thêm type cho text message
+          reply_to_id: replyToId,
         })
       );
+      // Clear reply message after sending
+      setReplyToMessage(null);
     } finally {
       setSending(false);
     }
-  };
+  }, [currentConversation, dispatch]);
 
-  const handleSendFile = async (
+  const handleSendFile = useCallback(async (
     file: File,
-    type: "image" | "file" | "audio"
+    type: "image" | "file" | "audio",
+    replyToId?: string
   ) => {
     if (!currentConversation) return;
 
@@ -201,14 +207,17 @@ export const ChatWindow: React.FC = () => {
           conversationId: currentConversation.room.id,
           content: URL.createObjectURL(file),
           type, // Truyền type từ file
+          reply_to_id: replyToId,
         })
       );
+      // Clear reply message after sending
+      setReplyToMessage(null);
     } finally {
       setSending(false);
     }
-  };
+  }, [currentConversation, dispatch]);
 
-  const handleEditMessage = async (messageId: string, newContent: string) => {
+  const handleEditMessage = useCallback(async (messageId: string, newContent: string) => {
     if (!currentConversation) return;
     
     try {
@@ -216,9 +225,9 @@ export const ChatWindow: React.FC = () => {
     } catch (error) {
       message.error("Chỉnh sửa tin nhắn thất bại");
     }
-  };
+  }, [currentConversation, dispatch]);
 
-  const handleDeleteMessage = async (messageId: string) => {
+  const handleDeleteMessage = useCallback(async (messageId: string) => {
     if (!currentConversation) return;
 
     try {
@@ -227,9 +236,42 @@ export const ChatWindow: React.FC = () => {
     } catch (error) {
       message.error("Xóa tin nhắn thất bại");
     }
-  };
+  }, [currentConversation, dispatch]);
 
-  const handleAudioCall = () => {
+  const handleReplyClick = useCallback((message: Message) => {
+    setReplyToMessage({
+      id: message.id,
+      content: message.content,
+      type: message.type || "text",
+      sender: message.sender,
+      created_at: message.created_at,
+    });
+  }, []);
+
+  const handleCancelReply = useCallback(() => {
+    setReplyToMessage(null);
+  }, []);
+
+  const handleScrollToMessage = useCallback((messageId: string) => {
+    // Tìm message element trong DOM
+    const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+    
+    if (messageElement) {
+      // Scroll đến message với animation
+      messageElement.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center' 
+      });
+      
+      // Highlight message tạm thời
+      messageElement.classList.add(styles.highlightMessage);
+      setTimeout(() => {
+        messageElement.classList.remove(styles.highlightMessage);
+      }, 2000);
+    }
+  }, []);
+
+  const handleAudioCall = useCallback(() => {
     if (!currentConversation) return;
     setCallType("audio");
     setIsCallModalVisible(true);
@@ -241,9 +283,9 @@ export const ChatWindow: React.FC = () => {
         type: "audio",
       })
     );
-  };
+  }, [currentConversation, user?.id, dispatch]);
 
-  const handleVideoCall = () => {
+  const handleVideoCall = useCallback(() => {
     if (!currentConversation) return;
     setCallType("video");
     setIsCallModalVisible(true);
@@ -255,21 +297,21 @@ export const ChatWindow: React.FC = () => {
         type: "video",
       })
     );
-  };
+  }, [currentConversation, user?.id, dispatch]);
 
-  const handleAnswerCall = () => {
+  const handleAnswerCall = useCallback(() => {
     setIsCallModalVisible(false);
-  };
+  }, []);
 
-  const handleRejectCall = () => {
+  const handleRejectCall = useCallback(() => {
     setIsCallModalVisible(false);
-  };
+  }, []);
 
-  const handleEndCall = () => {
+  const handleEndCall = useCallback(() => {
     setIsCallModalVisible(false);
-  };
+  }, []);
 
-  const handleLeaveRoom = async () => {
+  const handleLeaveRoom = useCallback(async () => {
     if (!currentConversation) return;
     try {
       await roomService.leaveRoom(currentConversation.room.id);
@@ -279,9 +321,9 @@ export const ChatWindow: React.FC = () => {
     } catch (err) {
       message.error("Rời phòng thất bại");
     }
-  };
+  }, [currentConversation, dispatch]);
 
-  const handleCopyRoomId = async (e: React.MouseEvent) => {
+  const handleCopyRoomId = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!currentConversation) return;
     
@@ -291,13 +333,13 @@ export const ChatWindow: React.FC = () => {
     } catch (err) {
       message.error("Copy Room ID thất bại");
     }
-  };
+  }, [currentConversation]);
 
   // Group messages by date
-  const groupMessagesByDate = (messages: any[]) => {
+  const groupMessagesByDate = useMemo(() => {
     const grouped: { [key: string]: any[] } = {};
     
-    messages.forEach(message => {
+    currentConversationMessages.forEach(message => {
       const messageDate = new Date(message.created_at);
       const dateKey = messageDate.toDateString();
       
@@ -315,7 +357,7 @@ export const ChatWindow: React.FC = () => {
     });
     
     return grouped;
-  };
+  }, [currentConversationMessages]);
 
   if (!currentConversation) {
     return (
@@ -324,8 +366,6 @@ export const ChatWindow: React.FC = () => {
       </div>
     );
   }
-
-  const groupedMessages = groupMessagesByDate(currentConversationMessages);
 
   return (
     <div className={styles.container}>
@@ -378,7 +418,7 @@ export const ChatWindow: React.FC = () => {
           <Loading local={true} />
         )}
         
-        {Object.entries(groupedMessages)
+        {Object.entries(groupMessagesByDate)
           .sort(([dateKeyA], [dateKeyB]) => 
             new Date(dateKeyA).getTime() - new Date(dateKeyB).getTime()
           )
@@ -392,6 +432,8 @@ export const ChatWindow: React.FC = () => {
                   currentUserId={user?.id || ""}
                   onEditMessage={handleEditMessage}
                   onDeleteMessage={handleDeleteMessage}
+                  onReplyClick={handleReplyClick}
+                  onScrollToMessage={handleScrollToMessage}
                 />
               </div>
             );
@@ -407,6 +449,9 @@ export const ChatWindow: React.FC = () => {
         onSendFile={handleSendFile}
         loading={sending}
         room_id={currentConversation?.room.id}
+        replyToMessage={replyToMessage}
+        onCancelReply={handleCancelReply}
+        onScrollToMessage={handleScrollToMessage}
       />
 
       <CallModal

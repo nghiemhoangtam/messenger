@@ -1,15 +1,15 @@
 import { io, Socket } from "socket.io-client";
 import { receiveIncomingCall } from "../features/calls/callsSlice";
 import {
-  deleteMessageSuccess,
-  editMessageSuccess,
-  receiveMessage,
-  removeTypingIndicator,
-  setTypingIndicator,
-  updateMessageStatus,
-  updateRoomActivity,
-  updateRoomOnlineUsers,
-  updateUserActivity
+    deleteMessageSuccess,
+    editMessageSuccess,
+    receiveMessage,
+    removeTypingIndicator,
+    setTypingIndicator,
+    updateMessageStatus,
+    updateRoomActivity,
+    updateRoomOnlineUsers,
+    updateUserActivity
 } from "../features/chat/chatSlice";
 
 export class SocketService {
@@ -201,7 +201,7 @@ export class SocketService {
   }
 
   // Chat methods - tương thích với chat.gateway.ts
-  sendMessage(message: { room_id: string; content: string; type?: string }) {
+  sendMessage(message: { room_id: string; content: string; type?: string; reply_to_id?: string }) {
     if (this.socket?.connected) {
       this.socket.emit("send_message", message);
     }

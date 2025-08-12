@@ -107,4 +107,27 @@
   color: #1890ff;
   background: rgba(24, 144, 255, 0.1);
   opacity: 1;
+}
+
+/* Add highlight animation for scrolled message */
+@keyframes highlightMessage {
+  0% {
+    background-color: rgba(24, 144, 255, 0.1);
+    transform: scale(1);
+  }
+  50% {
+    background-color: rgba(24, 144, 255, 0.2);
+    transform: scale(1.02);
+  }
+  100% {
+    background-color: rgba(24, 144, 255, 0.1);
+    transform: scale(1);
+  }
+}
+
+.highlightMessage {
+  animation: highlightMessage 2s ease-in-out;
+  border-radius: 8px;
+  padding: 4px;
+  margin: -4px;
 } 

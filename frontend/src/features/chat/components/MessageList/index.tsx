@@ -8,6 +8,8 @@ interface MessageListProps {
   currentUserId: string;
   onEditMessage: (messageId: string, newContent: string) => Promise<void>;
   onDeleteMessage?: (messageId: string) => Promise<void>;
+  onReplyClick?: (message: Message) => void;
+  onScrollToMessage?: (messageId: string) => void;
 }
 
 export const MessageList: React.FC<MessageListProps> = ({
@@ -15,6 +17,8 @@ export const MessageList: React.FC<MessageListProps> = ({
   currentUserId,
   onEditMessage,
   onDeleteMessage,
+  onReplyClick,
+  onScrollToMessage,
 }) => {
   return (
     <div className={styles.messageList}>
@@ -25,6 +29,8 @@ export const MessageList: React.FC<MessageListProps> = ({
           isOwn={message.sender.id === currentUserId}
           onEditMessage={onEditMessage}
           onDeleteMessage={onDeleteMessage}
+          onReplyClick={onReplyClick}
+          onScrollToMessage={onScrollToMessage}
         />
       ))}
     </div>

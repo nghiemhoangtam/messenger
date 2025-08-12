@@ -1,7 +1,7 @@
-import { FileOutlined, LoadingOutlined } from "@ant-design/icons";
+import { FileOutlined, LoadingOutlined, UndoOutlined } from "@ant-design/icons";
 import React from "react";
 import { Avatar } from "../../../../components/atoms/Avatar";
-import { Message } from "../../types";
+import { Message, ReplyMessage } from "../../types";
 import styles from "./MessageBubble.module.css";
 
 interface MessageBubbleProps {
@@ -12,6 +12,8 @@ interface MessageBubbleProps {
   status: Message["status"];
   senderAvatar?: string | null;
   senderName?: string;
+  replyTo?: ReplyMessage;
+  onScrollToMessage?: (messageId: string) => void;
 }
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({
@@ -22,6 +24,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   status,
   senderAvatar,
   senderName,
+  replyTo,
+  onScrollToMessage,
 }) => {
   const renderContent = () => {
     switch (type) {
@@ -54,6 +58,48 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     }
   };
 
+  const renderReplyPreview = () => {
+    if (!replyTo) return null;
+
+    const renderReplyContent = () => {
+      switch (replyTo.type) {
+        case "image":
+          return <img src={replyTo.content} alt="reply" className={styles.replyImage} />;
+        case "file":
+          return (
+            <div className={styles.replyFile}>
+              <FileOutlined />
+              <span>{replyTo.content}</span>
+            </div>
+          );
+        case "audio":
+          return (
+            <div className={styles.replyAudio}>
+              <FileOutlined />
+              <span>Audio</span>
+            </div>
+          );
+        default:
+          return replyTo.content;
+      }
+    };
+
+    return (
+      <div 
+        className={styles.replyPreview}
+        onClick={() => onScrollToMessage?.(replyTo.id)}
+      >
+        <div className={styles.replyIcon}>
+          <UndoOutlined />
+        </div>
+        <div className={styles.replyContent}>
+          <div className={styles.replySender}>{replyTo.sender.display_name}</div>
+          <div className={styles.replyText}>{renderReplyContent()}</div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className={`${styles.container} ${isOwn ? styles.own : ""}`}>
       {!isOwn && (
@@ -66,6 +112,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           <div className={styles.senderName}>{senderName}</div>
         )}
         <div className={`${styles.bubble} ${styles[type]}`}>
+          {renderReplyPreview()}
           {renderContent()}
           <div className={styles.metadata}>
             <span className={styles.timestamp}>{timestamp}</span>

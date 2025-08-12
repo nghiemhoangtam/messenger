@@ -1,6 +1,6 @@
-import { CheckOutlined, CloseOutlined, DeleteOutlined, EditOutlined } from "@ant-design/icons";
+import { CheckOutlined, CloseOutlined, DeleteOutlined, EditOutlined, UndoOutlined } from "@ant-design/icons";
 import { Button, Input, Popconfirm } from "antd";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Avatar } from "../../../../components/atoms/Avatar";
 import { Message } from "../../types";
 import styles from "./EditableMessageBubble.module.css";
@@ -12,6 +12,8 @@ interface EditableMessageBubbleProps {
   isOwn: boolean;
   onEditMessage: (messageId: string, newContent: string) => Promise<void>;
   onDeleteMessage?: (messageId: string) => Promise<void>;
+  onReplyClick?: (message: Message) => void;
+  onScrollToMessage?: (messageId: string) => void;
   onCancelEdit?: () => void;
 }
 
@@ -20,6 +22,8 @@ export const EditableMessageBubble: React.FC<EditableMessageBubbleProps> = ({
   isOwn,
   onEditMessage,
   onDeleteMessage,
+  onReplyClick,
+  onScrollToMessage,
   onCancelEdit,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -46,12 +50,12 @@ export const EditableMessageBubble: React.FC<EditableMessageBubbleProps> = ({
     }
   }, [isEditing]);
 
-  const handleEditClick = () => {
+  const handleEditClick = useCallback(() => {
     setIsEditing(true);
     setEditContent(message.content);
-  };
+  }, [message.content]);
 
-  const handleSaveEdit = async () => {
+  const handleSaveEdit = useCallback(async () => {
     if (!editContent.trim() || editContent === message.content) {
       setIsEditing(false);
       return;
@@ -66,15 +70,15 @@ export const EditableMessageBubble: React.FC<EditableMessageBubbleProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [editContent, message.content, message.id, onEditMessage]);
 
-  const handleCancelEdit = () => {
+  const handleCancelEdit = useCallback(() => {
     setIsEditing(false);
     setEditContent(message.content);
     onCancelEdit?.();
-  };
+  }, [message.content, onCancelEdit]);
 
-  const handleDeleteClick = async () => {
+  const handleDeleteClick = useCallback(async () => {
     if (!onDeleteMessage) return;
     
     setIsDeleting(true);
@@ -85,25 +89,42 @@ export const EditableMessageBubble: React.FC<EditableMessageBubbleProps> = ({
     } finally {
       setIsDeleting(false);
     }
-  };
+  }, [onDeleteMessage, message.id]);
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleReplyClick = useCallback(() => {
+    onReplyClick?.(message);
+  }, [onReplyClick, message]);
+
+  const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSaveEdit();
+      if (!editContent.trim() || editContent === message.content) {
+        setIsEditing(false);
+        return;
+      }
+      setIsLoading(true);
+      onEditMessage(message.id, editContent).then(() => {
+        setIsEditing(false);
+        setIsLoading(false);
+      }).catch((error) => {
+        console.error("Failed to edit message:", error);
+        setIsLoading(false);
+      });
     } else if (e.key === "Escape") {
-      handleCancelEdit();
+      setIsEditing(false);
+      setEditContent(message.content);
+      onCancelEdit?.();
     }
-  };
+  }, [editContent, message.content, message.id, onEditMessage, onCancelEdit]);
 
-  const getMessageType = () => {
+  const getMessageType = useCallback(() => {
     if (message.content.startsWith("data:image")) return "image";
     if (message.content.startsWith("data:audio")) return "audio";
     if (message.content.startsWith("data:application")) return "file";
-    return "text";
-  };
+    return message.type || "text";
+  }, [message.content, message.type]);
 
-  const renderContent = () => {
+  const renderContent = useMemo(() => {
     const messageType = getMessageType();
     switch (messageType) {
       case "image":
@@ -119,9 +140,9 @@ export const EditableMessageBubble: React.FC<EditableMessageBubbleProps> = ({
       default:
         return message.content;
     }
-  };
+  }, [message.content, getMessageType]);
 
-  const renderStatus = () => {
+  const renderStatus = useMemo(() => {
     switch (message.status) {
       case "sent":
         return "✓";
@@ -132,17 +153,66 @@ export const EditableMessageBubble: React.FC<EditableMessageBubbleProps> = ({
       default:
         return "⏳";
     }
-  };
+  }, [message.status]);
 
-  const formatTimestamp = (date: Date) => {
+  const renderReplyPreview = useMemo(() => {
+    if (!message.reply_to) return null;
+
+    const renderReplyContent = () => {
+      const replyTo = message.reply_to;
+      if (!replyTo) return null;
+      
+      switch (replyTo.type) {
+        case "image":
+          return <img src={replyTo.content} alt="reply" className={styles.replyImage} />;
+        case "file":
+          return (
+            <div className={styles.replyFile}>
+              <span>{replyTo.content}</span>
+            </div>
+          );
+        case "audio":
+          return (
+            <div className={styles.replyAudio}>
+              <span>Audio</span>
+            </div>
+          );
+        default:
+          return replyTo.content;
+      }
+    };
+
+    const handleReplyClick = () => {
+      if (message.reply_to) {
+        onScrollToMessage?.(message.reply_to.id);
+      }
+    };
+
+    return (
+      <div 
+        className={styles.replyPreview}
+        onClick={handleReplyClick}
+      >
+        <div className={styles.replyIcon}>
+          <UndoOutlined />
+        </div>
+        <div className={styles.replyContent}>
+          <div className={styles.replySender}>{message.reply_to?.sender.display_name}</div>
+          <div className={styles.replyText}>{renderReplyContent()}</div>
+        </div>
+      </div>
+    );
+  }, [message.reply_to?.id, message.reply_to?.content, message.reply_to?.type, message.reply_to?.sender?.display_name, onScrollToMessage]);
+
+  const formatTimestamp = useCallback((date: Date) => {
     return new Date(date).toLocaleTimeString([], { 
       hour: '2-digit', 
       minute: '2-digit' 
     });
-  };
+  }, []);
 
   return (
-    <div className={`${styles.container} ${isOwn ? styles.own : ""}`}>
+    <div className={`${styles.container} ${isOwn ? styles.own : ""}`} data-message-id={message.id}>
       {!isOwn && (
         <Avatar src={message.sender.avatar} size={32}>
           {message.sender.display_name?.[0].toUpperCase()}
@@ -185,7 +255,8 @@ export const EditableMessageBubble: React.FC<EditableMessageBubbleProps> = ({
             </div>
           ) : (
             <>
-              {renderContent()}
+              {renderReplyPreview}
+              {renderContent}
               {message.edited_at && (
                 <div className={styles.editedIndicator}>
                   (đã chỉnh sửa)
@@ -197,21 +268,30 @@ export const EditableMessageBubble: React.FC<EditableMessageBubbleProps> = ({
             <span className={styles.timestamp}>
               {formatTimestamp(message.created_at)}
             </span>
-            {isOwn && <span className={styles.status}>{renderStatus()}</span>}
+            {isOwn && <span className={styles.status}>{renderStatus}</span>}
           </div>
         </div>
-        {isOwn && !isEditing && (
+        {!isEditing && (
           <div className={styles.actionButtons}>
-            {getMessageType() === "text" && (
+            <Button
+              type="text"
+              icon={<UndoOutlined />}
+              onClick={handleReplyClick}
+              size="small"
+              className={styles.replyButton}
+              title="Trả lời"
+            />
+            {isOwn && getMessageType() === "text" && (
               <Button
                 type="text"
                 icon={<EditOutlined />}
                 onClick={handleEditClick}
                 size="small"
                 className={styles.editButton}
+                title="Chỉnh sửa"
               />
             )}
-            {onDeleteMessage && (
+            {isOwn && onDeleteMessage && (
               <Popconfirm
                 title="Bạn có chắc chắn muốn xóa tin nhắn này không?"
                 onConfirm={handleDeleteClick}
@@ -225,6 +305,7 @@ export const EditableMessageBubble: React.FC<EditableMessageBubbleProps> = ({
                   size="small"
                   className={styles.deleteButton}
                   loading={isDeleting}
+                  title="Xóa"
                 />
               </Popconfirm>
             )}

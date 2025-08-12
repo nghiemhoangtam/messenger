@@ -97,4 +97,80 @@
   .actions {
     display: none;
   }
+}
+
+/* Reply message styles */
+.replyPreview {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px;
+  background-color: #f0f8ff;
+  border-radius: 8px;
+  border-left: 3px solid #1890ff;
+  position: relative;
+}
+
+.replyIcon {
+  color: #1890ff;
+  font-size: 16px;
+  margin-top: 2px;
+}
+
+.replyContent {
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.replyContent:hover {
+  background-color: rgba(24, 144, 255, 0.05);
+  border-radius: 4px;
+  padding: 2px;
+  margin: -2px;
+}
+
+.replySender {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1890ff;
+  margin-bottom: 4px;
+}
+
+.replyText {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.65);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 300px;
+}
+
+.replyImage {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.replyFile,
+.replyAudio {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.cancelReply {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.cancelReply:hover {
+  color: #ff4d4f;
 } 
