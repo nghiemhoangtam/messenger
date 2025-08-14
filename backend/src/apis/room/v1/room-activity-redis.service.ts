@@ -1,10 +1,10 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import Redis from 'ioredis';
 import {
-  roomOnlineUsersKey,
-  userPresenceKey,
-  userRoomsKey,
-  userStatusKey
+    roomOnlineUsersKey,
+    userPresenceKey,
+    userRoomsKey,
+    userStatusKey
 } from '../../../common/redis/redis.key';
 
 export interface UserPresence {
@@ -344,7 +344,7 @@ export class RoomActivityRedisService {
       await this.redis.expire(presenceKey, this.PRESENCE_TTL);
       await this.redis.expire(userKey, this.DEFAULT_TTL);
       
-      this.logger.debug(`Extended presence TTL for user ${userId}`);
+      // this.logger.debug(`Extended presence TTL for user ${userId}`);
     } catch (error) {
       this.logger.error(`Error extending user presence: ${error.message}`);
     }

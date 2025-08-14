@@ -6,6 +6,7 @@ import { PaginationRequest } from 'src/common/dto/request/pagination.request';
 import { PaginationResponse } from 'src/common/dto/response/pagination.response';
 import { MessageCode } from 'src/common/messages/message.enum';
 import { BaseService } from 'src/common/services/base.service';
+import { MediaService } from '../../media/v1/media.service';
 import { CreateMessageDto } from '../common/dto/request/create-message.dto';
 import { EditMessageDto } from '../common/dto/request/edit-message.dto';
 import { MessageResponse } from '../common/dto/response/message.response';
@@ -17,7 +18,8 @@ export class ChatService extends BaseService {
     @InjectModel(Message.name) private messageModel: Model<Message>, //
     @InjectModel(Room.name) private roomModel: Model<Room>, //
     @InjectModel(User.name) private userModel: Model<User>,
-    @InjectModel(MessageRead.name) private messageReadModel: Model<MessageRead>
+    @InjectModel(MessageRead.name) private messageReadModel: Model<MessageRead>,
+    private readonly mediaService: MediaService
   ) {
     super();
   }
@@ -73,10 +75,23 @@ export class ChatService extends BaseService {
       });
       
       const savedMessage = await newMessage.save();
+
+      // Link file to message if file_id is provided
+      if (dto.file_id) {
+        await this.mediaService.linkFileToMessage(dto.file_id, savedMessage._id?.toString() || '');
+      }
+      
+      // Get files for this message
+      let files: any[] = [];
+      try {
+        files = await this.mediaService.getFilesByMessageId(savedMessage._id?.toString() || '');
+      } catch (error) {
+        console.warn('Failed to get files for message:', error);
+      }
       
       // Trả về MessageResponse
       const messageReads = await this.messageReadModel.find({ message_id: savedMessage._id }).exec();
-      return new MessageResponse(savedMessage, messageReads, sender, replyToMessage, replyToSender);
+      return new MessageResponse(savedMessage, messageReads, sender, replyToMessage, replyToSender, this.mediaService, files);
     });
   }
 
@@ -109,6 +124,14 @@ export class ChatService extends BaseService {
             throw new NotFoundException([{ code: MessageCode.USER_NOT_FOUND }]);
           }
           
+          // Get files for this message
+          let files: any[] = [];
+          try {
+            files = await this.mediaService.getFilesByMessageId(message._id?.toString() || '');
+          } catch (error) {
+            console.warn('Failed to get files for message:', error);
+          }
+          
           // Get reply message info if exists
           let replyToMessage: Message | undefined = undefined;
           let replyToSender: User | undefined = undefined;
@@ -123,7 +146,7 @@ export class ChatService extends BaseService {
             }
           }
           
-          return new MessageResponse(message, messageReads, sender, replyToMessage, replyToSender);
+          return new MessageResponse(message, messageReads, sender, replyToMessage, replyToSender, this.mediaService, files);
         })),
         meta: {
           total,
@@ -217,7 +240,7 @@ export class ChatService extends BaseService {
         }
       }
       
-      return new MessageResponse(updatedMessage, messageReads, sender, replyToMessage, replyToSender);
+      return new MessageResponse(updatedMessage, messageReads, sender, replyToMessage, replyToSender, this.mediaService);
     });
   }
 
@@ -275,7 +298,7 @@ export class ChatService extends BaseService {
         }
       }
 
-      return new MessageResponse(message, messageReads, sender, replyToMessage, replyToSender);
+      return new MessageResponse(message, messageReads, sender, replyToMessage, replyToSender, this.mediaService);
     });
   }
 }

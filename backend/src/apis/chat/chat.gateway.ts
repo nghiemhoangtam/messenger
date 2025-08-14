@@ -1,13 +1,13 @@
 import { Logger, UseGuards } from '@nestjs/common';
 import {
-  ConnectedSocket,
-  MessageBody,
-  OnGatewayConnection,
-  OnGatewayDisconnect,
-  OnGatewayInit,
-  SubscribeMessage,
-  WebSocketGateway,
-  WebSocketServer,
+    ConnectedSocket,
+    MessageBody,
+    OnGatewayConnection,
+    OnGatewayDisconnect,
+    OnGatewayInit,
+    SubscribeMessage,
+    WebSocketGateway,
+    WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { WsJwtAuthGuard } from '../../common/guards/ws-jwt-auth.guard';
@@ -276,7 +276,7 @@ export class ChatGateway
   @SubscribeMessage('send_message')
   async handleSendMessage(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { room_id: string; content: string; type?: string; reply_to_id?: string },
+    @MessageBody() data: { room_id: string; content: string; type?: string; reply_to_id?: string; file_id?: string },
   ) {
     const user_id = client.data.user_id;
 
@@ -297,6 +297,7 @@ export class ChatGateway
       createMessageDto.content = data.content;
       createMessageDto.type = data.type || 'text';
       createMessageDto.reply_to_id = data.reply_to_id;
+      createMessageDto.file_id = data.file_id;
 
       const message = await this.chatService.createMessage(
         user_id,

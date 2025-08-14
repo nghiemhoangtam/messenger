@@ -5,6 +5,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { WsJwtAuthGuard } from '../../../common/guards/ws-jwt-auth.guard';
 import { RedisModule } from '../../../common/redis/redis.module';
 import { Token, TokenSchema } from '../../auth/common/schemas';
+import { MediaModule } from '../../media/v1/media.module';
 import { Room, RoomSchema } from '../../room/common/schemas/rooms.schema';
 import { RoomModule } from '../../room/v1/room.module';
 import { User, UserSchema } from '../../user/schemas';
@@ -35,6 +36,7 @@ import { ChatService } from './chat.service';
     RedisModule,
     RoomModule,
     UsersModule,
+    MediaModule,
   ],
   controllers: [ChatController],
   providers: [ChatService, ChatGateway, WsJwtAuthGuard],

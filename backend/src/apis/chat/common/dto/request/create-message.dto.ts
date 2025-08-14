@@ -19,4 +19,9 @@ export class CreateMessageDto {
   @IsOptional()
   @IsString({ message: 'Reply to ID must be a string' })
   reply_to_id?: string;
+
+  @ApiProperty({ required: false, description: 'ID of the uploaded file to attach to message' })
+  @IsOptional()
+  @IsString({ message: 'File ID must be a string' })
+  file_id?: string;
 }

@@ -1,3 +1,4 @@
+import { MediaService } from "src/apis/media/v1/media.service";
 import { ContactResponse } from "src/apis/user-relationship/common/dto/contact.response";
 import { User } from "src/apis/user/schemas";
 import { Message, MessageRead } from "../../schemas";
@@ -14,8 +15,9 @@ export class MessageResponse {
   message_reads: MessageReadResponse[];
   type: string;
   reply_to?: ReplyMessageResponse;
+  files?: any[];
 
-  constructor(message: Message, messageReads: MessageRead[], sender: User, replyToMessage?: Message, replyToSender?: User) {
+  constructor(message: Message, messageReads: MessageRead[], sender: User, replyToMessage?: Message, replyToSender?: User, mediaService?: MediaService, files?: any[]) {
     this.id = typeof message._id === 'string' ? message._id : message._id?.toString?.() ?? '';
     this.room_id = typeof message.room_id === 'string' ? message.room_id : message.room_id?.toString?.() ?? '';
     this.sender = new ContactResponse(sender);
@@ -29,5 +31,8 @@ export class MessageResponse {
     if (replyToMessage && replyToSender) {
       this.reply_to = new ReplyMessageResponse(replyToMessage, replyToSender);
     }
+
+    // Set files if provided, otherwise initialize as empty array
+    this.files = files || [];
   }
 }
