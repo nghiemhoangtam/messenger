@@ -4,18 +4,19 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useDispatch, useSelector } from "react-redux";
 import Loading from "../../../../components/atoms/Loading/Loading";
 import { startCallRequest } from "../../../../features/calls/callsSlice";
+import { mediaService } from "../../../../services/mediaService";
 import { roomService } from "../../../../services/roomService";
 import { socketService } from "../../../../services/socketService";
 import { RootState } from "../../../../store";
 import { createPaginationRequest } from "../../../../types/pagination-request";
 import { User } from "../../../auth";
 import {
-  deleteMessageRequest,
-  editMessageRequest,
-  fetchMessagesRequest,
-  markMessagesAsReadRequest,
-  removeConversation,
-  sendMessageRequest
+    deleteMessageRequest,
+    editMessageRequest,
+    fetchMessagesRequest,
+    markMessagesAsReadRequest,
+    removeConversation,
+    sendMessageRequest
 } from "../../chatSlice";
 import { Message, ReplyMessage } from "../../types";
 import { CallControls } from "../CallControls";
@@ -202,20 +203,32 @@ export const ChatWindow: React.FC = () => {
 
     setSending(true);
     try {
+      // Upload file first
+      const uploadResult = await mediaService.uploadFile(file);
+      
+      // Send message with file_id
       await dispatch(
         sendMessageRequest({
           conversationId: currentConversation.room.id,
-          content: URL.createObjectURL(file),
-          type, // Truyền type từ file
+          content: file.name, // Use file name as content
+          type,
+          file_id: uploadResult.id,
           reply_to_id: replyToId,
         })
       );
+      
+
+      
       // Clear reply message after sending
       setReplyToMessage(null);
+    } catch (error) {
+      message.error("Gửi file thất bại");
     } finally {
       setSending(false);
     }
   }, [currentConversation, dispatch]);
+
+
 
   const handleEditMessage = useCallback(async (messageId: string, newContent: string) => {
     if (!currentConversation) return;

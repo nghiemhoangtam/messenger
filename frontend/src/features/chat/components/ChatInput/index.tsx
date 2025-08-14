@@ -1,13 +1,7 @@
-import {
-    AudioOutlined,
-    CloseOutlined,
-    FileImageOutlined,
-    FileOutlined,
-    SendOutlined,
-    UndoOutlined,
-} from "@ant-design/icons";
+import { AudioOutlined, CloseOutlined, FileOutlined, PaperClipOutlined, SendOutlined, UndoOutlined } from "@ant-design/icons";
 import { Button, Input, Upload, notification } from "antd";
 import React, { useEffect, useRef, useState } from "react";
+import { mediaService } from "../../../../services/mediaService";
 import { socketService } from "../../../../services/socketService";
 import { ReplyMessage } from "../../types";
 import styles from "./ChatInput.module.css";
@@ -73,27 +67,36 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         clearTimeout(typingTimeoutRef.current);
       }
     };
-  }, [message, room_id]); // Remove isTyping from dependencies to avoid infinite loop
+  }, [message, room_id, isTyping]);
 
   const handleSendMessage = () => {
     if (!message.trim()) return;
-    
+
     // Stop typing when sending message
     if (room_id) {
       setIsTyping(false);
       socketService.stopTyping(room_id);
     }
-    
+
     onSendMessage(message, replyToMessage?.id);
     setMessage("");
   };
 
-  const handleFileUpload = async (
-    file: File,
-    type: "image" | "file" | "audio"
-  ) => {
-    setPreview({ file, type });
-    return false;
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  const handleFileSelect = (file: File) => {
+    const fileType = file.type.startsWith("image/")
+      ? "image"
+      : file.type.startsWith("audio/")
+      ? "audio"
+      : "file";
+
+    setPreview({ file, type: fileType });
   };
 
   const handleRemovePreview = () => {
@@ -103,12 +106,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const handleSendFile = async () => {
     if (!preview) return;
     try {
+      // Upload file first
+      const uploadResult = await mediaService.uploadFile(preview.file);
+      
+      // Send message with file
       await onSendFile(preview.file, preview.type, replyToMessage?.id);
       setPreview(null);
-      notification.success({
-        message: "Thành công",
-        description: "Gửi file thành công",
-      });
+      
+
     } catch (error) {
       notification.error({
         message: "Lỗi",
@@ -116,6 +121,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       });
     }
   };
+
+
 
   const renderReplyPreview = () => {
     if (!replyToMessage) return null;
@@ -205,14 +212,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           <Upload
             accept="image/*"
             showUploadList={false}
-            beforeUpload={(file) => handleFileUpload(file, "image")}
+            beforeUpload={(file) => handleFileSelect(file)}
           >
-            <Button icon={<FileImageOutlined />} type="text" />
+            <Button icon={<PaperClipOutlined />} type="text" />
           </Upload>
 
           <Upload
             showUploadList={false}
-            beforeUpload={(file) => handleFileUpload(file, "file")}
+            beforeUpload={(file) => handleFileSelect(file)}
           >
             <Button icon={<FileOutlined />} type="text" />
           </Upload>
@@ -220,7 +227,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           <Button
             icon={<AudioOutlined />}
             type="text"
-            onClick={() => handleFileUpload(new File([], "audio"), "audio")}
+            onClick={() => handleFileSelect(new File([], "audio"))}
           />
         </div>
 

@@ -41,6 +41,7 @@ export interface Message {
   edited_by?: string;
   encryption_key?: string;
   type?: string;
+  files?: any[];
 }
 
 export interface Conversation {

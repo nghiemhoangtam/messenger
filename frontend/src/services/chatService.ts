@@ -19,12 +19,16 @@ class ChatService {
     room_id: string,
     content: string,
     type: "text" | "image" | "file" | "audio" = "text",
+    file_id?: string,
+    reply_to_id?: string,
   ): Promise<Message> {
     return apiRequest<Message>(() =>
       accessTokenAxiosClient.post(`${API_PREFIX}`, {
         room_id,
         content,
         type,
+        file_id,
+        reply_to_id,
       })
     );
   }

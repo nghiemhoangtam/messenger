@@ -1,7 +1,8 @@
-import { CheckOutlined, CloseOutlined, DeleteOutlined, EditOutlined, UndoOutlined } from "@ant-design/icons";
-import { Button, Input, Popconfirm } from "antd";
+import { CheckOutlined, CloseOutlined, DeleteOutlined, DownloadOutlined, EditOutlined, UndoOutlined } from "@ant-design/icons";
+import { Button, Input, Popconfirm, message as messageApi } from "antd";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Avatar } from "../../../../components/atoms/Avatar";
+import { mediaService } from "../../../../services/mediaService";
 import { Message } from "../../types";
 import styles from "./EditableMessageBubble.module.css";
 
@@ -95,6 +96,32 @@ export const EditableMessageBubble: React.FC<EditableMessageBubbleProps> = ({
     onReplyClick?.(message);
   }, [onReplyClick, message]);
 
+
+
+  const handleDownloadIconClick = useCallback(async (file: any, event: React.MouseEvent) => {
+    // Prevent default to avoid triggering other click handlers
+    event.preventDefault();
+    event.stopPropagation();
+    
+    try {
+      // Sử dụng mediaService để download file
+      if (file.id) {
+        await mediaService.downloadFile(file.id, file.fileName);
+      } else {
+        // Fallback cho trường hợp không có file.id (file cũ)
+        const link = document.createElement('a');
+        link.href = file.fileUrl;
+        link.download = file.fileName;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } catch (error) {
+      messageApi.error("Tải xuống file thất bại");
+    }
+  }, []);
+
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -117,30 +144,146 @@ export const EditableMessageBubble: React.FC<EditableMessageBubbleProps> = ({
     }
   }, [editContent, message.content, message.id, onEditMessage, onCancelEdit]);
 
+  // File extension categories for better organization
+  const FILE_EXTENSIONS = {
+    documents: ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.odt', '.ods', '.odp', '.rtf', '.txt', '.csv'],
+    images: ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg', '.webp', '.tiff', '.ico'],
+    audio: ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.wma', '.m4a', '.opus'],
+    video: ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm', '.mkv', '.m4v', '.3gp'],
+    archives: ['.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.xz'],
+    code: ['.js', '.ts', '.jsx', '.tsx', '.html', '.css', '.scss', '.sass', '.json', '.xml', '.py', '.java', '.cpp', '.c', '.php', '.rb', '.go', '.rs', '.swift', '.kt'],
+    executables: ['.exe', '.msi', '.dmg', '.pkg', '.deb', '.rpm', '.apk'],
+    other: ['.iso', '.dmg', '.bin', '.dat', '.log', '.bak', '.tmp']
+  };
+
+  // Method to check if content contains any file extension
+  const hasFileExtension = useCallback((content: string): boolean => {
+    const lowerContent = content.toLowerCase();
+    const allExtensions = Object.values(FILE_EXTENSIONS).flat();
+    return allExtensions.some(ext => lowerContent.includes(ext));
+  }, []);
+
+  // Method to get file extension from content
+  const getFileExtension = useCallback((content: string): string | null => {
+    const lowerContent = content.toLowerCase();
+    const allExtensions = Object.values(FILE_EXTENSIONS).flat();
+    const foundExtension = allExtensions.find(ext => lowerContent.includes(ext));
+    return foundExtension || null;
+  }, []);
+
+  // Method to get file category based on extension
+  const getFileCategory = useCallback((content: string): string => {
+    const extension = getFileExtension(content);
+    if (!extension) return 'unknown';
+    
+    for (const [category, extensions] of Object.entries(FILE_EXTENSIONS)) {
+      if (extensions.includes(extension)) {
+        return category;
+      }
+    }
+    return 'unknown';
+  }, [getFileExtension]);
+
   const getMessageType = useCallback(() => {
+    // Kiểm tra type trước
+    if (message.type) {
+      return message.type;
+    }
+    
+    // Fallback: kiểm tra content
     if (message.content.startsWith("data:image")) return "image";
     if (message.content.startsWith("data:audio")) return "audio";
     if (message.content.startsWith("data:application")) return "file";
-    return message.type || "text";
-  }, [message.content, message.type]);
+    
+    // Kiểm tra file extension trong content
+    if (hasFileExtension(message.content)) {
+      return "file";
+    }
+    
+    return "text";
+  }, [message.content, message.type, hasFileExtension]);
 
   const renderContent = useMemo(() => {
     const messageType = getMessageType();
+    
     switch (messageType) {
       case "image":
+        if (message.files && message.files.length > 0) {
+          return (
+            <div className={styles.imageContainer}>
+              {message.files.map((file: any, index: number) => (
+                <img key={index} src={file.fileUrl} alt={file.fileName} className={styles.image} />
+              ))}
+            </div>
+          );
+        }
         return <img src={message.content} alt="message" className={styles.image} />;
       case "file":
+        if (message.files && message.files.length > 0) {
+          return (
+            <div className={styles.fileContainer}>
+              {message.files.map((file: any, index: number) => (
+                <div 
+                  key={index} 
+                  className={styles.file}
+                  title="File information"
+                >
+                  <div className={styles.fileInfo}>
+                    <div className={styles.fileHeader}>
+                      <span className={styles.fileName}>{file.fileName}</span>
+                      <span className={styles.clickableBadge}>FILE</span>
+                    </div>
+                    <span className={styles.fileSize}>{(file.fileSize / 1024 / 1024).toFixed(2)} MB</span>
+                    <span className={styles.fileHint}>Click icon để tải xuống</span>
+                  </div>
+                  <div 
+                    className={styles.downloadIconContainer}
+                    onClick={(e) => handleDownloadIconClick(file, e)}
+                    title="Click để tải xuống file"
+                  >
+                    <DownloadOutlined className={styles.downloadIcon} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+        }
+        // Fallback: hiển thị file ngay cả khi không có files array
         return (
           <div className={styles.file}>
-            <span>{message.content}</span>
+            <div className={styles.fileInfo}>
+              <div className={styles.fileHeader}>
+                <span className={styles.fileName}>{message.content}</span>
+                <span className={styles.clickableBadge}>FILE</span>
+              </div>
+              <span className={styles.fileHint}>File message</span>
+            </div>
+            <div 
+              className={styles.downloadIconContainer}
+              onClick={(e) => {
+                messageApi.info('File download not available for this message');
+              }}
+              title="File download not available"
+            >
+              <DownloadOutlined className={styles.downloadIcon} />
+            </div>
           </div>
         );
       case "audio":
+        if (message.files && message.files.length > 0) {
+          return (
+            <div className={styles.audioContainer}>
+              {message.files.map((file: any, index: number) => (
+                <audio key={index} src={file.fileUrl} controls className={styles.audio} />
+              ))}
+            </div>
+          );
+        }
         return <audio src={message.content} controls className={styles.audio} />;
       default:
         return message.content;
     }
-  }, [message.content, getMessageType]);
+  }, [message.content, message.files, getMessageType, handleDownloadIconClick]);
 
   const renderStatus = useMemo(() => {
     switch (message.status) {
@@ -212,7 +355,7 @@ export const EditableMessageBubble: React.FC<EditableMessageBubbleProps> = ({
   }, []);
 
   return (
-    <div className={`${styles.container} ${isOwn ? styles.own : ""}`} data-message-id={message.id}>
+    <div className={`${styles.container} ${isOwn ? styles.own : ""}`} data-message-id={message.id}>      
       {!isOwn && (
         <Avatar src={message.sender.avatar} size={32}>
           {message.sender.display_name?.[0].toUpperCase()}

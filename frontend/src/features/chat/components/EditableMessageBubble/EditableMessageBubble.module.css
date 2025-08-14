@@ -51,8 +51,224 @@
   gap: 8px;
   padding: 12px;
   background-color: #f8f9fa;
-  border: 1px solid #e9ecef;
-  border-radius: 8px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.bubble.file::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(24, 144, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.bubble.file:hover {
+  background-color: rgba(24, 144, 255, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.2);
+  border-color: rgba(24, 144, 255, 0.3);
+}
+
+.bubble.file:hover::before {
+  left: 100%;
+}
+
+.bubble.file:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.15);
+}
+
+.fileContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fileInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.fileHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.fileName {
+  font-weight: 600;
+  font-size: 14px;
+  color: white;
+  transition: color 0.3s ease;
+  flex: 1;
+}
+
+.bubble.file:hover .fileName {
+  color: #fa8c16;
+}
+
+.fileIcon {
+  font-size: 24px;
+  color: #fa8c16;
+  transition: all 0.3s ease;
+}
+
+.file:hover .fileIcon {
+  transform: scale(1.1);
+  color: #ffa940;
+}
+
+.clickableBadge {
+  background: linear-gradient(45deg, #fa8c16, #ffa940);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  animation: pulse 2s infinite;
+  box-shadow: 0 2px 4px rgba(250, 140, 22, 0.3);
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.bubble.file:hover .clickableBadge {
+  animation: none;
+  transform: scale(1.1);
+  box-shadow: 0 3px 6px rgba(250, 140, 22, 0.4);
+}
+
+.fileSize {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  transition: color 0.3s ease;
+}
+
+.bubble.file:hover .fileSize {
+  color: rgba(250, 140, 22, 0.9);
+}
+
+.fileHint {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  font-style: italic;
+  opacity: 0.8;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.bubble.file:hover .fileHint {
+  opacity: 1;
+  color: rgba(255, 255, 255, 0.9);
+  transform: translateX(4px);
+}
+
+.downloadIcon {
+  font-size: 18px;
+  color: #52c41a;
+  margin-left: 8px;
+  opacity: 0.8;
+  transition: all 0.3s ease;
+}
+
+.bubble.file:hover .downloadIcon {
+  opacity: 1;
+  transform: scale(1.2);
+  color: #73d13d;
+}
+
+.downloadIconContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-left: 8px;
+  border: 2px solid transparent;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.downloadIconContainer:hover {
+  background-color: white;
+  transform: scale(1.1);
+  border-color: rgba(82, 196, 26, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.downloadIconContainer:active {
+  transform: scale(0.95);
+}
+
+.downloadIconContainer .downloadIcon {
+  margin-left: 0;
+  opacity: 1;
+  font-size: 20px;
+  color: #52c41a;
+}
+
+.downloadIconContainer:hover .downloadIcon {
+  color: #73d13d;
+  transform: scale(1.1);
+}
+
+.downloadLink {
+  color: #52c41a;
+  text-decoration: none;
+  font-size: 12px;
+  padding: 6px 12px;
+  border: 1px solid #52c41a;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  background-color: transparent;
+  font-weight: 500;
+}
+
+.downloadLink:hover {
+  background-color: #52c41a;
+  color: white;
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(82, 196, 26, 0.3);
+}
+
+.imageContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.audioContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .bubble.audio audio {

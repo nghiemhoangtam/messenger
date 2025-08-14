@@ -182,7 +182,7 @@ const chatSlice = createSlice({
     },
     sendMessageRequest: (
       state,
-      action: PayloadAction<{ conversationId: string; content: string; type?: string; reply_to_id?: string }>,
+      action: PayloadAction<{ conversationId: string; content: string; type?: string; reply_to_id?: string; file_id?: string }>,
     ) => {
       state.roomPage.loading = true;
       state.error = null;

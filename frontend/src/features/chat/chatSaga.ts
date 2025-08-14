@@ -60,7 +60,7 @@ function* handleFetchConversations(action: PayloadAction<PaginationRequest>) {
 }
 
 function* handleSendMessage(
-  action: PayloadAction<{ conversationId: string; content: string; type?: string; reply_to_id?: string }>,
+  action: PayloadAction<{ conversationId: string; content: string; type?: string; reply_to_id?: string; file_id?: string }>,
 ) {
   try {
     // Sử dụng WebSocket để gửi tin nhắn real-time thay vì REST API
@@ -68,7 +68,8 @@ function* handleSendMessage(
       room_id: action.payload.conversationId,
       content: action.payload.content,
       type: action.payload.type || "text",
-      reply_to_id: action.payload.reply_to_id
+      reply_to_id: action.payload.reply_to_id,
+      file_id: action.payload.file_id
     };
     
     // Gửi tin nhắn qua WebSocket
