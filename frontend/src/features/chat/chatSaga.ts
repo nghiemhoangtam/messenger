@@ -33,6 +33,7 @@ import {
     markMessagesAsReadFailure,
     markMessagesAsReadRequest,
     markMessagesAsReadSuccess,
+    receiveMessage,
     removeAvailableFriend,
     searchGroupUserFailure,
     searchGroupUserRequest,
@@ -63,7 +64,34 @@ function* handleSendMessage(
   action: PayloadAction<{ conversationId: string; content: string; type?: string; reply_to_id?: string; file_id?: string }>,
 ) {
   try {
-    // Sử dụng WebSocket để gửi tin nhắn real-time thay vì REST API
+    // Tạo temp message ngay lập tức để hiển thị UI
+    const tempMessage = {
+      id: `temp_${Date.now()}_${Math.random()}`,
+      room_id: action.payload.conversationId,
+      content: action.payload.content,
+      type: action.payload.type || "text",
+      sender: {
+        id: "current_user", // Sẽ được thay thế bởi server
+        username: "You",
+        avatar: null
+      },
+      created_at: new Date(),
+      status: "sending",
+      message_reads: [],
+      files: action.payload.file_id ? [{
+        id: action.payload.file_id,
+        fileUrl: action.payload.content, // Sử dụng content làm URL tạm thời
+        fileName: action.payload.content.split('/').pop() || 'file',
+        fileSize: 0,
+        fileType: action.payload.type || "file",
+        mimeType: action.payload.type === "image" ? "image/*" : "application/*"
+      }] : []
+    };
+
+    // Dispatch temp message để hiển thị ngay lập tức
+    yield put(receiveMessage(tempMessage));
+
+    // Sử dụng WebSocket để gửi tin nhắn real-time
     const messageData = {
       room_id: action.payload.conversationId,
       content: action.payload.content,
@@ -75,7 +103,7 @@ function* handleSendMessage(
     // Gửi tin nhắn qua WebSocket
     socketService.sendMessage(messageData);
     
-    // Không tạo temp message nữa, chỉ đánh dấu là đã gửi thành công
+    // Đánh dấu là đã gửi thành công
     yield put(sendMessageSuccess());
   } catch (error) {
     console.error('Error sending message:', error);

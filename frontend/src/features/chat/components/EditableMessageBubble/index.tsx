@@ -1,5 +1,5 @@
-import { CheckOutlined, CloseOutlined, DeleteOutlined, DownloadOutlined, EditOutlined, UndoOutlined } from "@ant-design/icons";
-import { Button, Input, Popconfirm, message as messageApi } from "antd";
+import { CheckOutlined, CloseOutlined, DeleteOutlined, DownloadOutlined, EditOutlined, EyeOutlined, UndoOutlined } from "@ant-design/icons";
+import { Button, Input, Modal, Popconfirm, message as messageApi } from "antd";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Avatar } from "../../../../components/atoms/Avatar";
 import { mediaService } from "../../../../services/mediaService";
@@ -32,6 +32,9 @@ export const EditableMessageBubble: React.FC<EditableMessageBubbleProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const textAreaRef = useRef<any>(null);
+  const [imageModalVisible, setImageModalVisible] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string>("");
+  const [messageApiInstance, contextHolder] = messageApi.useMessage();
 
   useEffect(() => {
     if (isEditing && textAreaRef.current) {
@@ -102,24 +105,21 @@ export const EditableMessageBubble: React.FC<EditableMessageBubbleProps> = ({
     // Prevent default to avoid triggering other click handlers
     event.preventDefault();
     event.stopPropagation();
-    
     try {
-      // Sử dụng mediaService để download file
-      if (file.id) {
-        await mediaService.downloadFile(file.id, file.fileName);
-      } else {
-        // Fallback cho trường hợp không có file.id (file cũ)
-        const link = document.createElement('a');
-        link.href = file.fileUrl;
-        link.download = file.fileName;
-        link.target = '_blank';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
+      await mediaService.downloadFile(file.id, file.fileName);
     } catch (error) {
       messageApi.error("Tải xuống file thất bại");
     }
+  }, []);
+
+  const handleImageClick = useCallback((imageUrl: string) => {
+    setSelectedImage(imageUrl);
+    setImageModalVisible(true);
+  }, []);
+
+  const handleImageModalClose = useCallback(() => {
+    setImageModalVisible(false);
+    setSelectedImage("");
   }, []);
 
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
@@ -205,6 +205,7 @@ export const EditableMessageBubble: React.FC<EditableMessageBubbleProps> = ({
 
   const renderContent = useMemo(() => {
     const messageType = getMessageType();
+    const isTempMessage = message.id.startsWith("temp_");
     
     switch (messageType) {
       case "image":
@@ -212,12 +213,70 @@ export const EditableMessageBubble: React.FC<EditableMessageBubbleProps> = ({
           return (
             <div className={styles.imageContainer}>
               {message.files.map((file: any, index: number) => (
-                <img key={index} src={file.fileUrl} alt={file.fileName} className={styles.image} />
+                <div key={index} className={styles.imageWrapper}>
+                  <img 
+                    src={file.fileUrl} 
+                    alt={file.fileName} 
+                    className={`${styles.image} ${isTempMessage ? styles.sending : ''}`}
+                    onClick={() => handleImageClick(file.fileUrl)}
+                    title="Click để xem ảnh toàn màn hình"
+                  />
+                  {isTempMessage && (
+                    <div className={styles.sendingOverlay}>
+                      <div className={styles.sendingSpinner}></div>
+                      <span>Sending...</span>
+                    </div>
+                  )}
+                  <div className={styles.imageOverlay}>
+                    <Button
+                      type="text"
+                      icon={<EyeOutlined />}
+                      size="small"
+                      className={styles.viewImageButton}
+                      onClick={() => handleImageClick(file.fileUrl)}
+                      title="Xem ảnh toàn màn hình"
+                    />
+                    <Button
+                      type="text"
+                      icon={<DownloadOutlined />}
+                      size="small"
+                      className={styles.downloadImageButton}
+                      onClick={(e) => handleDownloadIconClick(file, e)}
+                      title="Tải xuống ảnh"
+                    />
+                  </div>
+                </div>
               ))}
             </div>
           );
         }
-        return <img src={message.content} alt="message" className={styles.image} />;
+        return (
+          <div className={styles.imageWrapper}>
+            <img 
+              src={message.content} 
+              alt="message" 
+              className={`${styles.image} ${isTempMessage ? styles.sending : ''}`}
+              onClick={() => handleImageClick(message.content)}
+              title="Click để xem ảnh toàn màn hình"
+            />
+            {isTempMessage && (
+              <div className={styles.sendingOverlay}>
+                <div className={styles.sendingSpinner}></div>
+                <span>Sending...</span>
+              </div>
+            )}
+            <div className={styles.imageOverlay}>
+              <Button
+                type="text"
+                icon={<EyeOutlined />}
+                size="small"
+                className={styles.viewImageButton}
+                onClick={() => handleImageClick(message.content)}
+                title="Xem ảnh toàn màn hình"
+              />
+            </div>
+          </div>
+        );
       case "file":
         if (message.files && message.files.length > 0) {
           return (
@@ -281,9 +340,9 @@ export const EditableMessageBubble: React.FC<EditableMessageBubbleProps> = ({
         }
         return <audio src={message.content} controls className={styles.audio} />;
       default:
-        return message.content;
+        return <div className={styles.text}>{message.content}</div>;
     }
-  }, [message.content, message.files, getMessageType, handleDownloadIconClick]);
+  }, [message, getMessageType, handleDownloadIconClick, handleImageClick]);
 
   const renderStatus = useMemo(() => {
     switch (message.status) {
@@ -355,106 +414,127 @@ export const EditableMessageBubble: React.FC<EditableMessageBubbleProps> = ({
   }, []);
 
   return (
-    <div className={`${styles.container} ${isOwn ? styles.own : ""}`} data-message-id={message.id}>      
-      {!isOwn && (
-        <Avatar src={message.sender.avatar} size={32}>
-          {message.sender.display_name?.[0].toUpperCase()}
-        </Avatar>
-      )}
-      <div className={styles.bubbleWrapper}>
-        {!isOwn && message.sender.display_name && (
-          <div className={styles.senderName}>{message.sender.display_name}</div>
+    <>
+      {contextHolder}
+      <div className={`${styles.container} ${isOwn ? styles.own : ""}`} data-message-id={message.id}>      
+        {!isOwn && (
+          <Avatar src={message.sender.avatar} size={32}>
+            {message.sender.display_name?.[0].toUpperCase()}
+          </Avatar>
         )}
-        <div className={`${styles.bubble} ${styles[getMessageType()]}`}>
-          {isEditing ? (
-            <div className={styles.editContainer}>
-              <TextArea
-                ref={textAreaRef}
-                value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                onKeyDown={handleKeyPress}
-                autoSize={{ minRows: 1, maxRows: 4 }}
-                className={styles.editTextArea}
-                disabled={isLoading}
-              />
-              <div className={styles.editActions}>
-                <Button
-                  type="text"
-                  icon={<CheckOutlined />}
-                  onClick={handleSaveEdit}
-                  loading={isLoading}
-                  size="small"
-                  className={styles.saveButton}
-                />
-                <Button
-                  type="text"
-                  icon={<CloseOutlined />}
-                  onClick={handleCancelEdit}
-                  disabled={isLoading}
-                  size="small"
-                  className={styles.cancelButton}
-                />
-              </div>
-            </div>
-          ) : (
-            <>
-              {renderReplyPreview}
-              {renderContent}
-              {message.edited_at && (
-                <div className={styles.editedIndicator}>
-                  (đã chỉnh sửa)
-                </div>
-              )}
-            </>
+        <div className={styles.bubbleWrapper}>
+          {!isOwn && message.sender.display_name && (
+            <div className={styles.senderName}>{message.sender.display_name}</div>
           )}
-          <div className={styles.metadata}>
-            <span className={styles.timestamp}>
-              {formatTimestamp(message.created_at)}
-            </span>
-            {isOwn && <span className={styles.status}>{renderStatus}</span>}
+          <div className={`${styles.bubble} ${styles[getMessageType()]}`}>
+            {isEditing ? (
+              <div className={styles.editContainer}>
+                <TextArea
+                  ref={textAreaRef}
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  onKeyDown={handleKeyPress}
+                  autoSize={{ minRows: 1, maxRows: 4 }}
+                  className={styles.editTextArea}
+                  disabled={isLoading}
+                />
+                <div className={styles.editActions}>
+                  <Button
+                    type="text"
+                    icon={<CheckOutlined />}
+                    onClick={handleSaveEdit}
+                    loading={isLoading}
+                    size="small"
+                    className={styles.saveButton}
+                  />
+                  <Button
+                    type="text"
+                    icon={<CloseOutlined />}
+                    onClick={handleCancelEdit}
+                    disabled={isLoading}
+                    size="small"
+                    className={styles.cancelButton}
+                  />
+                </div>
+              </div>
+            ) : (
+              <>
+                {renderReplyPreview}
+                {renderContent}
+                {message.edited_at && (
+                  <div className={styles.editedIndicator}>
+                    (đã chỉnh sửa)
+                  </div>
+                )}
+              </>
+            )}
+            <div className={styles.metadata}>
+              <span className={styles.timestamp}>
+                {formatTimestamp(message.created_at)}
+              </span>
+              {isOwn && <span className={styles.status}>{renderStatus}</span>}
+            </div>
           </div>
-        </div>
-        {!isEditing && (
-          <div className={styles.actionButtons}>
-            <Button
-              type="text"
-              icon={<UndoOutlined />}
-              onClick={handleReplyClick}
-              size="small"
-              className={styles.replyButton}
-              title="Trả lời"
-            />
-            {isOwn && getMessageType() === "text" && (
+          {!isEditing && (
+            <div className={styles.actionButtons}>
               <Button
                 type="text"
-                icon={<EditOutlined />}
-                onClick={handleEditClick}
+                icon={<UndoOutlined />}
+                onClick={handleReplyClick}
                 size="small"
-                className={styles.editButton}
-                title="Chỉnh sửa"
+                className={styles.replyButton}
+                title="Trả lời"
               />
-            )}
-            {isOwn && onDeleteMessage && (
-              <Popconfirm
-                title="Bạn có chắc chắn muốn xóa tin nhắn này không?"
-                onConfirm={handleDeleteClick}
-                okButtonProps={{ loading: isDeleting }}
-                cancelButtonProps={{ loading: isDeleting }}
-              >
+              {isOwn && getMessageType() === "text" && (
                 <Button
                   type="text"
-                  icon={<DeleteOutlined />}
-                  onClick={handleDeleteClick}
+                  icon={<EditOutlined />}
+                  onClick={handleEditClick}
                   size="small"
-                  className={styles.deleteButton}
-                  loading={isDeleting}
-                  title="Xóa"
+                  className={styles.editButton}
+                  title="Chỉnh sửa"
                 />
-              </Popconfirm>
-            )}
-          </div>
-        )}
+              )}
+              {isOwn && onDeleteMessage && (
+                <Popconfirm
+                  title="Bạn có chắc chắn muốn xóa tin nhắn này không?"
+                  onConfirm={handleDeleteClick}
+                  okButtonProps={{ loading: isDeleting }}
+                  cancelButtonProps={{ loading: isDeleting }}
+                >
+                  <Button
+                    type="text"
+                    icon={<DeleteOutlined />}
+                    onClick={handleDeleteClick}
+                    size="small"
+                    className={styles.deleteButton}
+                    loading={isDeleting}
+                    title="Xóa"
+                  />
+                </Popconfirm>
+              )}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+
+      <Modal
+        title="Xem ảnh"
+        open={imageModalVisible}
+        onCancel={handleImageModalClose}
+        footer={null}
+        width="80%"
+        centered
+        className={styles.imageModal}
+      >
+        <div className={styles.modalImageContainer}>
+          <img 
+            src={selectedImage} 
+            alt="Full size" 
+            className={styles.modalImage}
+          />
+        </div>
+      </Modal>
+    </>
   );
 };

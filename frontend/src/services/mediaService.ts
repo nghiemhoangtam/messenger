@@ -35,6 +35,20 @@ class MediaService {
     );
   }
 
+  async downloadFile(fileId: string, fileName: string): Promise<void> {
+    try {
+      const response = await accessTokenAxiosClient.get(`/media/download/${fileId}`, {
+        responseType: 'blob',
+      });
+      
+      const blob = new Blob([response.data]);
+      saveAs(blob, fileName);
+    } catch (error) {
+      console.error('Download failed:', error);
+      throw error;
+    }
+  }
+
   async getFileInfo(fileId: string): Promise<{
     id: string;
     fileUrl: string;
@@ -42,8 +56,6 @@ class MediaService {
     fileSize: number;
     fileType: string;
     mimeType: string;
-    uploadedAt: string;
-    uploaderId: string;
   }> {
     return apiRequest<{
       id: string;
@@ -52,31 +64,9 @@ class MediaService {
       fileSize: number;
       fileType: string;
       mimeType: string;
-      uploadedAt: string;
-      uploaderId: string;
     }>(() =>
       accessTokenAxiosClient.get(`/media/files/${fileId}`)
     );
-  }
-
-  async downloadFile(fileId: string, fileName: string): Promise<void> {
-    try {
-      const response = await accessTokenAxiosClient.get(`/media/download/${fileId}`, {
-        responseType: 'blob',
-      });
-      
-      // Sử dụng file-saver để download file
-      const blob = response.data;
-      
-      // Tạo blob với MIME type nếu có
-      const contentType = response.headers['content-type'];
-      const finalBlob = contentType ? new Blob([blob], { type: contentType }) : blob;
-      
-      saveAs(finalBlob, fileName);
-    } catch (error) {
-      console.error('Download error:', error);
-      throw error;
-    }
   }
 }
 

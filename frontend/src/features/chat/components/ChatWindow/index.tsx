@@ -206,11 +206,11 @@ export const ChatWindow: React.FC = () => {
       // Upload file first
       const uploadResult = await mediaService.uploadFile(file);
       
-      // Send message with file_id
+      // Send message with file_id and file URL for immediate display
       await dispatch(
         sendMessageRequest({
           conversationId: currentConversation.room.id,
-          content: file.name, // Use file name as content
+          content: uploadResult.fileUrl, // Use file URL for immediate display
           type,
           file_id: uploadResult.id,
           reply_to_id: replyToId,

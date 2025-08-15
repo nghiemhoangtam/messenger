@@ -223,11 +223,27 @@ const chatSlice = createSlice({
         msg => msg.id === action.payload.id
       );
       
-
+      // Kiểm tra xem có phải là temp message không (bắt đầu bằng "temp_")
+      const tempMessageIndex = conversation.room.messagePage.results.findIndex(
+        msg => msg.id.startsWith("temp_") && 
+              (msg.content === action.payload.content || 
+               (msg.files && msg.files.length > 0 && action.payload.files && action.payload.files.length > 0 &&
+                msg.files[0].id === action.payload.files[0].id) ||
+               (action.payload.file_id && msg.files && msg.files.length > 0 && 
+                msg.files[0].id === action.payload.file_id))
+      );
       
       if (!messageExists) {
-        // Thêm message mới vào danh sách
-        const updatedResults = [...conversation.room.messagePage.results, action.payload];
+        let updatedResults;
+        
+        if (tempMessageIndex !== -1) {
+          // Thay thế temp message bằng message thật
+          updatedResults = [...conversation.room.messagePage.results];
+          updatedResults[tempMessageIndex] = action.payload;
+        } else {
+          // Thêm message mới vào danh sách
+          updatedResults = [...conversation.room.messagePage.results, action.payload];
+        }
 
         // Cập nhật state với immutability đúng cách
         const updatedConversations = state.roomPage.data.results.map((conv, index) => {
