@@ -6,7 +6,10 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "nest build && cp -r i18n public dist/",
+    "build": "nest build && cp -r i18n public uploads dist/",
+    "sync-uploads": "node scripts/sync-uploads.js",
+    "watch-uploads": "node scripts/watch-uploads.js",
+    "dev-with-uploads": "node scripts/dev-with-uploads.js",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",

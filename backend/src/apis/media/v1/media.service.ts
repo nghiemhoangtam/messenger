@@ -1,4 +1,5 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Response } from 'express';
 import { createReadStream, statSync } from 'fs';
@@ -12,6 +13,7 @@ import { File } from '../schema/file.schema';
 export class MediaService extends BaseService {
   constructor(
     @InjectModel(File.name) private readonly fileModel: Model<File>,
+    private readonly configService: ConfigService,
   ) {
     super();
   }
@@ -20,9 +22,13 @@ export class MediaService extends BaseService {
     return await this.handle(async () => {
       const fileType = this.getFileType(file.mimetype);
       
+      // Get base URL from config or use default
+      const baseUrl = this.configService.get<string>('BASE_URL') || 'http://localhost:8080';
+      const fullFileUrl = `${baseUrl}/uploads/${file.filename}`;
+      
       const newFile = new this.fileModel({
         uploader_id: new Types.ObjectId(userId),
-        file_url: `/uploads/${file.filename}`,
+        file_url: fullFileUrl, // Store full URL instead of relative path
         file_type: fileType,
         file_size: file.size,
         original_name: file.originalname,
@@ -36,7 +42,7 @@ export class MediaService extends BaseService {
 
       return {
         id: savedFile._id,
-        fileUrl: savedFile.file_url,
+        fileUrl: savedFile.file_url, // This will now be the full URL
         fileName: savedFile.original_name,
         fileSize: savedFile.file_size,
         fileType: savedFile.file_type,
@@ -52,7 +58,9 @@ export class MediaService extends BaseService {
         throw new NotFoundException('File not found');
       }
 
-      const fullFileUrl = baseUrl ? `${baseUrl}${file.file_url}` : file.file_url;
+      // Since we now store full URL, we don't need to construct it
+      // But we keep the baseUrl parameter for backward compatibility
+      const fullFileUrl = file.file_url; // This is already the full URL
 
       return {
         id: file._id,
@@ -74,7 +82,12 @@ export class MediaService extends BaseService {
         throw new NotFoundException('File not found');
       }
 
-      const filePath = join(process.cwd(), file.file_url);
+      // Extract filename from URL
+      const urlParts = file.file_url.split('/');
+      const filename = urlParts[urlParts.length - 1];
+      
+      // Use uploads directory
+      const filePath = join(process.cwd(), 'uploads', filename);
       
       try {
         // Kiểm tra file có tồn tại không
@@ -110,7 +123,15 @@ export class MediaService extends BaseService {
 
       // Xóa file từ filesystem
       try {
-        const filePath = join(process.cwd(), file.file_url);
+        // Extract relative path from full URL for file system access
+        let relativePath = file.file_url;
+        if (file.file_url.startsWith('http')) {
+          // Remove base URL to get relative path
+          const baseUrl = this.configService.get<string>('BASE_URL') || 'http://localhost:8080';
+          relativePath = file.file_url.replace(baseUrl, '');
+        }
+        
+        const filePath = join(process.cwd(), relativePath);
         await unlink(filePath);
       } catch (error) {
         // File có thể đã bị xóa hoặc không tồn tại
@@ -132,7 +153,7 @@ export class MediaService extends BaseService {
 
       return files.map(file => ({
         id: file._id,
-        fileUrl: file.file_url,
+        fileUrl: file.file_url, // This will now be the full URL since we store it that way
         fileName: file.original_name,
         fileSize: file.file_size,
         fileType: file.file_type,

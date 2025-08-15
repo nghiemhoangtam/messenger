@@ -28,7 +28,7 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.set('trust proxy', 'loopback');
   app.useStaticAssets(join(__dirname, '..', 'public'));
-  app.useStaticAssets(join(__dirname, '..', 'uploads'), { prefix: '/uploads/' });
+  app.useStaticAssets(join(__dirname, '..', '..', 'uploads'), { prefix: '/uploads/' });
   app.enableVersioning({ type: VersioningType.URI });
   
   app.connectMicroservice({

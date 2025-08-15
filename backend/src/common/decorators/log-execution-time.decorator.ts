@@ -14,7 +14,7 @@ export function LogExecutionTime<T = any>(): MethodDecorator {
       try {
         const result = (await originalMethod.apply(this, args)) as T;
         const duration = Date.now() - start;
-        console.log(`[${className}.${methodName}] executed in ${duration}ms`);
+        // console.log(`[${className}.${methodName}] executed in ${duration}ms`);
         return result;
       } catch (error) {
         const duration = Date.now() - start;

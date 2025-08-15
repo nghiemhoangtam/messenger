@@ -1,18 +1,17 @@
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
-import { Module, OnModuleInit } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ThrottlerModule } from '@nestjs/throttler';
 import Redis from 'ioredis';
 import * as Joi from 'joi';
-import * as mongoose from 'mongoose';
 import {
-  AcceptLanguageResolver,
-  CookieResolver,
-  HeaderResolver,
-  I18nModule,
-  QueryResolver,
+    AcceptLanguageResolver,
+    CookieResolver,
+    HeaderResolver,
+    I18nModule,
+    QueryResolver,
 } from 'nestjs-i18n';
 import * as path from 'path';
 import { AuthV1Module } from './apis/auth/v1/auth.v1.module';
@@ -107,14 +106,4 @@ import { RedisModule } from './common/redis/redis.module';
     },
   ],
 })
-export class AppModule implements OnModuleInit {
-  onModuleInit() {
-    mongoose.set('debug', function (collectionName, method, query, doc) {
-      console.log(
-        `[MongoDB] ${collectionName}.${method}`,
-        JSON.stringify(query),
-        doc || '',
-      );
-    });
-  }
-}
+export class AppModule {}

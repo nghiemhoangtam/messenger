@@ -1,34 +1,34 @@
 import {
-    BadRequestException,
-    Controller,
-    Delete,
-    FileTypeValidator,
-    ForbiddenException,
-    Get,
-    MaxFileSizeValidator,
-    Param,
-    ParseFilePipe,
-    Post,
-    Request,
-    Res,
-    UploadedFile,
-    UseGuards,
-    UseInterceptors,
+  BadRequestException,
+  Controller,
+  Delete,
+  FileTypeValidator,
+  ForbiddenException,
+  Get,
+  MaxFileSizeValidator,
+  Param,
+  ParseFilePipe,
+  Post,
+  Request,
+  Res,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
-    ApiBadRequestResponse,
-    ApiBearerAuth,
-    ApiBody,
-    ApiConsumes,
-    ApiForbiddenResponse,
-    ApiInternalServerErrorResponse,
-    ApiNotFoundResponse,
-    ApiOperation,
-    ApiParam,
-    ApiResponse,
-    ApiTags,
-    ApiUnauthorizedResponse
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
+  ApiNotFoundResponse,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+  ApiUnauthorizedResponse
 } from '@nestjs/swagger';
 import { Response } from 'express';
 import { diskStorage } from 'multer';
@@ -39,35 +39,6 @@ import { MessageCode } from '../../../common/messages/message.enum';
 import { MediaService } from './media.service';
 
 // Response DTOs for Swagger documentation
-class FileUploadResponseDto {
-  id: string;
-  fileUrl: string;
-  fileName: string;
-  fileSize: number;
-  fileType: string;
-  mimeType: string;
-}
-
-class FileInfoResponseDto {
-  id: string;
-  fileUrl: string;
-  fileName: string;
-  fileSize: number;
-  fileType: string;
-  mimeType: string;
-  uploadedAt: Date;
-  uploaderId: string;
-}
-
-class FileDeleteResponseDto {
-  message: string;
-}
-
-class ErrorResponseDto {
-  statusCode: number;
-  message: string;
-  error: string;
-}
 
 @ApiTags('Media Management')
 @Controller({ path: 'media', version: '1' })
@@ -227,6 +198,7 @@ export class MediaController {
   }
 
   @Get('files/:fileId')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: 'Get file information',
     description: 'Retrieve detailed information about a specific file including metadata, file URL, and upload details.',
