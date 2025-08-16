@@ -1,30 +1,30 @@
 import {
-    DeleteOutlined,
-    EditOutlined,
-    InfoCircleOutlined,
-    PlusOutlined,
-    SearchOutlined,
-    TeamOutlined,
-    UserAddOutlined,
-    UserDeleteOutlined,
-    UserOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  InfoCircleOutlined,
+  PlusOutlined,
+  SearchOutlined,
+  TeamOutlined,
+  UserAddOutlined,
+  UserDeleteOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
 import {
-    Avatar,
-    Button,
-    Form,
-    Input,
-    List,
-    message,
-    Modal,
-    Select,
-    Tabs,
-    Tag,
-    Tooltip,
+  Avatar,
+  Button,
+  Form,
+  Input,
+  List,
+  message,
+  Modal,
+  Select,
+  Tabs,
+  Tag,
+  Tooltip,
 } from "antd";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import groupService from "../../../../services/groupService";
+import { groupService } from "../../../../services/groupService";
 import { RootState } from "../../../../store";
 import { User } from "../../../auth";
 import { Group } from "../../types";
@@ -222,12 +222,12 @@ export const GroupsPage: React.FC = () => {
             // Implement user search logic here
             setSelectedMember({
               id: "1",
-              username: value,
+              display_name: value,
               email: "example@email.com",
               avatar: null,
               status: "offline",
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
             });
           }}
         />
@@ -237,7 +237,7 @@ export const GroupsPage: React.FC = () => {
             icon={<UserAddOutlined />}
             onClick={() => handleAddMember(group.id, selectedMember.id)}
           >
-            Thêm {selectedMember.username}
+            Thêm {selectedMember.display_name}
           </Button>
         )}
       </div>

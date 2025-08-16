@@ -634,6 +634,13 @@
   color: rgba(255, 255, 255, 0.8);
 }
 
+.replyEmoji {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 16px;
+}
+
 .replyButton {
   color: #1890ff;
 }
@@ -642,3 +649,30 @@
   color: #40a9ff;
   background-color: rgba(24, 144, 255, 0.1);
 }
+
+/* Emoji message styles */
+.bubble.emoji {
+  background-color: transparent;
+  padding: 4px 8px;
+}
+
+.container.own .bubble.emoji {
+  background-color: transparent;
+}
+
+.emojiContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  min-height: 40px;
+}
+
+.emojiText {
+  font-size: 48px;
+  line-height: 1;
+  user-select: none;
+  cursor: default;
+}
+
+

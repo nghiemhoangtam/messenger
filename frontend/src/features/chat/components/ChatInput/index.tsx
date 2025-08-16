@@ -3,12 +3,13 @@ import { Button, Input, Upload, message as messageApi } from "antd";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { socketService } from "../../../../services/socketService";
 import { ReplyMessage } from "../../types";
+import { EmojiPicker } from "../EmojiPicker";
 import styles from "./ChatInput.module.css";
 
 const { TextArea } = Input;
 
 interface ChatInputProps {
-  onSendMessage: (content: string, replyToId?: string) => void;
+  onSendMessage: (content: string, type?: string, replyToId?: string) => void;
   onSendFile: (file: File, type: "image" | "file" | "audio", replyToId?: string) => void;
   loading?: boolean;
   room_id?: string;
@@ -94,9 +95,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     if (preview) {
       await handleSendFile();
     } else {
-      await onSendMessage(message, replyToMessage?.id);
+      await onSendMessage(message, "text", replyToMessage?.id);
       setMessage("");
     }
+  };
+
+  const handleEmojiSelect = (emoji: string) => {
+    onSendMessage(emoji, "emoji", replyToMessage?.id);
   };
 
   const validateFile = (file: File): boolean => {
@@ -238,6 +243,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               <span>Audio</span>
             </div>
           );
+        case "emoji":
+          return (
+            <div className={styles.replyEmoji}>
+              <span>{replyToMessage.content}</span>
+            </div>
+          );
         default:
           return replyToMessage.content;
       }
@@ -339,6 +350,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
         <div className={styles.inputArea}>
           <div className={styles.actions}>
+            <EmojiPicker 
+              onEmojiSelect={handleEmojiSelect}
+              disabled={uploading}
+            />
+
             <Upload
               accept="image/*"
               showUploadList={false}

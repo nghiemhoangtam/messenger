@@ -228,13 +228,11 @@ const chatSlice = createSlice({
         msg => msg.id.startsWith("temp_") && 
               (msg.content === action.payload.content || 
                (msg.files && msg.files.length > 0 && action.payload.files && action.payload.files.length > 0 &&
-                msg.files[0].id === action.payload.files[0].id) ||
-               (action.payload.file_id && msg.files && msg.files.length > 0 && 
-                msg.files[0].id === action.payload.file_id))
+                msg.files[0].id === action.payload.files[0].id))
       );
       
       if (!messageExists) {
-        let updatedResults;
+        let updatedResults: Message[] = [];
         
         if (tempMessageIndex !== -1) {
           // Thay thế temp message bằng message thật

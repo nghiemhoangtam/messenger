@@ -339,6 +339,12 @@ export const EditableMessageBubble: React.FC<EditableMessageBubbleProps> = ({
           );
         }
         return <audio src={message.content} controls className={styles.audio} />;
+      case "emoji":
+        return (
+          <div className={styles.emojiContainer}>
+            <span className={styles.emojiText}>{message.content}</span>
+          </div>
+        );
       default:
         return <div className={styles.text}>{message.content}</div>;
     }
@@ -377,6 +383,12 @@ export const EditableMessageBubble: React.FC<EditableMessageBubbleProps> = ({
           return (
             <div className={styles.replyAudio}>
               <span>Audio</span>
+            </div>
+          );
+        case "emoji":
+          return (
+            <div className={styles.replyEmoji}>
+              <span>{replyTo.content}</span>
             </div>
           );
         default:

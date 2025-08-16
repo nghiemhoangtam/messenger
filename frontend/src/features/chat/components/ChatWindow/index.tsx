@@ -174,7 +174,7 @@ export const ChatWindow: React.FC = () => {
     }
   }, [currentConversation, roomPage.data.results, loadingMoreMessages, dispatch]);
 
-  const handleSendMessage = useCallback(async (content: string, replyToId?: string) => {
+  const handleSendMessage = useCallback(async (content: string, type: string = "text", replyToId?: string) => {
     if (!currentConversation) return;
 
     setSending(true);
@@ -183,7 +183,7 @@ export const ChatWindow: React.FC = () => {
         sendMessageRequest({
           conversationId: currentConversation.room.id,
           content,
-          type: "text", // Thêm type cho text message
+          type,
           reply_to_id: replyToId,
         })
       );

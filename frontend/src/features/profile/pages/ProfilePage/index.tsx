@@ -18,7 +18,7 @@ export const ProfilePage: React.FC = () => {
         {isOwnProfile ? (
           <div className={styles.ownProfile}>
             <div className={styles.profileInfo}>
-              <h2>{user?.username}</h2>
+              <h2>{user?.display_name}</h2>
               <p>{user?.email}</p>
             </div>
           </div>

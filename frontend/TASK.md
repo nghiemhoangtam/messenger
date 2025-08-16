@@ -218,7 +218,7 @@ Frontend (22 hours):
   - File preview
   - Error handling
 
-- [ ] Emoji picker (2h)
+- [x] Emoji picker (2h)
   - Emoji categories
   - Search functionality
   - Recent emojis

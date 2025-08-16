@@ -1,12 +1,12 @@
 import { PayloadAction, createSlice } from "@reduxjs/toolkit";
 import { ErrorState } from "../../types/error";
 import {
-    AuthState,
-    LoginCredentials,
-    RegisterCredentials,
-    ResetPassword,
-    SocialAuthCredentials,
-    User,
+  AuthState,
+  LoginCredentials,
+  RegisterCredentials,
+  ResetPassword,
+  SocialAuthCredentials,
+  User,
 } from "./types";
 
 const initialState: AuthState = {
@@ -14,7 +14,7 @@ const initialState: AuthState = {
   isAuthenticated: false,
   status: "idle",
   error: null,
-  token: null,
+  // token: null,
 };
 
 const setLoading = (state: AuthState) => {
@@ -29,9 +29,8 @@ const authSlice = createSlice({
     // Login with email/password
     loginRequest: (state, action: PayloadAction<LoginCredentials>) =>
       setLoading(state),
-    loginSuccess: (state, action: PayloadAction<{ user: User; token: string }>) => {
-      state.user = action.payload.user;
-      state.token = action.payload.token;
+    loginSuccess: (state, action: PayloadAction<User>) => {
+      state.user = action.payload;
       state.isAuthenticated = true;
       state.status = "succeeded";
       state.error = null;
@@ -81,9 +80,9 @@ const authSlice = createSlice({
     // Social authentication
     socialAuthRequest: (state, action: PayloadAction<SocialAuthCredentials>) =>
       setLoading(state),
-    socialAuthSuccess: (state, action: PayloadAction<{ user: User; token: string }>) => {
-      state.user = action.payload.user;
-      state.token = action.payload.token;
+    socialAuthSuccess: (state, action: PayloadAction<User>) => {
+      state.user = action.payload;
+      // state.token = action.payload.token;
       state.isAuthenticated = true;
       state.status = "succeeded";
       state.error = null;
@@ -93,14 +92,14 @@ const authSlice = createSlice({
     logoutRequest: (state) => setLoading(state),
     logoutSuccess: (state) => {
       state.user = null;
-      state.token = null;
+      // state.token = null;
       state.isAuthenticated = false;
       state.status = "succeeded";
       state.error = null;
     },
     logout: (state) => {
       state.user = null;
-      state.token = null;
+      // state.token = null;
       state.isAuthenticated = false;
       state.error = null;
     },
@@ -118,7 +117,7 @@ const authSlice = createSlice({
       setLoading(state),
     getUserInfoSuccess: (state, action: PayloadAction<User>) => {
       state.user = action.payload;
-      state.token = localStorage.getItem("access_token");
+      // state.token = localStorage.getItem("access_token");
       state.status = "succeeded";
       state.error = null;
       state.isAuthenticated = true;
