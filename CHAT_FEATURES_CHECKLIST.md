@@ -65,8 +65,8 @@
 ### **4. Tính Năng Media Nâng Cao**
 - [ ] **Voice messages** - Ghi âm và gửi tin nhắn thoại
 - [ ] **Video messages** - Gửi video message
-- [ ] **Sticker picker** - Bộ chọn sticker
-- [ ] **Emoji picker** - Bộ chọn emoji
+- [x] **Sticker picker** - Bộ chọn sticker
+- [x] **Emoji picker** - Bộ chọn emoji
 - [ ] **GIF picker** - Tìm kiếm và gửi GIF
 - [ ] **File preview** - Preview chi tiết cho file
 - [ ] **Media gallery** - Gallery để xem media đã gửi
