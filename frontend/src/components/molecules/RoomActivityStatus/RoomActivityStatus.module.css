@@ -1,0 +1,151 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 8px;
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.activityDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+  display: inline-block;
+}
+
+.activityDot.active {
+  background-color: #28a745;
+  box-shadow: 0 0 8px rgba(40, 167, 69, 0.4);
+  animation: pulse 2s infinite;
+}
+
+.activityDot.active.high {
+  background-color: #28a745;
+  box-shadow: 0 0 12px rgba(40, 167, 69, 0.6);
+  animation: pulse 1.5s infinite;
+}
+
+.activityDot.active.medium {
+  background-color: #20c997;
+  box-shadow: 0 0 10px rgba(32, 201, 151, 0.5);
+  animation: pulse 2s infinite;
+}
+
+.activityDot.active.low {
+  background-color: #6f42c1;
+  box-shadow: 0 0 8px rgba(111, 66, 193, 0.4);
+  animation: pulse 3s infinite;
+}
+
+.activityDot.inactive {
+  background-color: #6c757d;
+  opacity: 0.6;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 8px rgba(40, 167, 69, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(40, 167, 69, 0.6);
+  }
+  100% {
+    box-shadow: 0 0 8px rgba(40, 167, 69, 0.4);
+  }
+}
+
+.onlineCount {
+  color: #28a745;
+  font-weight: 600;
+}
+
+.separator {
+  color: #6c757d;
+}
+
+.totalCount {
+  color: #495057;
+}
+
+.status {
+  color: #6c757d;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid #e9ecef;
+}
+
+.statusItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.statusDot.online {
+  background-color: #28a745;
+}
+
+.statusDot.away {
+  background-color: #ffc107;
+}
+
+.statusDot.busy {
+  background-color: #dc3545;
+}
+
+.statusDot.offline {
+  background-color: #6c757d;
+}
+
+.statusLabel {
+  color: #495057;
+  font-weight: 500;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .container {
+    padding: 6px;
+  }
+  
+  .summary {
+    font-size: 12px;
+    gap: 6px;
+  }
+  
+  .activityDot {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .details {
+    font-size: 11px;
+  }
+}

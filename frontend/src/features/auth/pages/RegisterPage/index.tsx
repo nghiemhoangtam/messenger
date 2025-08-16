@@ -1,7 +1,7 @@
 import {
-  FacebookOutlined,
-  GithubOutlined,
-  GoogleOutlined,
+    FacebookOutlined,
+    GithubOutlined,
+    GoogleOutlined,
 } from "@ant-design/icons";
 import { Button, Divider, Form, Input, message, Spin } from "antd";
 import React, { useEffect } from "react";
@@ -34,8 +34,11 @@ export const RegisterPage: React.FC = () => {
 
   useEffect(() => {
     if (auth.status === "succeeded") {
-      message.success(
-        translator.common.success_message(t, translator.auth.login(t))
+      message.warning(
+        translator.common.success_message(
+          t,
+          translator.auth.send_validate_code(t)
+        )
       );
       dispatch(resetStatus());
       navigate("/verify-token");
@@ -59,7 +62,7 @@ export const RegisterPage: React.FC = () => {
 
   const handleSocialRegister = (provider: string): void => {
     // Implement social register logic here
-    console.log(`Register with ${provider}`);
+
   };
 
   if (auth.status === "loading") {

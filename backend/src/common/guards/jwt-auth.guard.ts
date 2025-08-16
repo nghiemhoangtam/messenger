@@ -1,18 +1,28 @@
-import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import {
+  ExecutionContext,
+  ForbiddenException,
+  Inject,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService, TokenExpiredError } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { AuthGuard } from '@nestjs/passport';
+import Redis from 'ioredis';
 import { Model } from 'mongoose';
 import { IJwtRequest } from 'src/apis/auth/common/interfaces';
+import { Token } from 'src/apis/auth/common/schemas';
 import { User } from 'src/apis/user/schemas';
 import { MessageCode } from '../messages/message.enum';
+import { authBlacklistKey } from '../redis/redis.key';
 
 export class JwtAuthGuard extends AuthGuard('jwt') {
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel(Token.name) private tokenModel: Model<Token>,
+    @Inject('REDIS_CLIENT') private readonly redis: Redis,
   ) {
     super();
   }
@@ -32,17 +42,29 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
           secret: this.configService.get<string>('JWT_SECRET'),
         },
       );
+
+      if (await this.checkTokenBlacklistRedis(token)) {
+        throw new ForbiddenException([{ code: MessageCode.FORBIDDEN }]);
+      }
+
+      if (await this.checkTokenBlacklistMongo(token)) {
+        throw new ForbiddenException([{ code: MessageCode.FORBIDDEN }]);
+      }
+
       const user = await this.userModel.findById(payload.id);
       if (!user) {
         throw new UnauthorizedException([{ code: MessageCode.USER_NOT_FOUND }]);
       }
       request.user = {
-        id: user._id as string,
+        id: String(user._id),
         email: user.email,
       };
+      request.token = token;
     } catch (error) {
       if (error instanceof TokenExpiredError) {
         throw new UnauthorizedException([{ code: MessageCode.TOKEN_EXPIRED }]);
+      } else if (error instanceof ForbiddenException) {
+        throw error;
       } else {
         throw new UnauthorizedException([{ code: MessageCode.INVALID_TOKEN }]);
       }
@@ -57,4 +79,21 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     const [bearer, token] = authHeader.split(' ');
     return bearer === 'Bearer' && token ? token : null;
   }
+
+  private checkTokenBlacklistRedis = async (
+    token: string,
+  ): Promise<boolean> => {
+    const isBlacklisted = await this.redis.get(authBlacklistKey(token));
+    return isBlacklisted !== null;
+  };
+
+  private checkTokenBlacklistMongo = async (
+    token: string,
+  ): Promise<boolean> => {
+    const isBlacklisted = await this.tokenModel.findOne({
+      access_token: token,
+      revoked_at: { $ne: null },
+    });
+    return isBlacklisted !== null;
+  };
 }

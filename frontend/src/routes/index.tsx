@@ -16,7 +16,7 @@ import { ResetPasswordPage } from "../features/auth/pages/ResetPasswordPage";
 import { ResultVerifyTokenPage } from "../features/auth/pages/ResultVerifyTokenPage";
 import { VerifyTokenPage } from "../features/auth/pages/VerifyTokenPage";
 import { CallsPage } from "../features/calls";
-import { ChatPage } from "../features/chat/pages/ChatPage";
+import { ChatPage } from "../features/chat";
 import { ContactsPage } from "../features/contacts/pages/ContactsPage";
 import { ProfilePage } from "../features/profile/pages/ProfilePage";
 import { SettingsPage } from "../features/settings/pages/SettingsPage";

@@ -113,3 +113,15 @@ export const internal_server = (t: TFunction) =>
     ns,
     defaultValue: `Internal server error`,
   });
+
+export const too_many_requests = (t: TFunction) =>
+  t("too_many_requests", {
+    ns,
+    defaultValue: `Too many requests, please try again later`,
+  });
+
+export const not_found = (t: TFunction) =>
+  t("not_found", {
+    ns,
+    defaultValue: `Resource not found`,
+  });

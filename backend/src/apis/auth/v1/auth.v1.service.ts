@@ -1,7 +1,7 @@
 import {
-  BadRequestException,
   ForbiddenException,
   HttpException,
+  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -10,15 +10,21 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
-import * as bcrypt from 'bcryptjs';
+import Redis from 'ioredis';
 import * as jwt from 'jsonwebtoken';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { MessageCode } from 'src/common/messages/message.enum';
 import { MessageService } from 'src/common/messages/message.service';
+import {
+  authBlacklistKey,
+  loginAttemptKey,
+  resetPasswordBlacklistKey,
+  userDataKey,
+} from 'src/common/redis/redis.key';
 import { BaseService } from 'src/common/services/base.service';
+import { EmailQueueService } from 'src/rabbitmq/email/email-queue.service';
 import { plusMinute } from 'src/utils/date.utils';
 import { randomString } from 'src/utils/random.utils';
-import { sendSimpleMail } from 'src/utils/sendmail.utils';
 import { User } from '../../user/schemas';
 import { LoginDto, RegisterDto, ResetPasswordDto } from '../common/dto';
 import { ISocialLogin } from '../common/interfaces';
@@ -37,6 +43,8 @@ export class AuthV1Service extends BaseService {
     private jwtService: JwtService,
     private messageService: MessageService,
     private configService: ConfigService,
+    @Inject('REDIS_CLIENT') private readonly redis: Redis,
+    private emailService: EmailQueueService,
   ) {
     super();
   }
@@ -69,21 +77,53 @@ export class AuthV1Service extends BaseService {
     user_agent?: string,
   ): Promise<LoginInfoResponse> {
     return this.handle(async () => {
+      const attemptKey = loginAttemptKey(loginDto.email);
+      const loginAttempt = ((await this.redis.get(attemptKey)) || 0) as number;
+      const maxLoginAttempt =
+        this.configService.get<number>('LOGIN_ATTEMPT_COUNT') || 0;
+      if (loginAttempt > maxLoginAttempt) {
+        throw new UnauthorizedException([
+          { code: MessageCode.OVER_MAX_ATTEMPT_LOGIN },
+        ]);
+      }
       const user = await this.userModel.findOne({ email: loginDto.email });
-      if (!user || !(await bcrypt.compare(loginDto.password, user.password))) {
+      // if (!user || !(await bcrypt.compare(loginDto.password, user.password))) {
+      if (!user || loginDto.password !== user.password) {
+        const isExistAttemptKey = await this.redis.exists(attemptKey);
+        if (isExistAttemptKey) {
+          await this.redis.incr(attemptKey);
+        } else {
+          await this.redis.set(
+            attemptKey,
+            1,
+            'EX',
+            this.configService.get<number>('LOGIN_ATTEMPT_TTL') || 300,
+          );
+        }
         throw new UnauthorizedException([
           { code: MessageCode.INVALID_CREDENTIALS },
         ]);
       }
+      if (!user.is_active) {
+        throw new UnauthorizedException([
+          { code: MessageCode.USER_NOT_ACTIVE },
+        ]);
+      }
       const token = this.createNewToken(user);
       const newToken = new this.tokenModel({
-        user: user._id,
+        user_id: user._id,
         access_token: token.access_token,
         refresh_token: token.refresh_token,
         user_agent: user_agent,
         ip_address: ip_address,
       });
       await newToken.save();
+      await this.redis.set(
+        userDataKey((user._id as string).toString()),
+        JSON.stringify(user),
+        'EX',
+        this.configService.get<number>('USER_DATA_TTL') || 60 * 60 * 24,
+      );
       return {
         access_token: token.access_token,
         refresh_token: token.refresh_token,
@@ -115,7 +155,7 @@ export class AuthV1Service extends BaseService {
       });
 
       const socialAccount = new this.socialAccountModel({
-        user: user._id,
+        user_id: user._id,
         provider: socialLogin.provider,
         provider_id: socialLogin.provider_id,
         access_token: socialLogin.access_token,
@@ -125,14 +165,19 @@ export class AuthV1Service extends BaseService {
 
       const token = this.createNewToken(user);
       const newToken = new this.tokenModel({
-        user: user._id,
+        user_id: user._id,
         access_token: token.access_token,
         refresh_token: token.refresh_token,
         user_agent: socialLogin.user_agent,
         ip_address: socialLogin.ip_address,
       });
       await newToken.save();
-
+      await this.redis.set(
+        userDataKey((user._id as string).toString()),
+        JSON.stringify(user),
+        'EX',
+        this.configService.get<number>('USER_DATA_TTL') || 60 * 60 * 24,
+      );
       return {
         access_token: token.access_token,
         refresh_token: token.refresh_token,
@@ -181,6 +226,12 @@ export class AuthV1Service extends BaseService {
             { code: MessageCode.TOKEN_EXPIRED },
           ]);
         }
+        if (error instanceof jwt.JsonWebTokenError) {
+          throw new UnauthorizedException([
+            { code: MessageCode.INVALID_TOKEN },
+          ]);
+        }
+        throw new InternalServerErrorException(MessageCode.INTERNAL_SERVER);
       },
     );
   }
@@ -200,29 +251,42 @@ export class AuthV1Service extends BaseService {
 
   async resetPassword(resetPasswordDto: ResetPasswordDto) {
     return this.handle(async () => {
+      const isblacklisted = await this.redis.get(
+        resetPasswordBlacklistKey(resetPasswordDto.token),
+      );
+      if (isblacklisted) {
+        throw new UnauthorizedException([{ code: MessageCode.INVALID_TOKEN }]);
+      }
       const tokenSearch: PasswordResetToken | null =
         await this.passwordResetTokenModel.findOne({
           token: resetPasswordDto.token,
           is_used: false,
         });
       if (!tokenSearch) {
-        throw new BadRequestException({ code: MessageCode.INVALID_TOKEN });
+        throw new UnauthorizedException([{ code: MessageCode.INVALID_TOKEN }]);
       } else {
         if (tokenSearch.expired_at.getTime() < Date.now()) {
           throw new UnauthorizedException([
             { code: MessageCode.TOKEN_EXPIRED },
           ]);
         } else {
-          const hashedPassword = await bcrypt.hash(
-            resetPasswordDto.password,
-            10,
-          );
+          // const hashedPassword = await bcrypt.hash(
+          //   resetPasswordDto.password,
+          //   10,
+          // );
+          const hashedPassword = resetPasswordDto.password;
           await this.passwordResetTokenModel.deleteMany({
             user: tokenSearch._id,
           });
+          await this.redis.set(
+            resetPasswordBlacklistKey(resetPasswordDto.token),
+            '1',
+            'EX',
+            this.configService.get<number>('RESET_PASSWORD_TOKEN_TTL') || 60,
+          );
           await this.userModel.updateOne(
             {
-              _id: tokenSearch.user,
+              _id: tokenSearch.user_id,
             },
             {
               $set: {
@@ -240,10 +304,10 @@ export class AuthV1Service extends BaseService {
       const token = randomString(10);
       const url = `${origin}/reset-password?token=${token}`;
       await this.passwordResetTokenModel.deleteMany({
-        user: user._id,
+        user_id: user._id,
       });
       const resetPasswordModel = new this.passwordResetTokenModel({
-        user: user._id,
+        user_id: user._id,
         token,
         expired_at: plusMinute(1),
       });
@@ -300,7 +364,8 @@ export class AuthV1Service extends BaseService {
 
   private async createNewUser(registerDto: RegisterDto): Promise<User> {
     return this.handle(async () => {
-      const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+      // const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+      const hashedPassword = registerDto.password;
       const user = new this.userModel({
         email: registerDto.email,
         display_name: registerDto.display_name,
@@ -321,7 +386,7 @@ export class AuthV1Service extends BaseService {
         { url },
       );
 
-      await sendSimpleMail(email, subject, html);
+      await this.emailService.sendEmail(email, subject, html);
     });
   }
 
@@ -334,7 +399,9 @@ export class AuthV1Service extends BaseService {
             secret: this.configService.get<string>('JWT_SECRET'),
           },
         );
-        const user = await this.userModel.findById(payload.id);
+        const user = await this.userModel
+          .findById(payload.id)
+          .select('-password');
         if (!user) {
           throw new ForbiddenException([{ code: MessageCode.FORBIDDEN }]);
         }
@@ -360,7 +427,7 @@ export class AuthV1Service extends BaseService {
         MessageCode.VERIFY_EMAIL_TEMPLATE,
         { url },
       );
-      await sendSimpleMail(email, subject, html);
+      await this.emailService.sendEmail(email, subject, html);
     });
   }
 
@@ -390,10 +457,29 @@ export class AuthV1Service extends BaseService {
 
   async getCurrentUser(userId: string): Promise<CurrentUserResponse> {
     return this.handle(async () => {
-      const user = await this.userModel.findById(userId);
+      const userCached = await this.redis.get(userDataKey(userId));
+      if (userCached) {
+        const user: User = JSON.parse(userCached) as User;
+        const response: CurrentUserResponse = {
+          id: user._id as string,
+          email: user.email,
+          display_name: user.display_name,
+          avatar: user.avatar,
+          created_at: user.created_at,
+          updated_at: user.updated_at,
+        };
+        return response;
+      }
+      const user = await this.userModel.findById(userId).select('-password');
       if (!user) {
         throw new NotFoundException([{ code: MessageCode.FORBIDDEN }]);
       }
+      await this.redis.set(
+        userDataKey((user._id as string).toString()),
+        JSON.stringify(user),
+        'EX',
+        this.configService.get<number>('USER_DATA_TTL') || 60 * 60 * 24,
+      );
       const response: CurrentUserResponse = {
         id: user._id as string,
         email: user.email,
@@ -431,12 +517,12 @@ export class AuthV1Service extends BaseService {
             { code: MessageCode.REFRESH_TOKEN_IS_USED },
           ]);
         }
-        const user = await this.userModel.findById(tokenSearched.user);
+        const user = await this.userModel.findById(new Types.ObjectId(tokenSearched.user_id));
         if (!user) {
           throw new NotFoundException([
             {
               code: MessageCode.USER_NOT_FOUND,
-              email: tokenSearched.user.email,
+              email: user!.email,
             },
           ]);
         }
@@ -446,7 +532,7 @@ export class AuthV1Service extends BaseService {
 
         const token = this.createNewToken(user);
         const newToken = new this.tokenModel({
-          user: user._id,
+          user_id: user._id,
           access_token: token.access_token,
           refresh_token: token.refresh_token,
           user_agent: user_agent,
@@ -467,5 +553,25 @@ export class AuthV1Service extends BaseService {
         }
       },
     );
+  }
+
+  async logout(userId: string, access_token: string) {
+    return this.handle(async () => {
+      const tokenSearched = await this.tokenModel.findOne({
+        user_id: new Types.ObjectId(userId),
+        access_token,
+      });
+      if (!tokenSearched) {
+        throw new UnauthorizedException([{ code: MessageCode.INVALID_TOKEN }]);
+      }
+      await this.redis.set(
+        authBlacklistKey(access_token),
+        '1',
+        'EX',
+        this.configService.get<number>('ACCESS_TOKEN_TTL') || 180,
+      );
+      tokenSearched.revoked_at = new Date();
+      await tokenSearched.save();
+    });
   }
 }

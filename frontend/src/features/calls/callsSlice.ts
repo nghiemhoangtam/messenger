@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { User } from "../auth/types";
+import { Contact } from "../contacts/types";
 import { Call, CallsState } from "./types";
 
 const initialState: CallsState = {
@@ -27,7 +27,7 @@ const callsSlice = createSlice({
     },
     startCallRequest: (
       state,
-      action: PayloadAction<{ participant: User; type: "audio" | "video" }>,
+      action: PayloadAction<{ participant: Contact; type: "audio" | "video" }>,
     ) => {
       state.loading = true;
       state.error = null;

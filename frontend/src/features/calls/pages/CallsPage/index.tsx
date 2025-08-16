@@ -9,7 +9,7 @@ import styles from "./CallsPage.module.css";
 const { TabPane } = Tabs;
 
 export const CallsPage: React.FC = () => {
-  const { calls } = useSelector((state: RootState) => state.calls);
+  const { calls } = useSelector((state: RootState) => state.call);
   const { user } = useSelector((state: RootState) => state.auth);
 
   const missedCalls = calls.filter((call: Call) => call.status === "missed");
@@ -36,7 +36,7 @@ export const CallsPage: React.FC = () => {
       return (
         <CallCard
           key={call.id}
-          username={otherParticipant.username}
+          username={otherParticipant.display_name}
           avatar={otherParticipant.avatar}
           type={call.type}
           status={getCallStatus(call)}

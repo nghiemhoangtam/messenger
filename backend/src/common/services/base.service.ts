@@ -8,10 +8,12 @@ export abstract class BaseService {
   protected async handle<T>(
     fn: () => Promise<T>,
     customErrorHandler?: (error: unknown) => Promise<void> | void,
+    customFinallyHandler?: () => Promise<void> | void,
   ): Promise<T> {
     try {
       return await fn();
     } catch (error) {
+      console.error(error);
       if (customErrorHandler) {
         await customErrorHandler(error);
       }
@@ -21,6 +23,10 @@ export abstract class BaseService {
       }
 
       throw new InternalServerErrorException(MessageCode.INTERNAL_SERVER);
+    } finally {
+      if (customFinallyHandler) {
+        await customFinallyHandler();
+      }
     }
   }
 }

@@ -1,0 +1,678 @@
+.container {
+  display: flex;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+
+.container.own {
+  flex-direction: row-reverse;
+}
+
+.bubbleWrapper {
+  display: flex;
+  flex-direction: column;
+  max-width: 70%;
+  position: relative;
+}
+
+.senderName {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.bubble {
+  padding: 8px 12px;
+  border-radius: 18px;
+  background-color: #f0f0f0;
+  word-wrap: break-word;
+  position: relative;
+}
+
+.container.own .bubble {
+  background-color: #1890ff;
+  color: white;
+}
+
+.bubble.text {
+  max-width: 100%;
+}
+
+.bubble.image img {
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: 8px;
+}
+
+.bubble.file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background-color: #f8f9fa;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.bubble.file::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(24, 144, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.bubble.file:hover {
+  background-color: rgba(24, 144, 255, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.2);
+  border-color: rgba(24, 144, 255, 0.3);
+}
+
+.bubble.file:hover::before {
+  left: 100%;
+}
+
+.bubble.file:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.15);
+}
+
+.fileContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fileInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.fileHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.fileName {
+  font-weight: 600;
+  font-size: 14px;
+  color: white;
+  transition: color 0.3s ease;
+  flex: 1;
+}
+
+.bubble.file:hover .fileName {
+  color: #fa8c16;
+}
+
+.fileIcon {
+  font-size: 24px;
+  color: #fa8c16;
+  transition: all 0.3s ease;
+}
+
+.file:hover .fileIcon {
+  transform: scale(1.1);
+  color: #ffa940;
+}
+
+.clickableBadge {
+  background: linear-gradient(45deg, #fa8c16, #ffa940);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  animation: pulse 2s infinite;
+  box-shadow: 0 2px 4px rgba(250, 140, 22, 0.3);
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.bubble.file:hover .clickableBadge {
+  animation: none;
+  transform: scale(1.1);
+  box-shadow: 0 3px 6px rgba(250, 140, 22, 0.4);
+}
+
+.fileSize {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  transition: color 0.3s ease;
+}
+
+.bubble.file:hover .fileSize {
+  color: rgba(250, 140, 22, 0.9);
+}
+
+.fileHint {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  font-style: italic;
+  opacity: 0.8;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.bubble.file:hover .fileHint {
+  opacity: 1;
+  color: rgba(255, 255, 255, 0.9);
+  transform: translateX(4px);
+}
+
+.downloadIcon {
+  font-size: 18px;
+  color: #52c41a;
+  margin-left: 8px;
+  opacity: 0.8;
+  transition: all 0.3s ease;
+}
+
+.bubble.file:hover .downloadIcon {
+  opacity: 1;
+  transform: scale(1.2);
+  color: #73d13d;
+}
+
+.downloadIconContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-left: 8px;
+  border: 2px solid transparent;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.downloadIconContainer:hover {
+  background-color: white;
+  transform: scale(1.1);
+  border-color: rgba(82, 196, 26, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.downloadIconContainer:active {
+  transform: scale(0.95);
+}
+
+.downloadIconContainer .downloadIcon {
+  margin-left: 0;
+  opacity: 1;
+  font-size: 20px;
+  color: #52c41a;
+}
+
+.downloadIconContainer:hover .downloadIcon {
+  color: #73d13d;
+  transform: scale(1.1);
+}
+
+.downloadLink {
+  color: #52c41a;
+  text-decoration: none;
+  font-size: 12px;
+  padding: 6px 12px;
+  border: 1px solid #52c41a;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  background-color: transparent;
+  font-weight: 500;
+}
+
+.downloadLink:hover {
+  background-color: #52c41a;
+  color: white;
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(82, 196, 26, 0.3);
+}
+
+.imageContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.imageWrapper {
+  position: relative;
+  display: inline-block;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.imageWrapper:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.image {
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: 8px;
+  display: block;
+  transition: all 0.3s ease;
+}
+
+.image.sending {
+  opacity: 0.7;
+  filter: grayscale(0.3);
+}
+
+.sendingOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 8px;
+  z-index: 10;
+}
+
+.sendingSpinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 4px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.imageWrapper:hover .image {
+  filter: brightness(0.9);
+}
+
+.imageOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: 8px;
+}
+
+.imageWrapper:hover .imageOverlay {
+  opacity: 1;
+}
+
+.viewImageButton,
+.downloadImageButton {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: none !important;
+  color: #333 !important;
+  border-radius: 50% !important;
+  width: 32px !important;
+  height: 32px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.3s ease !important;
+}
+
+.viewImageButton:hover,
+.downloadImageButton:hover {
+  background: white !important;
+  transform: scale(1.1) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+.imageModal {
+  .ant-modal-content {
+    background: transparent;
+    box-shadow: none;
+  }
+  
+  .ant-modal-header {
+    background: rgba(0, 0, 0, 0.8);
+    border-bottom: none;
+  }
+  
+  .ant-modal-title {
+    color: white;
+  }
+  
+  .ant-modal-close {
+    color: white;
+  }
+  
+  .ant-modal-body {
+    padding: 0;
+    background: transparent;
+  }
+}
+
+.modalImageContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  background: rgba(0, 0, 0, 0.9);
+  border-radius: 8px;
+}
+
+.modalImage {
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.text {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.audioContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bubble.audio audio {
+  max-width: 200px;
+}
+
+.metadata {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.timestamp {
+  font-size: 11px;
+}
+
+.status {
+  font-size: 11px;
+}
+
+.editButton {
+  position: absolute;
+  top: 0;
+  right: -30px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  color: #666;
+}
+
+.container.own .editButton {
+  right: auto;
+  left: -30px;
+}
+
+.bubbleWrapper:hover .editButton {
+  opacity: 1;
+}
+
+.actionButtons {
+  position: absolute;
+  top: 0;
+  right: -60px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.container.own .actionButtons {
+  right: auto;
+  left: -60px;
+}
+
+.bubbleWrapper:hover .actionButtons {
+  opacity: 1;
+}
+
+.deleteButton {
+  color: #ff4d4f;
+}
+
+.deleteButton:hover {
+  color: #cf1322;
+  background-color: rgba(255, 77, 79, 0.1);
+}
+
+.editContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.editTextArea {
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  resize: none;
+}
+
+.editTextArea:focus {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.editActions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.saveButton {
+  color: #52c41a;
+}
+
+.saveButton:hover {
+  color: #389e0d;
+  background-color: rgba(82, 196, 26, 0.1);
+}
+
+.cancelButton {
+  color: #ff4d4f;
+}
+
+.cancelButton:hover {
+  color: #cf1322;
+  background-color: rgba(255, 77, 79, 0.1);
+}
+
+.editedIndicator {
+  font-size: 11px;
+  opacity: 0.7;
+  font-style: italic;
+  margin-top: 2px;
+}
+
+.container.own .editedIndicator {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Reply message styles */
+.replyPreview {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px;
+  margin-bottom: 8px;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  border-left: 3px solid #1890ff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.replyPreview:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+  transform: translateX(2px);
+}
+
+.replyPreview:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.container.own .replyPreview {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-left-color: rgba(255, 255, 255, 0.8);
+}
+
+.container.own .replyPreview:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.replyIcon {
+  color: #1890ff;
+  font-size: 14px;
+  margin-top: 2px;
+}
+
+.container.own .replyIcon {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.replyContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.replySender {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1890ff;
+  margin-bottom: 2px;
+}
+
+.container.own .replySender {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.replyText {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.65);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+.container.own .replyText {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.replyImage {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.replyFile,
+.replyAudio {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.container.own .replyFile,
+.container.own .replyAudio {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.replyEmoji {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 16px;
+}
+
+.replyButton {
+  color: #1890ff;
+}
+
+.replyButton:hover {
+  color: #40a9ff;
+  background-color: rgba(24, 144, 255, 0.1);
+}
+
+/* Emoji message styles */
+.bubble.emoji {
+  background-color: transparent;
+  padding: 4px 8px;
+}
+
+.container.own .bubble.emoji {
+  background-color: transparent;
+}
+
+.emojiContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  min-height: 40px;
+}
+
+.emojiText {
+  font-size: 48px;
+  line-height: 1;
+  user-select: none;
+  cursor: default;
+}
+
+

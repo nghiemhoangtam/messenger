@@ -14,6 +14,7 @@ const initialState: AuthState = {
   isAuthenticated: false,
   status: "idle",
   error: null,
+  // token: null,
 };
 
 const setLoading = (state: AuthState) => {
@@ -81,6 +82,7 @@ const authSlice = createSlice({
       setLoading(state),
     socialAuthSuccess: (state, action: PayloadAction<User>) => {
       state.user = action.payload;
+      // state.token = action.payload.token;
       state.isAuthenticated = true;
       state.status = "succeeded";
       state.error = null;
@@ -90,12 +92,14 @@ const authSlice = createSlice({
     logoutRequest: (state) => setLoading(state),
     logoutSuccess: (state) => {
       state.user = null;
+      // state.token = null;
       state.isAuthenticated = false;
       state.status = "succeeded";
       state.error = null;
     },
     logout: (state) => {
       state.user = null;
+      // state.token = null;
       state.isAuthenticated = false;
       state.error = null;
     },
@@ -104,7 +108,6 @@ const authSlice = createSlice({
       state.status = "idle";
     },
     resetStatusAndError: (state) => {
-      console.log("resetStatusAndError");
       state.error = null;
       state.status = "idle";
     },
@@ -114,6 +117,7 @@ const authSlice = createSlice({
       setLoading(state),
     getUserInfoSuccess: (state, action: PayloadAction<User>) => {
       state.user = action.payload;
+      // state.token = localStorage.getItem("access_token");
       state.status = "succeeded";
       state.error = null;
       state.isAuthenticated = true;

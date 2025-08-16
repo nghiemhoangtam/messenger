@@ -3,7 +3,12 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useDispatch } from "react-redux";
 import { ErrorState } from "../types/error";
-import { BUSINESS_ERROR, VALIDATION_ERROR } from "../utils/constants/constant";
+import {
+  BUSINESS_ERROR,
+  NOT_FOUND_ERROR,
+  TOO_MANY_REQUESTS,
+  VALIDATION_ERROR,
+} from "../utils/constants/constant";
 import * as translator from "../utils/translator";
 
 export function useShowError(error: ErrorState) {
@@ -11,7 +16,6 @@ export function useShowError(error: ErrorState) {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    console.log(error);
     if (error) {
       if (error.code === BUSINESS_ERROR || error.code === VALIDATION_ERROR) {
         error.messages.forEach((element) => {
@@ -23,7 +27,12 @@ export function useShowError(error: ErrorState) {
             ),
           );
         });
-      } else {
+      } else if (error.code === TOO_MANY_REQUESTS) {
+        message.error(translator.common.too_many_requests(t));
+      } else if(error.code === NOT_FOUND_ERROR)  {
+        message.error(translator.common.not_found(t));
+      }
+      else {
         message.error(translator.common.internal_server(t));
       }
     }

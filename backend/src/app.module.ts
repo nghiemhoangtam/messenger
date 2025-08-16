@@ -1,19 +1,30 @@
+import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 import { MongooseModule } from '@nestjs/mongoose';
+import { ThrottlerModule } from '@nestjs/throttler';
+import Redis from 'ioredis';
 import * as Joi from 'joi';
 import {
-  AcceptLanguageResolver,
-  CookieResolver,
-  HeaderResolver,
-  I18nModule,
-  QueryResolver,
+    AcceptLanguageResolver,
+    CookieResolver,
+    HeaderResolver,
+    I18nModule,
+    QueryResolver,
 } from 'nestjs-i18n';
 import * as path from 'path';
 import { AuthV1Module } from './apis/auth/v1/auth.v1.module';
 import { AuthV2Module } from './apis/auth/v2/auth.v2.module';
+import { ChatModule } from './apis/chat/v1/chat.module';
+import { MediaModule } from './apis/media/v1/media.module';
+import { RoomModule } from './apis/room/v1/room.module';
+import { UserRelationshipModule } from './apis/user-relationship/v1/user-relationship.module';
 import { UsersModule } from './apis/user/users.module';
+import { AppController } from './app.controller';
+import { ThrottlerBehindProxyGuard } from './common/guards/throttler-behind-proxy.guard';
 import { MessageModule } from './common/messages/message.module';
+import { RedisModule } from './common/redis/redis.module';
 
 @Module({
   imports: [
@@ -34,6 +45,26 @@ import { MessageModule } from './common/messages/message.module';
         REDIS_PORT: Joi.number().default(6379),
         REDIS_USERNAME: Joi.string().default(''),
         REDIS_PASSWORD: Joi.string().default(''),
+      }),
+    }),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        throttlers: [
+          {
+            ttl: configService.get<number>('THROTTLE_TTL') ?? 60,
+            limit: configService.get<number>('THROTTLE_LIMIT') ?? 100,
+          },
+        ],
+        storage: new ThrottlerStorageRedisService(
+          new Redis({
+            host: configService.get<string>('REDIS_HOST'),
+            port: configService.get<number>('REDIS_PORT'),
+            username: configService.get<string>('REDIS_USERNAME'),
+            password: configService.get<string>('REDIS_PASSWORD'),
+          }),
+        ),
       }),
     }),
     MongooseModule.forRootAsync({
@@ -60,9 +91,19 @@ import { MessageModule } from './common/messages/message.module';
         AcceptLanguageResolver,
       ],
     }),
+    RedisModule,
     MessageModule,
+    ChatModule,
+    RoomModule,
+    UserRelationshipModule,
+    MediaModule
   ],
-  // controllers: [AppController,UsersController],
-  // providers: [AppService],
+  controllers: [AppController],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerBehindProxyGuard,
+    },
+  ],
 })
 export class AppModule {}

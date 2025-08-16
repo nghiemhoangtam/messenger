@@ -1,54 +1,62 @@
-import axios from "axios";
-import { API_URL } from "../config";
-import { Conversation, Message } from "../features/chat/types";
+import { Message } from "../features/chat/types";
+import { PaginationRequest, cleanPaginationParams } from "../types/pagination-request";
+import { PaginationResponse } from "../types/pagination-response";
+import { accessTokenAxiosClient } from "../utils/request/axiosClient";
+import { apiRequest } from "../utils/request/http-request";
 
-export const chatService = {
-  async getConversations(): Promise<Conversation[]> {
-    const response = await axios.get(`${API_URL}/conversations`);
-    return response.data;
-  },
+const API_PREFIX = "/chat";
 
-  async getMessages(conversationId: string): Promise<Message[]> {
-    const response = await axios.get(
-      `${API_URL}/conversations/${conversationId}/messages`,
+class ChatService {
+  async getMessages(room_id: string, pageRequest: PaginationRequest): Promise<PaginationResponse<Message>> {
+    return apiRequest<PaginationResponse<Message>>(() =>
+      accessTokenAxiosClient.get(`${API_PREFIX}/messages/${room_id}`, {
+        params: cleanPaginationParams(pageRequest),
+      })
     );
-    return response.data;
-  },
+  }
 
   async sendMessage(
-    conversationId: string,
+    room_id: string,
     content: string,
-    type: "text" | "image" | "file" | "audio",
+    type: "text" | "image" | "file" | "audio" = "text",
+    file_id?: string,
+    reply_to_id?: string,
   ): Promise<Message> {
-    const response = await axios.post(
-      `${API_URL}/conversations/${conversationId}/messages`,
-      {
+    return apiRequest<Message>(() =>
+      accessTokenAxiosClient.post(`${API_PREFIX}`, {
+        room_id,
         content,
         type,
-      },
+        file_id,
+        reply_to_id,
+      })
     );
-    return response.data;
-  },
+  }
 
-  async createConversation(participantIds: string[]): Promise<Conversation> {
-    const response = await axios.post(`${API_URL}/conversations`, {
-      participantIds,
-    });
-    return response.data;
-  },
+  async markMessagesAsRead(roomId: string): Promise<void> {
+    return apiRequest<void>(() =>
+      accessTokenAxiosClient.post(`${API_PREFIX}/mark-as-read/${roomId}`)
+    );
+  }
 
-  async markAsRead(conversationId: string): Promise<void> {
-    await axios.post(`${API_URL}/conversations/${conversationId}/read`);
-  },
+  async editMessage(
+    messageId: string,
+    content: string,
+    type: "text" | "image" | "file" | "audio" = "text",
+  ): Promise<Message> {
+    return apiRequest<Message>(() =>
+      accessTokenAxiosClient.put(`${API_PREFIX}/${messageId}`, {
+        content,
+        type,
+      })
+    );
+  }
 
-  async uploadFile(file: File): Promise<{ fileUrl: string }> {
-    const formData = new FormData();
-    formData.append("file", file);
-    const response = await axios.post(`${API_URL}/upload`, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-    return response.data;
-  },
-};
+  async deleteMessage(messageId: string): Promise<void> {
+    return apiRequest<void>(() =>
+      accessTokenAxiosClient.delete(`${API_PREFIX}/${messageId}`)
+    );
+  }
+}
+
+export const chatService = new ChatService();

@@ -1,6 +1,7 @@
 import {
   BUSINESS_ERROR,
   INTERNAL_SERVER_ERROR,
+  NOT_FOUND_ERROR,
   VALIDATION_ERROR,
 } from "../constants/constant";
 
@@ -24,6 +25,12 @@ export class ValidationError extends AppError {
 export class BusinessError extends AppError {
   constructor(messages: { params?: any; code: string }[]) {
     super(BUSINESS_ERROR, messages);
+  }
+}
+
+export class NotFoundError extends AppError {
+  constructor(messages: { params?: any; code: string }[]) {
+    super(NOT_FOUND_ERROR, messages);
   }
 }
 

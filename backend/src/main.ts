@@ -6,22 +6,44 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import { Transport } from '@nestjs/microservices';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as passport from 'passport';
 import { join } from 'path';
 import { AuthV1Module } from './apis/auth/v1/auth.v1.module';
 import { AuthV2Module } from './apis/auth/v2/auth.v2.module';
+import { ChatController } from './apis/chat/v1/chat.controller';
+import { MediaModule } from './apis/media/v1/media.module';
+import { RoomModule } from './apis/room/v1/room.module';
+import { UsersModule } from './apis/user/users.module';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
+import { MessageModule } from './common/messages/message.module';
 
 async function bootstrap() {
   const logger = new Logger('bootstrap');
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  app.set('trust proxy', 'loopback');
   app.useStaticAssets(join(__dirname, '..', 'public'));
+  app.useStaticAssets(join(__dirname, '..', '..', 'uploads'), { prefix: '/uploads/' });
   app.enableVersioning({ type: VersioningType.URI });
+  
+  app.connectMicroservice({
+    transport: Transport.RMQ,
+    options: {
+      urls: ['amqp://localhost:5672'],
+      queue: 'email_verification_queue',
+      queueOptions: {
+        durable: true,
+      },
+    },
+  });
+
+  // Khởi động cả HTTP và Microservice
+  await app.startAllMicroservices();
 
   const configV1 = new DocumentBuilder()
     .setTitle('Messenger API')
@@ -30,7 +52,7 @@ async function bootstrap() {
     .addBearerAuth() // If you use JWT auth
     .build();
   const documentV1 = SwaggerModule.createDocument(app, configV1, {
-    include: [AuthV1Module],
+    include: [AuthV1Module, ChatController, MediaModule, UsersModule, RoomModule, MessageModule],
   });
   SwaggerModule.setup('swagger/v1', app, documentV1);
 

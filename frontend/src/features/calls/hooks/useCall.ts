@@ -11,7 +11,7 @@ import {
 export const useCall = () => {
   const dispatch = useDispatch();
   const { currentCall, loading, error } = useSelector(
-    (state: RootState) => state.calls,
+    (state: RootState) => state.call,
   );
 
   const startCall = useCallback(

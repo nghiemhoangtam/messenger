@@ -1,0 +1,144 @@
+.activityDot {
+  display: inline-block;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+/* Size variants */
+.activityDot.small {
+  width: 6px;
+  height: 6px;
+}
+
+.activityDot.medium {
+  width: 8px;
+  height: 8px;
+}
+
+.activityDot.large {
+  width: 12px;
+  height: 12px;
+}
+
+/* Active states */
+.activityDot.active {
+  background-color: #28a745;
+  box-shadow: 0 0 6px rgba(40, 167, 69, 0.4);
+  animation: pulse 2s infinite;
+}
+
+.activityDot.active.high {
+  background-color: #28a745;
+  box-shadow: 0 0 10px rgba(40, 167, 69, 0.6);
+  animation: pulse 1.5s infinite;
+}
+
+.activityDot.active.medium {
+  background-color: #20c997;
+  box-shadow: 0 0 8px rgba(32, 201, 151, 0.5);
+  animation: pulse 2s infinite;
+}
+
+.activityDot.active.low {
+  background-color: #6f42c1;
+  box-shadow: 0 0 6px rgba(111, 66, 193, 0.4);
+  animation: pulse 3s infinite;
+}
+
+/* Inactive state */
+.activityDot.inactive {
+  background-color: #6c757d;
+  opacity: 0.6;
+}
+
+/* Pulse animation */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 6px rgba(40, 167, 69, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(40, 167, 69, 0.6);
+  }
+  100% {
+    box-shadow: 0 0 6px rgba(40, 167, 69, 0.4);
+  }
+}
+
+/* High activity pulse */
+.activityDot.active.high {
+  animation: pulseHigh 1.5s infinite;
+}
+
+@keyframes pulseHigh {
+  0% {
+    box-shadow: 0 0 8px rgba(40, 167, 69, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(40, 167, 69, 0.7);
+  }
+  100% {
+    box-shadow: 0 0 8px rgba(40, 167, 69, 0.4);
+  }
+}
+
+/* Medium activity pulse */
+.activityDot.active.medium {
+  animation: pulseMedium 2s infinite;
+}
+
+@keyframes pulseMedium {
+  0% {
+    box-shadow: 0 0 6px rgba(32, 201, 151, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(32, 201, 151, 0.6);
+  }
+  100% {
+    box-shadow: 0 0 6px rgba(32, 201, 151, 0.4);
+  }
+}
+
+/* Low activity pulse */
+.activityDot.active.low {
+  animation: pulseLow 3s infinite;
+}
+
+@keyframes pulseLow {
+  0% {
+    box-shadow: 0 0 4px rgba(111, 66, 193, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 8px rgba(111, 66, 193, 0.6);
+  }
+  100% {
+    box-shadow: 0 0 4px rgba(111, 66, 193, 0.4);
+  }
+}
+
+/* Hover effects */
+.activityDot:hover {
+  transform: scale(1.1);
+}
+
+.activityDot.active:hover {
+  box-shadow: 0 0 8px rgba(40, 167, 69, 0.6);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .activityDot.small {
+    width: 5px;
+    height: 5px;
+  }
+  
+  .activityDot.medium {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .activityDot.large {
+    width: 8px;
+    height: 8px;
+  }
+}

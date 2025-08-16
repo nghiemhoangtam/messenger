@@ -1,10 +1,14 @@
 import { ErrorState } from "../../types/error";
+import { RequestStatus } from "../../types/request";
 
 export interface User {
   id: string;
   email: string;
   display_name: string;
   avatar?: string | null;
+  status: "online" | "offline" | "away";
+  created_at: string;
+  updated_at: string;
 }
 
 export interface LoginCredentials {
@@ -27,11 +31,11 @@ export interface SocialAuthCredentials {
 }
 
 export type AuthProvider = "google" | "facebook" | "twitter";
-export type RequestStatus = "idle" | "loading" | "succeeded" | "failed";
 
 export interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   status: RequestStatus;
   error: ErrorState;
+  // token: string | null;
 }

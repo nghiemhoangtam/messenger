@@ -24,7 +24,7 @@ import {
 } from "antd";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import groupService from "../../../../services/groupService";
+import { groupService } from "../../../../services/groupService";
 import { RootState } from "../../../../store";
 import { User } from "../../../auth";
 import { Group } from "../../types";
@@ -222,12 +222,12 @@ export const GroupsPage: React.FC = () => {
             // Implement user search logic here
             setSelectedMember({
               id: "1",
-              username: value,
+              display_name: value,
               email: "example@email.com",
               avatar: null,
               status: "offline",
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
             });
           }}
         />
@@ -237,7 +237,7 @@ export const GroupsPage: React.FC = () => {
             icon={<UserAddOutlined />}
             onClick={() => handleAddMember(group.id, selectedMember.id)}
           >
-            Thêm {selectedMember.username}
+            Thêm {selectedMember.display_name}
           </Button>
         )}
       </div>
@@ -329,7 +329,7 @@ export const GroupsPage: React.FC = () => {
 
       <Modal
         title={selectedGroup ? "Chỉnh sửa nhóm" : "Tạo nhóm mới"}
-        visible={modalVisible}
+        open={modalVisible}
         onCancel={() => setModalVisible(false)}
         footer={null}
       >

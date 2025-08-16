@@ -15,13 +15,15 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, any> {
     const request = ctx.getRequest<Request>();
 
     return next.handle().pipe(
-      map((data: { message?: string; data?: unknown }) => ({
-        statusCode: 200,
-        message: data?.message || 'Success',
-        data: typeof data?.data !== 'undefined' ? data.data : data,
-        timestamp: new Date().toISOString(),
-        path: request.url,
-      })),
+      map((data: { message?: string; data?: unknown }) => {
+        return {
+          statusCode: 200,
+          message: data?.message || 'Success',
+          data: typeof data?.data !== 'undefined' ? data.data : data,
+          timestamp: new Date().toISOString(),
+          path: request.url,
+        };
+      }),
     );
   }
 }

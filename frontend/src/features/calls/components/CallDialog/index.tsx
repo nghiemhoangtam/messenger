@@ -37,9 +37,9 @@ export const CallDialog: React.FC<CallDialogProps> = ({ call }) => {
     >
       <div className={styles.container}>
         <Avatar size={96} src={call.caller.avatar} className={styles.avatar}>
-          {!call.caller.avatar && call.caller.username[0].toUpperCase()}
+          {!call.caller.avatar && call.caller.display_name[0].toUpperCase()}
         </Avatar>
-        <h2 className={styles.name}>{call.caller.username}</h2>
+        <h2 className={styles.name}>{call.caller.display_name}</h2>
         <p className={styles.status}>
           {isIncoming
             ? "Đang gọi đến..."

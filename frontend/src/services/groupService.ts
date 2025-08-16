@@ -1,51 +1,53 @@
-import axios from "axios";
-import { API_URL } from "../config";
+import { accessTokenAxiosClient } from "../utils/request/axiosClient";
+import { apiRequest } from "../utils/request/http-request";
 
-const groupService = {
-  getGroups: async () => {
-    const response = await axios.get(`${API_URL}/groups`);
-    return response;
-  },
+class GroupService {
+  async getGroups(): Promise<any> {
+    return apiRequest<any>(() =>
+      accessTokenAxiosClient.get("/groups")
+    );
+  }
 
-  createGroup: async (data: { name: string; description?: string }) => {
-    const response = await axios.post(`${API_URL}/groups`, data);
-    return response;
-  },
+  async createGroup(data: { name: string; description?: string }): Promise<any> {
+    return apiRequest<any>(() =>
+      accessTokenAxiosClient.post("/groups", data)
+    );
+  }
 
-  updateGroup: async (
+  async updateGroup(
     groupId: string,
     data: { name?: string; description?: string },
-  ) => {
-    const response = await axios.put(`${API_URL}/groups/${groupId}`, data);
-    return response;
-  },
-
-  deleteGroup: async (groupId: string) => {
-    const response = await axios.delete(`${API_URL}/groups/${groupId}`);
-    return response;
-  },
-
-  addMember: async (groupId: string, userId: string) => {
-    const response = await axios.post(`${API_URL}/groups/${groupId}/members`, {
-      userId,
-    });
-    return response;
-  },
-
-  removeMember: async (groupId: string, userId: string) => {
-    const response = await axios.delete(
-      `${API_URL}/groups/${groupId}/members/${userId}`,
+  ): Promise<any> {
+    return apiRequest<any>(() =>
+      accessTokenAxiosClient.put(`/groups/${groupId}`, data)
     );
-    return response;
-  },
+  }
 
-  updateMemberRole: async (groupId: string, userId: string, role: string) => {
-    const response = await axios.put(
-      `${API_URL}/groups/${groupId}/members/${userId}/role`,
-      { role },
+  async deleteGroup(groupId: string): Promise<void> {
+    return apiRequest<void>(() =>
+      accessTokenAxiosClient.delete(`/groups/${groupId}`)
     );
-    return response;
-  },
-};
+  }
 
-export default groupService;
+  async addMember(groupId: string, userId: string): Promise<void> {
+    return apiRequest<void>(() =>
+      accessTokenAxiosClient.post(`/groups/${groupId}/members`, {
+        userId,
+      })
+    );
+  }
+
+  async removeMember(groupId: string, userId: string): Promise<void> {
+    return apiRequest<void>(() =>
+      accessTokenAxiosClient.delete(`/groups/${groupId}/members/${userId}`)
+    );
+  }
+
+  async updateMemberRole(groupId: string, userId: string, role: string): Promise<void> {
+    return apiRequest<void>(() =>
+      accessTokenAxiosClient.put(`/groups/${groupId}/members/${userId}/role`, { role })
+    );
+  }
+}
+
+export const groupService = new GroupService();

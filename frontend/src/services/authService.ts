@@ -1,13 +1,13 @@
 import {
-  LoginCredentials,
-  RegisterCredentials,
-  ResetPassword,
-  SocialAuthCredentials,
-  User,
+    LoginCredentials,
+    RegisterCredentials,
+    ResetPassword,
+    SocialAuthCredentials,
+    User,
 } from "../features/auth/types";
 import {
-  accessTokenAxiosClient,
-  axiosClient,
+    accessTokenAxiosClient,
+    axiosClient,
 } from "../utils/request/axiosClient";
 import { apiRequest } from "../utils/request/http-request";
 
@@ -15,7 +15,7 @@ class AuthService {
   async login(credentials: LoginCredentials): Promise<void> {
     return apiRequest<void>(() =>
       axiosClient.post("/auth/login", credentials).then((res) => {
-        window.location.href = `${window.location.origin}/auth/callback?access_token=${res.data.access_token}&refresh_token=${res.data.refresh_token}`;
+        window.location.href = `${window.location.origin}/auth/callback?access_token=${res.data.data.access_token}&refresh_token=${res.data.data.refresh_token}`;
         return res;
       }),
     );
@@ -29,9 +29,9 @@ class AuthService {
 
   async resendVerification(email: string): Promise<void> {
     return apiRequest<void>(() =>
-      axiosClient.post("/resend-verification", {
+      axiosClient.post("/auth/resend-verification", {
         email,
-      }),
+      })
     );
   }
 
@@ -67,14 +67,16 @@ class AuthService {
           body: JSON.stringify({ token }),
         })
         .then((res) => {
-          localStorage.setItem("token", res.data.token);
+          localStorage.setItem("access_token", res.data.access_token);
+          localStorage.setItem("refresh_token", res.data.refresh_token);
           return res;
         }),
     );
   }
 
   async logout(): Promise<void> {
-    localStorage.removeItem("token");
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
   }
 
   async getUserInfo(): Promise<User | null> {
