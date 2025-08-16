@@ -17,5 +17,5 @@ export class EditMessageDto {
   })
   @IsOptional()
   @IsString()
-  type?: 'text' | 'image' | 'file' | 'video' | 'voice' | 'sticker' | 'emoji';
+  type?: 'text' | 'image' | 'file' | 'video' | 'voice' | 'emoji';
 }

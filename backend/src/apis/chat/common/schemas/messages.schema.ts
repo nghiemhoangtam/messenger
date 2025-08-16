@@ -10,7 +10,7 @@ export class Message extends Document {
   sender_id: Types.ObjectId;
 
   @Prop({ required: true })
-  type: 'text' | 'image' | 'file' | 'video' | 'voice' | 'sticker' | 'emoji';
+  type: 'text' | 'image' | 'file' | 'video' | 'voice' | 'emoji';
 
   @Prop({ required: true })
   content: string;

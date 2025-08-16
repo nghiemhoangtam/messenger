@@ -379,7 +379,6 @@ async function seed() {
           'file',
           'video',
           'voice',
-          'sticker',
           'emoji',
         ]),
         content: faker.lorem.sentences(faker.number.int({ min: 1, max: 3 })),
@@ -411,7 +410,6 @@ async function seed() {
             'file',
             'video',
             'voice',
-            'sticker',
             'emoji',
           ]),
           content: isSpecialUserMessage ? 

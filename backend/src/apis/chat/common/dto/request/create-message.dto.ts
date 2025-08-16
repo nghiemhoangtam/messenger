@@ -10,9 +10,9 @@ export class CreateMessageDto {
   @IsNotEmpty({ message: 'Content is required' })
   content: string;
 
-  @ApiProperty({ default: 'text', enum: ['text', 'image', 'file', 'audio', 'video', 'sticker', 'emoji'] })
+  @ApiProperty({ default: 'text', enum: ['text', 'image', 'file', 'audio', 'video', 'emoji'] })
   @IsOptional()
-  @IsIn(['text', 'image', 'file', 'audio', 'video', 'sticker', 'emoji'], { message: 'Invalid message type' })
+  @IsIn(['text', 'image', 'file', 'audio', 'video', 'emoji'], { message: 'Invalid message type' })
   type?: string = 'text';
 
   @ApiProperty({ required: false, description: 'ID of the message being replied to' })
